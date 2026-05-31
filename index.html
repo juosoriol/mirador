@@ -5568,11 +5568,15 @@ function togglePillsMode(){
   if(_pillsOn){
     pv.classList.add('open');
     da.style.display = 'none';
+    $('searchbar').style.display = 'none';
+    $('chips-bar').style.display = 'none';
     _pillsPopulateSelectors();
     renderPillsView();
   } else {
     pv.classList.remove('open');
     da.style.display = '';
+    $('searchbar').style.display = '';
+    $('chips-bar').style.display = '';
     if(_pillsFichaOpen) pillsCloseFicha();
   }
 }

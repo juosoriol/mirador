@@ -661,15 +661,14 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d1 .pd-id{font-size:11px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mpill-d1 .pd-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 0}
 .mpill-d1 .pd-badge{margin-left:auto;border-radius:20px;padding:3px 9px;font-size:11px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--s2);color:var(--muted)}
-/* D2: Lista compacta */
-.mpill-d2{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
+/* D2: Lista compacta — 2 líneas, nombre completo */
+.mpill-d2{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:11px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
 .mpill-d2:hover{background:var(--acc-dim);border-color:var(--acc-text)}
-.mpill-d2 .pl-num{font-size:11px;color:var(--muted);width:24px;text-align:right;flex-shrink:0}
-.mpill-d2 .pl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.mpill-d2 .pl-id{font-size:12px;color:var(--muted);font-family:monospace;width:90px;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mpill-d2 .pl-name{font-size:14px;color:var(--text);font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mpill-d2 .pl-tag{font-size:11px;border-radius:5px;padding:2px 8px;flex-shrink:0;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mpill-d2 .pl-arr{color:var(--border);font-size:14px;flex-shrink:0;margin-left:2px}
+.mpill-d2 .pl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mpill-d2 .pl-body{flex:1;min-width:0}
+.mpill-d2 .pl-name{font-size:14px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d2 .pl-id{font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d2 .pl-tag{font-size:11px;border-radius:5px;padding:3px 9px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* D3: Chips (wrap) */
 .mpill-d3{display:inline-flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;max-width:100%}
 .mpill-d3:hover{background:var(--acc-dim);border-color:var(--acc-text)}
@@ -748,7 +747,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .mpill-d1 .pd-badge{font-size:12px}
   .mpill-d2 .pl-name{font-size:15px;font-weight:600}
   .mpill-d2 .pl-id{font-size:12px}
-  .mpill-d2 .pl-tag{font-size:11px}
+  .mpill-d2 .pl-tag{font-size:12px;max-width:120px}
   .mpill-d5 .pt-name{font-size:16px}
   .mpill-d5 .pt-meta{font-size:13px}
   .mpill-d5 .pt-tag{font-size:12px}
@@ -5862,16 +5861,16 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d2'){
-      const dot = `<div class="pl-dot" style="background:${dotColor||'#334155'}"></div>`;
+      const dot = `<div class="pl-dot" style="background:${dotColor||'var(--border)'}"></div>`;
       const tagVal = dotColor ? eh(String(r[ck]||'')) : '';
       const tagHtml = tagVal ? `<div class="pl-tag" style="background:${dotColor}22;color:${dotColor}">${tagVal}</div>` : '';
       return `<div class="mpill-d2" onclick="pillsOpenFicha(${i})">
-        <div class="pl-num">${i+1}</div>
         ${dot}
-        <div class="pl-id">${eh(main)}</div>
-        <div class="pl-name">${eh(sec||main)}</div>
+        <div class="pl-body">
+          <div class="pl-name">${eh(sec||main)}</div>
+          <div class="pl-id">${eh(mk)}: ${eh(main)}</div>
+        </div>
         ${tagHtml}
-        <div class="pl-arr">›</div>
       </div>`;
     }
     if(design==='d3'){

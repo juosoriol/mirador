@@ -669,12 +669,13 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d2 .pl-name{font-size:14px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mpill-d2 .pl-id{font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mpill-d2 .pl-tag{font-size:11px;border-radius:5px;padding:3px 9px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* D3: Chips (wrap) */
-.mpill-d3{display:inline-flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;max-width:100%}
-.mpill-d3:hover{background:var(--acc-dim);border-color:var(--acc-text)}
-.mpill-d3 .pc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.mpill-d3 .pc-id{font-size:12px;color:var(--muted);font-family:monospace;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.mpill-d3 .pc-name{font-size:13px;color:var(--text);font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* D3: Chips avatar mini (diseño D) */
+.mpill-d3{display:inline-flex;align-items:center;gap:9px;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent}
+.mpill-d3:hover{border-color:var(--acc-text);background:var(--acc-dim)}
+.mpill-d3 .pc-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.mpill-d3 .pc-body{min-width:0}
+.mpill-d3 .pc-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.mpill-d3 .pc-id{font-size:10px;color:var(--muted);font-family:monospace;margin-top:1px;white-space:nowrap}
 /* D5: Timeline */
 .mpill-d5{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
 .mpill-d5:last-child{border-bottom:none}
@@ -5874,8 +5875,16 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d3'){
-      const dot = dotColor ? `<div class="pc-dot" style="background:${dotColor}"></div>` : '';
-      return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})">${dot}<div class="pc-id">${eh(main)}</div><div class="pc-name">${eh(sec||'')}</div></div>`;
+      const av = avColor(avSrc);
+      const init = initials(avSrc);
+      const borderColor = dotColor ? `border-color:${dotColor}44` : '';
+      return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})" style="${borderColor}">
+        <div class="pc-av" style="background:${av}">${init}</div>
+        <div class="pc-body">
+          <div class="pc-name">${eh(sec||main)}</div>
+          <div class="pc-id">${eh(main)}</div>
+        </div>
+      </div>`;
     }
     if(design==='d5'){
       const av = avColor(avSrc);

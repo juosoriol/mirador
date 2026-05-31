@@ -694,8 +694,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
   #topbar-breadcrumb{display:none!important}
-  /* Ocultar en móvil: sesión, enfoque, tema (van en menú ⋯) */
-  #btn-session,#btn-focus,#btn-theme,#focus-exit{display:none!important}
+  /* Ocultar en móvil: sesión, enfoque, tema, exportar, acciones (van en ⋯ o Acciones panel) */
+  #btn-session,#btn-focus,#btn-theme,#focus-exit,
+  #btn-export,#btn-actions{display:none!important}
   /* Mostrar botón menú ⋯ en móvil */
   #btn-mobile-menu{display:inline-flex!important}
   #btn-pills-mode{margin-left:0!important}
@@ -1205,8 +1206,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   <button class="ap-item" onclick="openFocusMenu();closeActionsPanel()">⊙ Modo enfoque</button>
 </div>
 
-<!-- ── MENÚ MÓVIL (solo ≤500px, para acciones secundarias sin archivo) ── -->
+<!-- ── MENÚ MÓVIL (solo ≤500px) ── -->
 <div id="mobile-menu">
+  <button class="mm-item" id="mm-export"  onclick="exportExcel();closeMobileMenu()" disabled>↓ Exportar</button>
+  <button class="mm-item" id="mm-graph"   onclick="openGraphPanel();closeMobileMenu()" disabled>📊 Gráfico</button>
+  <button class="mm-item" id="mm-cond"    onclick="openCondModal();closeMobileMenu()" disabled>⬛ Colores</button>
+  <button class="mm-item" id="mm-cols"    onclick="openColPanel();closeMobileMenu()" disabled>▦ Columnas</button>
+  <button class="mm-item" id="mm-views"   onclick="openViewsPanel();closeMobileMenu()">👁 Vistas</button>
+  <button class="mm-item" id="mm-refresh" onclick="openRefreshModal();closeMobileMenu()" disabled>↺ Actualizar</button>
+  <div class="mm-sep"></div>
   <button class="mm-item" onclick="openThemeModal();closeMobileMenu()">🎨 Tema</button>
   <button class="mm-item" onclick="openSessionPanel();closeMobileMenu()">⏱ Sesión</button>
 </div>
@@ -5822,11 +5830,15 @@ function _closeActionsPanelOutside(e){
   else if(p?.classList.contains('open')) setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
 }
 
-// Mostrar botones "Exportar" y "Acciones" cuando hay datos cargados
+// Mostrar botones de archivo cuando hay datos cargados
 function _showFileActions(){
   $('btn-export').style.display='';
   $('btn-actions').style.display='';
-  $('btn-mobile-sheets').style.display='';  // Hojas visible en móvil
+  $('btn-mobile-sheets').style.display='';
+  // Habilitar items del menú móvil
+  ['mm-export','mm-graph','mm-cond','mm-cols','mm-refresh'].forEach(id=>{
+    const el=$(id); if(el) el.disabled=false;
+  });
 }
 
 // ── MENÚ MÓVIL ───────────────────────────────────────────────────────────────

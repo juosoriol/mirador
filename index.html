@@ -739,19 +739,27 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #pills-grid.pg-wrap{flex-direction:row;flex-wrap:wrap}
   .mpill{border-radius:12px;width:100%;justify-content:flex-start}
   .mpill-d1,.mpill-d2,.mpill-d5,.mpill-d7{width:100%}
-  /* Fuentes más legibles en móvil */
-  .mpill-d7 .pg-name{font-size:16px}
-  .mpill-d7 .pg-sub{font-size:13px}
-  .mpill-d7 .pg-badge{font-size:12px}
-  .mpill-d1 .pd-name{font-size:16px}
-  .mpill-d1 .pd-id{font-size:12px}
-  .mpill-d1 .pd-badge{font-size:12px}
+  /* Fuentes optimizadas para nombres largos en móvil */
+  /* D7 Glass */
+  .mpill-d7 .pg-name{font-size:14px}
+  .mpill-d7 .pg-sub{font-size:12px}
+  .mpill-d7 .pg-badge{font-size:11px}
+  .mpill-d7 .pg-right{max-width:80px}
+  /* D1 ID Card */
+  .mpill-d1 .pd-name{font-size:14px}
+  .mpill-d1 .pd-id{font-size:11px}
+  .mpill-d1 .pd-badge{font-size:11px;max-width:80px}
+  /* D2 Lista */
   .mpill-d2 .pl-name{font-size:13px;font-weight:600}
   .mpill-d2 .pl-id{font-size:11px}
   .mpill-d2 .pl-tag{font-size:10px;max-width:88px}
-  .mpill-d5 .pt-name{font-size:16px}
-  .mpill-d5 .pt-meta{font-size:13px}
-  .mpill-d5 .pt-tag{font-size:12px}
+  /* D3 Chips */
+  .mpill-d3 .pc-name{font-size:13px}
+  .mpill-d3 .pc-id{font-size:11px}
+  /* D5 Timeline */
+  .mpill-d5 .pt-name{font-size:14px}
+  .mpill-d5 .pt-meta{font-size:12px}
+  .mpill-d5 .pt-tag{font-size:11px}
   /* Topbar: compacto, sin scroll */
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */

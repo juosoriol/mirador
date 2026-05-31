@@ -660,6 +660,62 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .pf-val{font-size:12px;color:var(--text);font-weight:500;word-break:break-word;line-height:1.5;flex:1}
 .pf-val.empty{color:var(--s3);font-style:italic;font-weight:400}
 @media(max-width:480px){.mpill{padding:9px 14px;min-height:42px}.mpill-main{font-size:13px}.pf-key{width:100px}}
+
+/* ── RESPONSIVE MÓVIL (iPhone 16 Pro Max y similares) ───────────────────────── */
+@media(max-width:500px){
+  /* Topbar: compacto, sin scroll */
+  #topbar{padding:0 10px;gap:6px;height:50px;padding-top:env(safe-area-inset-top)}
+  .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
+  #topbar-breadcrumb{display:none!important}
+  /* Ocultar botones secundarios del topbar en móvil */
+  #btn-graph,#btn-cond,#btn-views,#btn-cols,#btn-copy,#btn-refresh,
+  #btn-export,#btn-export-all,#btn-session,#btn-focus,#btn-theme,#focus-exit{display:none!important}
+  /* Mostrar botón menú móvil y pills */
+  #btn-mobile-menu{display:inline-flex!important}
+  #btn-pills-mode{order:2;padding:5px 10px;font-size:11px}
+  #topbar-actions{gap:4px}
+  /* Tabs: más compactas */
+  #tabs-bar{min-height:38px;padding:4px 8px 0}
+  .tab{padding:5px 10px 4px;max-width:160px}
+  .tab-name{font-size:10px}
+  #tabs-empty-text{font-size:11px}
+  #tabs-empty-btn{padding:3px 10px;font-size:11px}
+  /* Stats bar: scroll horizontal, tarjetas más pequeñas */
+  .scard{padding:4px 10px;min-width:70px}
+  .scard-val{font-size:15px}
+  /* Chips bar: compactar */
+  #chips-bar{padding:4px 10px;height:34px}
+  #chip-search{width:160px;font-size:11px}
+  /* Searchbar: reorganizar en columna */
+  #searchbar{flex-wrap:wrap;padding:6px 10px;gap:5px}
+  #search-input{width:100%;min-width:0;flex:none;order:0;font-size:13px;padding:8px 12px}
+  #regex-toggle,#excl-toggle{font-size:10px}
+  #search-col{font-size:11px;max-width:130px}
+  #btn-clear-inline{font-size:11px;padding:4px 8px;margin-left:auto}
+  #focus-exit-search{font-size:10px;padding:3px 8px}
+  /* Sidebar: ocultar por defecto en móvil, se puede abrir */
+  #sidebar{display:none}
+  /* Statusbar: simplificar */
+  #statusbar{padding:0 10px;height:26px;padding-bottom:env(safe-area-inset-bottom)}
+  #statusbar>span:last-child{display:none} /* ocultar hint de teclado */
+  #statusbar .sv{font-size:11px}
+  /* Pills view ajustes */
+  #pills-view{padding:10px}
+  .pf-header{padding:8px 14px 10px}
+  .pf-nav{padding:0 14px 8px}
+  .pf-body{padding:4px 14px 10px}
+  .pf-key{width:100px;font-size:11px}
+  .pf-val{font-size:12px}
+  /* Dropzone centrado */
+  #dropzone h2{font-size:16px}
+  /* Menú móvil overlay */
+  #mobile-menu{display:none;position:fixed;top:50px;right:8px;z-index:900;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:180px;flex-direction:column}
+  #mobile-menu.open{display:flex}
+  .mm-item{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13px;color:var(--text);cursor:pointer;transition:background .1s;font-family:var(--font);border:none;background:none;width:100%;text-align:left}
+  .mm-item:active{background:var(--s2)}
+  .mm-item:disabled{opacity:.35;cursor:not-allowed}
+  .mm-sep{height:1px;background:var(--border);margin:4px 0}
+}
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
@@ -729,6 +785,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     <button class="btn success"  id="btn-export" onclick="exportExcel()"  disabled>&#8595; Exportar</button>
     <button class="btn"          id="btn-export-all" onclick="exportAllTabs()" disabled title="Exportar todas las pestañas en un solo Excel">&#8595;&#8595; Todas</button>
   </div>
+  <!-- Botón menú móvil (solo visible en ≤500px) -->
+  <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 9px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
   <button id="btn-pills-mode" onclick="togglePillsMode()" title="Modo Pills — búsqueda rápida por tarjetas">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
     <span id="btn-pills-label">Pills</span>
@@ -1054,6 +1112,20 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 </div>
 
 <div id="toast"></div>
+
+<!-- ── MENÚ MÓVIL ── -->
+<div id="mobile-menu">
+  <button class="mm-item" id="mm-graph"   onclick="openGraphPanel();closeMobileMenu()" disabled>📊 Gráfico</button>
+  <button class="mm-item" id="mm-cond"    onclick="openCondModal();closeMobileMenu()"  disabled>⬛ Colores</button>
+  <button class="mm-item" id="mm-views"   onclick="openViewsPanel();closeMobileMenu()">👁 Vistas</button>
+  <button class="mm-item" id="mm-cols"    onclick="openColPanel();closeMobileMenu()"   disabled>▦ Columnas</button>
+  <div class="mm-sep"></div>
+  <button class="mm-item" id="mm-export"  onclick="exportExcel();closeMobileMenu()"   disabled>↓ Exportar</button>
+  <button class="mm-item" id="mm-refresh" onclick="openRefreshModal();closeMobileMenu()" disabled>↺ Actualizar</button>
+  <div class="mm-sep"></div>
+  <button class="mm-item" onclick="openThemeModal();closeMobileMenu()">🎨 Tema</button>
+  <button class="mm-item" onclick="openSessionPanel();closeMobileMenu()">⏱ Sesión</button>
+</div>
 
 <!-- ── FICHA BOTTOM SHEET (Pills mode) ── -->
 <div id="pills-ficha-overlay" onclick="pillsFichaOverlayClick(event)">
@@ -5559,6 +5631,22 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'||e.key==='ArrowDown') pillsNavigate(1);
   if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   pillsNavigate(-1);
 });
+
+// ── MENÚ MÓVIL ───────────────────────────────────────────────────────────────
+function toggleMobileMenu(){
+  const m=$('mobile-menu'); if(!m) return;
+  m.classList.toggle('open');
+  if(m.classList.contains('open')){
+    // Sincronizar estado disabled
+    const sync=[['mm-graph','btn-graph'],['mm-cond','btn-cond'],['mm-cols','btn-cols'],
+                ['mm-export','btn-export'],['mm-refresh','btn-refresh']];
+    sync.forEach(([mm,btn])=>{ const b=$$(mm),s=$$(btn); if(b&&s) b.disabled=s.disabled; });
+    setTimeout(()=>document.addEventListener('click',_closeMobileMenuOutside,{once:true}),10);
+  }
+}
+function $$(id){return document.getElementById(id);}
+function closeMobileMenu(){ $('mobile-menu')?.classList.remove('open'); }
+function _closeMobileMenuOutside(e){ if(!$('mobile-menu')?.contains(e.target)) closeMobileMenu(); }
 
 // Re-render pills cuando cambian los filtros (hook en applyFilters existente)
 const _origApplyFilters = applyFilters;

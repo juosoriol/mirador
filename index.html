@@ -632,9 +632,14 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-main{font-size:12px;font-weight:600;color:var(--text)}
 .mpill-sec{font-size:10px;color:var(--muted)}
 /* ── FICHA BOTTOM SHEET ── */
-#pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s}
+#pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
 #pills-ficha-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
-#pills-ficha-panel{background:var(--s1);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);padding-bottom:max(12px,env(safe-area-inset-bottom));border:1px solid var(--border);border-bottom:none}
+#pills-ficha-panel{background:var(--s1);border-radius:18px 18px 0 0;width:100%;max-width:600px;
+  /* dvh: usa el viewport visible real en iOS Safari; vh como fallback */
+  max-height:88vh;max-height:88dvh;
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  border:1px solid var(--border);border-bottom:none}
 #pills-ficha-overlay.open #pills-ficha-panel{transform:translateY(0)}
 .pf-handle-wrap{display:flex;justify-content:center;padding:10px 0 4px;cursor:grab;flex-shrink:0}
 .pf-handle{width:40px;height:4px;background:var(--s2);border-radius:2px}
@@ -650,7 +655,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .pf-nav-btn:disabled{opacity:.25;cursor:not-allowed}
 .pf-counter{font-size:11px;color:var(--muted);text-align:center;flex-shrink:0;white-space:nowrap;min-width:60px}
 .pf-divider{height:1px;background:var(--border);margin:0 16px;flex-shrink:0}
-.pf-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:4px 16px 12px}
+.pf-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0;padding:4px 16px calc(12px + env(safe-area-inset-bottom))}
 .pf-body::-webkit-scrollbar{width:3px}
 .pf-body::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px}
 .pf-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--s3);padding:12px 0 5px;border-bottom:1px solid var(--border);margin-bottom:2px}

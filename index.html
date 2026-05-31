@@ -442,6 +442,7 @@ input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radiu
 #fav-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0}
 #toast{position:absolute;bottom:44px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:7px 16px;font-size:12px;color:var(--text);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.show:has(span[onclick]){pointer-events:auto}
 /* Scrollbar global — delgada */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -1281,10 +1282,15 @@ function promptSessionRestore(){
   if(!saved||!saved.tabs||!saved.tabs.length) return false;
   const withData=saved.tabs.filter(t=>t.rawData&&t.rawData.length>0).length;
   if(!withData) return false;
-  // Show the session panel button as active
+  // En móvil: auto-restaurar directamente (btn-session está oculto)
+  if(window.innerWidth<=500){
+    restoreSession();
+    toast('Sesión restaurada');
+    return true;
+  }
+  // Desktop: iluminar botón y mostrar panel
   const btn=$('btn-session');
   if(btn){ btn.style.color='var(--acc-text)'; btn.style.borderColor='var(--acc)'; }
-  // Auto-show the session panel briefly
   openSessionPanel();
   return true;
 }
@@ -1332,9 +1338,17 @@ function openSessionPanel(){
       </div>`;
   }
 
-  const btn=$('btn-session');
-  const r=btn?.getBoundingClientRect();
-  if(r){ panel.style.right=(window.innerWidth-r.right)+'px'; panel.style.top=(r.bottom+4)+'px'; }
+  // Posicionar: en móvil desde botón ⋯, en desktop desde btn-session
+  const anchorEl = window.innerWidth<=500 ? $('btn-mobile-menu') : $('btn-session');
+  const r=anchorEl?.getBoundingClientRect();
+  if(r){
+    panel.style.right=(window.innerWidth-r.right)+'px';
+    panel.style.top=(r.bottom+4)+'px';
+  } else {
+    panel.style.right='8px'; panel.style.top='60px';
+  }
+  // En móvil: ancho casi completo
+  if(window.innerWidth<=500) panel.style.width=(window.innerWidth-16)+'px';
   document.body.appendChild(panel);
   setTimeout(()=>document.addEventListener('mousedown',e=>{
     if(!panel.contains(e.target)&&e.target.id!=='btn-session') panel.remove();
@@ -1641,13 +1655,11 @@ function loadSheet(name, tabId, preserveFilters){
   // Abrir picker si: hay filas encima del encabezado detectado, O la hoja tiene
   // muchas columnas y el encabezado no está en la primera fila
   const rowsAbove = detectedRow - range.s.r;
-  const needsPicker = rowsAbove > 0;
 
-  if(needsPicker){
-    $('loading').style.display='none';
-    openHdrPicker(tid, name, ws, range, preserveFilters);
-  } else {
-    _processSheetData(tid, name, ws, range, detectedRow, preserveFilters);
+  // Siempre auto-detectar y procesar directamente — el picker es solo bajo demanda
+  _processSheetData(tid, name, ws, range, detectedRow, preserveFilters);
+  if(rowsAbove > 0){
+    _showHdrToast(rowsAbove + 1);
   }
 }
 
@@ -4163,6 +4175,13 @@ let _toastTimer=null;
 function toast(msg,err){
   const e=$('toast'); e.textContent=msg; e.style.borderColor=err?'var(--danger)':'var(--border)';
   e.classList.add('show'); clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>e.classList.remove('show'),2800);
+}
+function _showHdrToast(fila){
+  const e=$('toast');
+  e.innerHTML=`Encabezado detectado en fila ${fila} &nbsp;·&nbsp; <span onclick="reopenHdrPicker();this.closest('#toast').classList.remove('show')" style="text-decoration:underline;cursor:pointer;color:var(--acc-text);font-weight:600">Cambiar</span>`;
+  e.style.borderColor='var(--border)';
+  e.classList.add('show');
+  clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>e.classList.remove('show'),5000);
 }
 
 // ── ATAJOS ────────────────────────────────────────────────────────────────────

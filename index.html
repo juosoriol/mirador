@@ -698,6 +698,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d7 .pg-badge{font-size:11px;border-radius:6px;padding:3px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;font-weight:500}
 /* Wrapper glass con gradiente de fondo */
 #pills-grid.pg-glass-bg{background:linear-gradient(135deg,var(--bg) 0%,var(--s1) 100%);border-radius:14px;padding:8px}
+/* Chips-bar dentro de pills-view en móvil */
+#chips-bar.pills-mode{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;padding:6px 10px;height:auto;flex-wrap:wrap;overflow-x:hidden;overflow-y:visible}
+#chips-bar.pills-mode.chips-collapsed{display:none!important}
 /* ── FICHA BOTTOM SHEET ── */
 #pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
 #pills-ficha-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
@@ -740,6 +743,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #pills-grid.pg-wrap{flex-direction:row;flex-wrap:wrap}
   .mpill{border-radius:12px;width:100%;justify-content:flex-start}
   .mpill-d1,.mpill-d2,.mpill-d5,.mpill-d7{width:100%}
+  #pills-filter-btn{display:inline-flex!important}
   /* Fuentes optimizadas para nombres largos en móvil */
   /* D7 Glass: padding reducido + nombre 2 líneas */
   .mpill-d7{padding:10px 10px}
@@ -1059,6 +1063,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </div>
     <div class="pills-toolbar">
       <span class="pills-toolbar-count" id="pills-toolbar-count"></span>
+      <button class="pills-cfg-btn" id="pills-filter-btn" onclick="pillsToggleMobileFilter()" style="display:none">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        <span id="pills-filter-label">Filtros</span>
+      </button>
       <button class="pills-cfg-btn" id="pills-cfg-btn" onclick="pillsToggleConfig()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
         Configurar
@@ -5674,6 +5682,10 @@ let _pillsCfgOn  = false;
 let _pillsFichaIdx = 0;
 let _pillsFichaOpen = false;
 let _pillsFilteredCache = [];
+// Posición original del chips-bar para restaurar al salir de pills mode
+let _pillsCbParent = null;
+let _pillsCbNext   = null;
+let _pillsMfOpen   = false;
 
 // Colores para avatar
 function _pillsAvatarColor(s){
@@ -5691,13 +5703,28 @@ function togglePillsMode(){
   btn.classList.toggle('pills-on', _pillsOn);
   const pv = $('pills-view');
   const da = $('data-area');
+  const cb = $('chips-bar');
+  const isMobile = window.innerWidth <= 500;
+
   if(_pillsOn){
     pv.classList.add('open');
     da.style.display = 'none';
     $('searchbar').style.display = 'none';
-    $('chips-bar').style.display = 'none';
+
+    if(isMobile && cb){
+      // Mover chips-bar dentro de pills-view (reutiliza toda la lógica de filtros)
+      _pillsCbParent = cb.parentNode;
+      _pillsCbNext   = cb.nextSibling;
+      cb.classList.add('pills-mode','chips-collapsed'); // empieza oculto
+      cb.style.display = '';
+      pv.insertBefore(cb, $('pills-grid'));
+      _pillsMfOpen = false;
+      _pillsUpdateFilterBtn();
+    } else {
+      cb.style.display = 'none';
+    }
+
     _pillsPopulateSelectors();
-    // Sincronizar buscador pills con el search actual
     const curSearch = $('search-input')?.value || '';
     const inp = $('pills-search-input');
     if(inp && !inp.value) inp.value = curSearch;
@@ -5706,9 +5733,36 @@ function togglePillsMode(){
     pv.classList.remove('open');
     da.style.display = '';
     $('searchbar').style.display = '';
-    $('chips-bar').style.display = '';
+
+    if(_pillsCbParent && cb){
+      // Restaurar chips-bar a su posición original
+      cb.classList.remove('pills-mode','chips-collapsed');
+      cb.style.display = '';
+      _pillsCbParent.insertBefore(cb, _pillsCbNext);
+      _pillsCbParent = null; _pillsCbNext = null;
+    } else {
+      cb.style.display = '';
+    }
     if(_pillsFichaOpen) pillsCloseFicha();
   }
+}
+
+function pillsToggleMobileFilter(){
+  const cb = $('chips-bar');
+  if(!cb) return;
+  _pillsMfOpen = !_pillsMfOpen;
+  cb.classList.toggle('chips-collapsed', !_pillsMfOpen);
+  _pillsUpdateFilterBtn();
+}
+
+function _pillsUpdateFilterBtn(){
+  const btn = $('pills-filter-btn');
+  const lbl = $('pills-filter-label');
+  if(!btn || !lbl) return;
+  const tab = T();
+  const n = Object.keys(tab?.colFilters||{}).length;
+  lbl.textContent = n > 0 ? `Filtros (${n})` : 'Filtros';
+  btn.classList.toggle('on', n > 0 || _pillsMfOpen);
 }
 
 // ── POBLAR SELECTORES CON COLUMNAS REALES ────────────────────────────────────
@@ -6153,7 +6207,10 @@ if(T()) _showFileActions();
 const _origApplyFilters = applyFilters;
 applyFilters = function(){
   _origApplyFilters.apply(this, arguments);
-  if(_pillsOn) renderPillsView();
+  if(_pillsOn){
+    renderPillsView();
+    _pillsUpdateFilterBtn();
+  }
 };
 </script>
 </body>

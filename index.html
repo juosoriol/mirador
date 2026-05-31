@@ -654,13 +654,14 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-main{font-size:12px;font-weight:600;color:var(--text)}
 .mpill-sec{font-size:10px;color:var(--muted)}
 /* D1: ID Card full */
-.mpill-d1{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
-.mpill-d1:hover{border-color:var(--acc-text);background:var(--acc-dim);transform:translateY(-1px)}
-.mpill-d1 .pd-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;color:#fff}
+.mpill-d1{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box;overflow:hidden;position:relative}
+.mpill-d1::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:14px 0 0 14px}
+.mpill-d1:hover{border-color:var(--acc-text);transform:translateY(-1px)}
+.mpill-d1 .pd-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .mpill-d1 .pd-body{flex:1;min-width:0}
 .mpill-d1 .pd-id{font-size:11px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mpill-d1 .pd-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 0}
-.mpill-d1 .pd-badge{margin-left:auto;border-radius:20px;padding:3px 9px;font-size:11px;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:var(--s2);color:var(--muted)}
+.mpill-d1 .pd-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:3px 0 0}
+.mpill-d1 .pd-badge{margin-left:auto;border-radius:999px;padding:4px 11px;font-size:11px;font-weight:600;flex-shrink:0;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* D2: Lista compacta — 2 líneas, nombre completo */
 .mpill-d2{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:11px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
 .mpill-d2:hover{background:var(--acc-dim);border-color:var(--acc-text)}
@@ -677,15 +678,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d3 .pc-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mpill-d3 .pc-id{font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;white-space:nowrap}
 /* D5: Timeline */
-.mpill-d5{display:flex;gap:12px;padding:12px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
+.mpill-d5{display:flex;gap:14px;padding:12px 8px 12px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box;position:relative}
 .mpill-d5:last-child{border-bottom:none}
-.mpill-d5:hover{background:var(--acc-dim);border-radius:8px;padding-left:8px}
-.mpill-d5 .pt-circle{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;color:#fff}
-.mpill-d5 .pt-body{flex:1;min-width:0;padding-top:2px}
-.mpill-d5 .pt-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mpill-d5 .pt-meta{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mpill-d5 .pt-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
-.mpill-d5 .pt-tag{font-size:11px;border-radius:4px;padding:3px 8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mpill-d5:hover{background:var(--acc-dim);border-radius:10px}
+.mpill-d5 .pt-circle{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:#fff;position:relative;z-index:1}
+.mpill-d5 .pt-body{flex:1;min-width:0;border-left:2px solid var(--border);padding-left:12px;margin-left:2px}
+.mpill-d5 .pt-name{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d5 .pt-meta{font-size:11px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;letter-spacing:.02em}
+.mpill-d5 .pt-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.mpill-d5 .pt-tag{font-size:11px;border-radius:6px;padding:3px 10px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 /* D7: Glass / Premium */
 .mpill-d7{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:13px 14px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%;box-sizing:border-box}
 .mpill-d7:hover{background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.5)}
@@ -1085,7 +1086,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       <div class="pills-cfg-row">
         <span class="pills-cfg-label">Diseño</span>
         <select class="pills-cfg-select" id="pills-sel-design" onchange="renderPillsView()">
-          <option value="d7">⬡ Glass · Premium</option>
           <option value="d1">▣ ID Card</option>
           <option value="d2">≡ Lista compacta</option>
           <option value="d3">○ Chips</option>
@@ -5767,7 +5767,7 @@ function _pillsPopulateSelectors(){
   // Diseño: restaurar o default d7
   const designSel = $('pills-sel-design');
   if(designSel){
-    designSel.value = saved?.design || 'd7';
+    designSel.value = (saved?.design && saved.design !== 'd7') ? saved.design : 'd1';
   }
 }
 
@@ -5862,9 +5862,11 @@ function renderPillsView(){
     if(design==='d1'){
       const av = avColor(avSrc);
       const init = initials(avSrc);
-      const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</div>` : '';
-      return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})">
-        <div class="pd-avatar" style="background:${av}">${init}</div>
+      const accentColor = dotColor || av;
+      const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${eh(String(r[ck]||''))}</div>` : '';
+      return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})" style="background:linear-gradient(to right,${accentColor}18 0%,var(--s1) 45%);border-color:${accentColor}33">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor};border-radius:14px 0 0 14px"></div>
+        <div class="pd-avatar" style="background:${av};box-shadow:0 0 0 3px ${av}44">${init}</div>
         <div class="pd-body">
           <div class="pd-id">${eh(mk)} · ${eh(main)}</div>
           <div class="pd-name">${eh(sec||main)}</div>
@@ -5901,10 +5903,11 @@ function renderPillsView(){
       const av = avColor(avSrc);
       const init = initials(avSrc);
       const tagVal = dotColor ? eh(String(r[ck]||'')) : '';
-      const tags = tagVal ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor}">${tagVal}</span>` : '';
+      const tags = tagVal ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${tagVal}</span>` : '';
+      const trackColor = dotColor || av;
       return `<div class="mpill-d5" onclick="pillsOpenFicha(${i})">
-        <div class="pt-circle" style="background:${av}">${init}</div>
-        <div class="pt-body">
+        <div class="pt-circle" style="background:${av};box-shadow:0 0 0 3px ${av}44,0 2px 8px ${av}33">${init}</div>
+        <div class="pt-body" style="border-left-color:${trackColor}44">
           <div class="pt-name">${eh(sec||main)}</div>
           <div class="pt-meta">${eh(mk)}: ${eh(main)}</div>
           ${tags?`<div class="pt-tags">${tags}</div>`:''}

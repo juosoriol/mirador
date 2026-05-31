@@ -608,6 +608,58 @@ html[data-theme="dashboard-purple"] #sidebar{background:var(--s1)}
 html[data-theme="dashboard"] #statusbar,
 html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
+/* ── MODO PILLS ─────────────────────────────────────────────────────────────── */
+#btn-pills-mode{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-family:var(--font);transition:all .2s;white-space:nowrap;flex-shrink:0}
+#btn-pills-mode:hover{background:rgba(255,255,255,.2)}
+#btn-pills-mode.pills-on{background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text)}
+#pills-view{display:none;position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px;background:var(--bg);z-index:5}
+#pills-view.open{display:block}
+.pills-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.pills-toolbar-count{font-size:11px;color:var(--muted);flex:1}
+.pills-cfg-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:20px;font-size:11px;border:1px solid var(--border);background:var(--s1);color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .12s;white-space:nowrap}
+.pills-cfg-btn:hover{border-color:var(--border2);color:var(--text)}
+.pills-cfg-btn.on{background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text)}
+#pills-cfg-panel{display:none;flex-direction:column;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.pills-cfg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pills-cfg-label{font-size:11px;color:var(--muted);flex-shrink:0;min-width:110px}
+.pills-cfg-select{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:11px;padding:5px 7px;outline:none;cursor:pointer;font-family:var(--font)}
+.pills-cfg-select:focus{border-color:var(--acc)}
+#pills-grid{display:flex;flex-wrap:wrap;gap:7px}
+.mpill{display:inline-flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;transition:background .12s,border-color .12s;user-select:none;min-height:38px;-webkit-tap-highlight-color:transparent}
+.mpill:hover{background:var(--acc-dim);border-color:var(--acc-text)}
+.mpill:active{background:var(--acc-dim);border-color:var(--acc-text)}
+.mpill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mpill-main{font-size:12px;font-weight:600;color:var(--text)}
+.mpill-sec{font-size:10px;color:var(--muted)}
+/* ── FICHA BOTTOM SHEET ── */
+#pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s}
+#pills-ficha-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
+#pills-ficha-panel{background:var(--s1);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:88vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);padding-bottom:max(12px,env(safe-area-inset-bottom));border:1px solid var(--border);border-bottom:none}
+#pills-ficha-overlay.open #pills-ficha-panel{transform:translateY(0)}
+.pf-handle-wrap{display:flex;justify-content:center;padding:10px 0 4px;cursor:grab;flex-shrink:0}
+.pf-handle{width:40px;height:4px;background:var(--s2);border-radius:2px}
+.pf-header{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;flex-shrink:0}
+.pf-avatar{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;flex-shrink:0}
+.pf-name{font-size:15px;font-weight:700;color:var(--text);line-height:1.2}
+.pf-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.pf-close{margin-left:auto;background:var(--s2);border:none;color:var(--muted);cursor:pointer;font-size:18px;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:var(--font);transition:all .12s}
+.pf-close:hover{background:var(--s3);color:var(--text)}
+.pf-nav{display:flex;align-items:center;gap:8px;padding:0 16px 10px;flex-shrink:0}
+.pf-nav-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;padding:8px;border-radius:8px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;min-height:36px;transition:all .12s;font-family:var(--font)}
+.pf-nav-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc-text);background:var(--acc-dim)}
+.pf-nav-btn:disabled{opacity:.25;cursor:not-allowed}
+.pf-counter{font-size:11px;color:var(--muted);text-align:center;flex-shrink:0;white-space:nowrap;min-width:60px}
+.pf-divider{height:1px;background:var(--border);margin:0 16px;flex-shrink:0}
+.pf-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:4px 16px 12px}
+.pf-body::-webkit-scrollbar{width:3px}
+.pf-body::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px}
+.pf-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--s3);padding:12px 0 5px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.pf-field{display:flex;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--s1);gap:12px}
+.pf-field:last-child{border-bottom:none}
+.pf-key{width:120px;font-size:11px;color:var(--muted);flex-shrink:0;padding-top:2px;line-height:1.4}
+.pf-val{font-size:12px;color:var(--text);font-weight:500;word-break:break-word;line-height:1.5;flex:1}
+.pf-val.empty{color:var(--s3);font-style:italic;font-weight:400}
+@media(max-width:480px){.mpill{padding:9px 14px;min-height:42px}.mpill-main{font-size:13px}.pf-key{width:100px}}
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
@@ -677,6 +729,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     <button class="btn success"  id="btn-export" onclick="exportExcel()"  disabled>&#8595; Exportar</button>
     <button class="btn"          id="btn-export-all" onclick="exportAllTabs()" disabled title="Exportar todas las pestañas en un solo Excel">&#8595;&#8595; Todas</button>
   </div>
+  <button id="btn-pills-mode" onclick="togglePillsMode()" title="Modo Pills — búsqueda rápida por tarjetas">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+    <span id="btn-pills-label">Pills</span>
+  </button>
   <button class="btn" id="btn-session" onclick="openSessionPanel()" title="Sesión guardada" style="padding:5px 9px;font-size:13px">⏱</button>
   <button class="btn" id="btn-focus" onclick="openFocusMenu()" title="Modo enfocado" style="padding:5px 9px;font-size:13px">⊙</button>
   <span id="focus-exit" onclick="exitFocusMode()" style="margin-left:4px">⊙ Salir</span>
@@ -780,6 +836,34 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       </div>
     </div>
   </div>
+  <!-- ── PILLS VIEW ── -->
+  <div id="pills-view">
+    <div class="pills-toolbar">
+      <span class="pills-toolbar-count" id="pills-toolbar-count"></span>
+      <button class="pills-cfg-btn" id="pills-cfg-btn" onclick="pillsToggleConfig()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        Configurar
+      </button>
+    </div>
+    <div id="pills-cfg-panel">
+      <div class="pills-cfg-row">
+        <span class="pills-cfg-label">Campo principal</span>
+        <select class="pills-cfg-select" id="pills-sel-main" onchange="renderPillsView()"></select>
+      </div>
+      <div class="pills-cfg-row">
+        <span class="pills-cfg-label">Campo secundario</span>
+        <select class="pills-cfg-select" id="pills-sel-sec" onchange="renderPillsView()"></select>
+      </div>
+      <div class="pills-cfg-row">
+        <span class="pills-cfg-label">Color por</span>
+        <select class="pills-cfg-select" id="pills-sel-color" onchange="renderPillsView()">
+          <option value="none">Sin color</option>
+        </select>
+      </div>
+    </div>
+    <div id="pills-grid"></div>
+  </div>
+
   <div id="data-area">
     <div id="dropzone" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
       <div class="drop-icon">📊</div>
@@ -970,6 +1054,28 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 </div>
 
 <div id="toast"></div>
+
+<!-- ── FICHA BOTTOM SHEET (Pills mode) ── -->
+<div id="pills-ficha-overlay" onclick="pillsFichaOverlayClick(event)">
+  <div id="pills-ficha-panel">
+    <div class="pf-handle-wrap" id="pf-handle"><div class="pf-handle"></div></div>
+    <div class="pf-header">
+      <div class="pf-avatar" id="pf-avatar"></div>
+      <div style="flex:1;min-width:0">
+        <div class="pf-name" id="pf-name"></div>
+        <div class="pf-sub"  id="pf-sub"></div>
+      </div>
+      <button class="pf-close" onclick="pillsCloseFicha()">×</button>
+    </div>
+    <div class="pf-nav">
+      <button class="pf-nav-btn" id="pf-btn-prev" onclick="pillsNavigate(-1)">◀ Anterior</button>
+      <span class="pf-counter" id="pf-counter"></span>
+      <button class="pf-nav-btn" id="pf-btn-next" onclick="pillsNavigate(1)">Siguiente ▶</button>
+    </div>
+    <div class="pf-divider"></div>
+    <div class="pf-body" id="pf-body"></div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -5272,6 +5378,194 @@ initChipSearch();
 initFocusModes();
 _sidebarInit();
 _renderRecentSearches();
+
+// ── MODO PILLS ────────────────────────────────────────────────────────────────
+const PILLS_KEY = 'mirador_pills_v1';
+let _pillsOn     = false;
+let _pillsCfgOn  = false;
+let _pillsFichaIdx = 0;
+let _pillsFichaOpen = false;
+let _pillsFilteredCache = [];
+
+// Colores para avatar
+function _pillsAvatarColor(s){
+  const c=['#1d4ed8','#7c3aed','#0f766e','#b45309','#0e7490','#be185d','#65a30d','#c2410c'];
+  let h=0; for(const ch of String(s)) h=(h*31+ch.charCodeAt(0))%c.length; return c[h];
+}
+function _pillsInitials(s){
+  return String(s||'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
+}
+
+// ── TOGGLE PRINCIPAL ──────────────────────────────────────────────────────────
+function togglePillsMode(){
+  _pillsOn = !_pillsOn;
+  const btn = $('btn-pills-mode');
+  btn.classList.toggle('pills-on', _pillsOn);
+  $('btn-pills-label').textContent = _pillsOn ? 'Pills ON' : 'Pills';
+  const pv = $('pills-view');
+  const da = $('data-area');
+  if(_pillsOn){
+    pv.classList.add('open');
+    da.style.display = 'none';
+    _pillsPopulateSelectors();
+    renderPillsView();
+  } else {
+    pv.classList.remove('open');
+    da.style.display = '';
+    if(_pillsFichaOpen) pillsCloseFicha();
+  }
+}
+
+// ── POBLAR SELECTORES CON COLUMNAS REALES ────────────────────────────────────
+function _pillsPopulateSelectors(){
+  const tab = T(); if(!tab||!tab.columns) return;
+  const cols = tab.columns;
+  const saved = _pillsLoadCfg();
+
+  ['pills-sel-main','pills-sel-sec'].forEach((id,i)=>{
+    const sel = $(id); if(!sel) return;
+    sel.innerHTML = cols.map(c=>`<option value="${eh(c)}">${eh(c)}</option>`).join('');
+    const def = saved?.[i==='0'?'main':'sec'];
+    if(def && cols.includes(def)) sel.value = def;
+    else if(i===1 && cols.length>1) sel.value = cols[1]; // 2nd col as default secondary
+  });
+
+  // Color por: columnas con pocos únicos (≤20) o primera columna
+  const colorSel = $('pills-sel-color');
+  colorSel.innerHTML = '<option value="none">Sin color</option>';
+  cols.forEach(c=>{
+    const uniq = new Set((tab.rawData||[]).slice(0,300).map(r=>r[c]||'')).size;
+    if(uniq<=20) colorSel.innerHTML += `<option value="${eh(c)}">${eh(c)}</option>`;
+  });
+  const savedColor = saved?.color;
+  if(savedColor) colorSel.value = savedColor;
+}
+
+function _pillsLoadCfg(){ try{ return JSON.parse(localStorage.getItem(PILLS_KEY)||'null'); }catch(_){return null;} }
+function _pillsSaveCfg(){
+  try{ localStorage.setItem(PILLS_KEY, JSON.stringify({
+    main:$('pills-sel-main')?.value,
+    sec:$('pills-sel-sec')?.value,
+    color:$('pills-sel-color')?.value
+  })); }catch(_){}
+}
+
+function pillsToggleConfig(){
+  _pillsCfgOn = !_pillsCfgOn;
+  $('pills-cfg-panel').style.display = _pillsCfgOn ? 'flex' : 'none';
+  $('pills-cfg-btn').classList.toggle('on', _pillsCfgOn);
+}
+
+// ── RENDER PILLS ──────────────────────────────────────────────────────────────
+function renderPillsView(){
+  const tab = T(); if(!tab) return;
+  _pillsSaveCfg();
+  const mk = $('pills-sel-main')?.value;
+  const sk = $('pills-sel-sec')?.value;
+  const ck = $('pills-sel-color')?.value;
+
+  // Usar tab.filtered (índices) → filas reales
+  const rows = (tab.filtered||[]).map(i=>tab.rawData[i]).filter(Boolean);
+  _pillsFilteredCache = rows;
+
+  $('pills-toolbar-count').textContent = rows.length.toLocaleString()+' registros';
+
+  // Mapa de colores únicos para la columna de color
+  let colorMap = {};
+  if(ck && ck!=='none'){
+    const palette=['#22c55e','#f59e0b','#f87171','#60a5fa','#c084fc','#34d399','#fb923c','#a78bfa'];
+    const uniqVals=[...new Set(rows.map(r=>r[ck]||''))];
+    uniqVals.forEach((v,i)=>{ colorMap[v]=palette[i%palette.length]; });
+  }
+
+  $('pills-grid').innerHTML = rows.map((r,i)=>{
+    const main = r[mk]||'—';
+    const sec  = mk!==sk ? (r[sk]||'') : '';
+    const dot  = (ck&&ck!=='none') ? `<span class="mpill-dot" style="background:${colorMap[r[ck]||'']||'#475569'}"></span>` : '';
+    return `<div class="mpill" onclick="pillsOpenFicha(${i})">${dot}<span class="mpill-main">${eh(main)}</span>${sec?`<span class="mpill-sec">${eh(sec)}</span>`:''}</div>`;
+  }).join('');
+}
+
+// ── FICHA ─────────────────────────────────────────────────────────────────────
+function pillsOpenFicha(i){
+  _pillsFichaIdx = i; _pillsFichaOpen = true;
+  _pillsRenderFicha();
+  $('pills-ficha-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function _pillsRenderFicha(){
+  const tab = T(); if(!tab) return;
+  const r = _pillsFilteredCache[_pillsFichaIdx]; if(!r) return;
+  const cols = tab.columns;
+
+  // Header
+  const mainKey = $('pills-sel-main')?.value || cols[0];
+  const mainVal = r[mainKey]||'—';
+  const secKey  = $('pills-sel-sec')?.value;
+  const secVal  = secKey&&secKey!==mainKey ? (r[secKey]||'') : '';
+  const col     = _pillsAvatarColor(mainVal);
+
+  $('pf-avatar').textContent   = _pillsInitials(mainVal);
+  $('pf-avatar').style.background = `linear-gradient(135deg,${col},${col}99)`;
+  $('pf-name').textContent     = mainVal;
+  $('pf-sub').textContent      = secVal;
+  $('pf-counter').textContent  = `${_pillsFichaIdx+1} / ${_pillsFilteredCache.length}`;
+  $('pf-btn-prev').disabled    = _pillsFichaIdx===0;
+  $('pf-btn-next').disabled    = _pillsFichaIdx===_pillsFilteredCache.length-1;
+
+  // Body — todos los campos
+  $('pf-body').innerHTML = `
+    <div class="pf-section">Todos los campos</div>
+    ${cols.map(c=>{
+      const v = r[c]||'';
+      return `<div class="pf-field">
+        <span class="pf-key">${eh(c)}</span>
+        <span class="pf-val${!v?' empty':''}">${v ? eh(v) : 'Sin información'}</span>
+      </div>`;
+    }).join('')}`;
+  $('pf-body').scrollTop = 0;
+}
+
+function pillsNavigate(dir){
+  const n = _pillsFichaIdx + dir;
+  if(n<0||n>=_pillsFilteredCache.length) return;
+  _pillsFichaIdx = n; _pillsRenderFicha();
+}
+
+function pillsCloseFicha(){
+  _pillsFichaOpen = false;
+  $('pills-ficha-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function pillsFichaOverlayClick(e){ if(e.target===$('pills-ficha-overlay')) pillsCloseFicha(); }
+
+// Swipe gestures en móvil
+(function(){
+  let sx=0, sy=0;
+  const panel = $('pills-ficha-panel');
+  panel.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
+  panel.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dy)>Math.abs(dx)&&dy>60){pillsCloseFicha();return;}
+    if(Math.abs(dx)>50&&Math.abs(dy)<60){ dx<0?pillsNavigate(1):pillsNavigate(-1); }
+  },{passive:true});
+})();
+
+// Teclado
+document.addEventListener('keydown',e=>{
+  if(!_pillsFichaOpen) return;
+  if(e.key==='Escape') pillsCloseFicha();
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') pillsNavigate(1);
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   pillsNavigate(-1);
+});
+
+// Re-render pills cuando cambian los filtros (hook en applyFilters existente)
+const _origApplyFilters = applyFilters;
+applyFilters = function(){
+  _origApplyFilters.apply(this, arguments);
+  if(_pillsOn) renderPillsView();
+};
 </script>
 </body>
 </html>

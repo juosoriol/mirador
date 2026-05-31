@@ -121,7 +121,7 @@ html[data-theme="dashboard-purple"]{
   --row-border:#1c1640;
   --font:'Segoe UI',system-ui,sans-serif;--r:6px;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 #topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0}
 .logo{width:26px;height:26px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
 .app-title{font-size:14px;font-weight:600;white-space:nowrap;color:var(--topbar-text,var(--text))}.app-title span{color:var(--acc-text)}
@@ -184,7 +184,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .scard-add:hover{background:var(--s2)}
 .spill:hover{filter:brightness(1.2);transform:scale(1.05)}
 .spill-more:hover{background:var(--s3)!important;color:var(--text)!important}
-#chips-bar{display:flex;align-items:center;gap:6px;padding:5px 14px;background:var(--s1);border-top:none;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:nowrap;overflow:hidden;height:38px;transition:height .35s cubic-bezier(.4,0,.2,1)}
+#chips-bar{display:flex;align-items:center;gap:6px;padding:5px 14px;background:var(--s1);border-top:none;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:38px;transition:height .35s cubic-bezier(.4,0,.2,1);-webkit-overflow-scrolling:touch}
 #chips-bar.chips-expanded{height:auto;flex-wrap:wrap;overflow:visible}
 #chips-toggle{display:none;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;border:0.5px solid var(--border2);color:var(--acc-text);cursor:pointer;background:var(--acc-dim);white-space:nowrap;transition:background .12s;user-select:none;flex-shrink:0;margin-left:auto}
 #chips-toggle:hover{background:var(--s2)}
@@ -283,9 +283,9 @@ input[type=date]{width:130px}
 .fm-ctx-item.danger{color:var(--danger)}
 #data-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #table-wrap{flex:1;display:none;flex-direction:column;overflow:hidden}
-#vt-scroll{flex:1;overflow:auto;position:relative}
+#vt-scroll{flex:1;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 .vt-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12px}
-thead th{position:sticky;top:0;z-index:2;background:var(--s2);color:var(--muted);font-weight:500;font-size:11px;padding:7px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;text-transform:uppercase;letter-spacing:.03em;min-width:80px;max-width:240px}
+thead th{position:-webkit-sticky;position:sticky;top:0;z-index:2;background:var(--s2);color:var(--muted);font-weight:500;font-size:11px;padding:7px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;text-transform:uppercase;letter-spacing:.03em;min-width:80px;max-width:240px}
 thead th:hover{color:var(--text);background:var(--s3)}
 thead th.col-filtered{color:var(--acc-text)}
 thead th.col-filtered::before{content:'▼ ';font-size:8px;opacity:.8}
@@ -2071,7 +2071,10 @@ function openDateChipPanel(col, chipEl){
   const panelW=280;
   let left=rect.left;
   if(left+panelW>window.innerWidth-10) left=Math.max(6,rect.right-panelW);
-  dd.style.left=left+'px';
+  const vwD = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const safeLeftD = vwD<=500 ? 8 : Math.max(6, Math.min(left, vwD-panelW-6));
+  dd.style.left = safeLeftD+'px';
+  dd.style.width = vwD<=500 ? (vwD-16)+'px' : '';
   dd.style.top=(rect.bottom+4)+'px';
   dd.style.maxHeight='200px';
 
@@ -2139,9 +2142,17 @@ function openCdpPanel(col, chipEl){
   const top = rect.bottom + 4;
   const available = window.innerHeight - top - 12;
 
-  dd.style.left = left + 'px';
-  dd.style.top = top + 'px';
-  dd.style.maxHeight = Math.min(420, Math.max(200, available)) + 'px';
+  // En móvil usar visualViewport para el alto real visible (iOS Safari)
+  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
+  const vw = (window.visualViewport ? window.visualViewport.width  : window.innerWidth);
+  const safeLeft = Math.max(6, Math.min(left, vw - panelW - 6));
+  const available2 = vh - top - 12;
+
+  dd.style.left = safeLeft + 'px';
+  dd.style.top  = top + 'px';
+  dd.style.maxHeight = Math.min(420, Math.max(180, available2)) + 'px';
+  // En móvil: ancho casi completo, centrado
+  if(vw <= 500){ dd.style.left='8px'; dd.style.width=(vw-16)+'px'; } else { dd.style.width=''; }
 
   renderCdpContent(col);
 }

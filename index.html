@@ -5695,11 +5695,23 @@ function openMobileSheets(){
     title.textContent = 'Hojas del archivo';
   } else {
     title.textContent = tab.fileName || 'Hojas del archivo';
-    list.innerHTML = tab.sheets.map(n=>`
+
+    // Info de encabezado actual
+    const hdrInfo = (tab._manualHdrRow != null)
+      ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:var(--acc-dim);border:1px solid var(--acc);border-radius:8px;font-size:12px">
+           <span style="color:var(--acc-text)">📌 Encabezado: fila <strong>${tab._manualHdrRow - (tab._hdrRangeStart||0) + 1}</strong></span>
+           <button onclick="closeMobileSheets();reopenHdrPicker()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc-text);cursor:pointer;font-family:var(--font)">Cambiar</button>
+         </div>`
+      : `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:var(--s2);border-radius:8px;font-size:12px">
+           <span style="color:var(--muted)">Encabezado: auto-detectado</span>
+           <button onclick="closeMobileSheets();reopenHdrPicker()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:var(--s1);color:var(--muted);cursor:pointer;font-family:var(--font)">Cambiar</button>
+         </div>`;
+
+    list.innerHTML = hdrInfo + tab.sheets.map(n=>`
       <div class="ms-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false);closeMobileSheets();_updateMobileSheetsBtn()">
         <span class="ms-dot"></span>
-        <span>${eh(n)}</span>
-        ${tab.activeSheet===n ? '<span style="margin-left:auto;font-size:16px">✓</span>' : ''}
+        <span style="flex:1">${eh(n)}</span>
+        ${tab.activeSheet===n ? '<span style="font-size:16px">✓</span>' : ''}
       </div>`).join('');
   }
   overlay.classList.add('open');

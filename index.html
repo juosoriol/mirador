@@ -1082,6 +1082,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
           <option value="d5">◎ Timeline</option>
         </select>
       </div>
+      <div class="pills-cfg-row" style="justify-content:flex-end;padding-top:4px">
+        <button onclick="pillsResetDefaults()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:var(--font)">↺ Por defecto</button>
+      </div>
     </div>
     <div id="pills-grid"></div>
   </div>
@@ -1381,7 +1384,8 @@ function saveSession(){
       statsPanels:t.statsPanels||null,
       // Truncar para no superar cuota de localStorage (~5MB)
       rawData:(t.rawData||[]).length>MAX_SESSION ? t.rawData.slice(0,MAX_SESSION) : (t.rawData||[]),
-    }))
+    })),
+    pillsCfg: _pillsLoadCfg(),
   };
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(_){}
 }
@@ -1489,6 +1493,8 @@ function restoreSession(){
     });
     if(!tabs.size) return false;
     activeTabId = tabs.has(saved.activeTabId) ? saved.activeTabId : [...tabs.keys()][0];
+    // Restaurar config de pills si venía en la sesión
+    if(saved.pillsCfg) try{ localStorage.setItem(PILLS_KEY, JSON.stringify(saved.pillsCfg)); }catch(_){}
     renderTabs(); restoreTabUI();
     toast(`Sesión restaurada — ${tabs.size} pestaña(s)`);
     return true;
@@ -5764,6 +5770,13 @@ function _pillsSaveCfg(){
     avatar:$('pills-sel-avatar')?.value,
     design:$('pills-sel-design')?.value
   })); }catch(_){}
+}
+
+function pillsResetDefaults(){
+  localStorage.removeItem(PILLS_KEY);
+  _pillsPopulateSelectors();
+  renderPillsView();
+  toast('Configuración restablecida');
 }
 
 function pillsToggleConfig(){

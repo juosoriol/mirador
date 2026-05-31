@@ -673,6 +673,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 /* ── RESPONSIVE MÓVIL (iPhone 16 Pro Max y similares) ───────────────────────── */
 @media(max-width:500px){
+  /* Pills: columna única en móvil, sin cortes */
+  #pills-grid{display:flex;flex-direction:column;gap:6px}
+  .mpill{border-radius:12px;width:100%;justify-content:flex-start}
   /* Topbar: compacto, sin scroll */
   #topbar{padding:0 10px;gap:6px;height:50px;padding-top:env(safe-area-inset-top)}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
@@ -682,8 +685,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #btn-export,#btn-export-all,#btn-session,#btn-focus,#btn-theme,#focus-exit{display:none!important}
   /* Mostrar botón menú móvil y pills */
   #btn-mobile-menu{display:inline-flex!important}
-  #btn-pills-mode{order:2;padding:5px 10px;font-size:11px}
-  #topbar-actions{gap:4px}
+  #btn-pills-mode{margin-left:0!important}
+  #topbar-actions{display:none}
   /* Tabs: más compactas */
   #tabs-bar{min-height:38px;padding:4px 8px 0}
   .tab{padding:5px 10px 4px;max-width:160px}
@@ -811,15 +814,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     <button class="btn success"  id="btn-export" onclick="exportExcel()"  disabled>&#8595; Exportar</button>
     <button class="btn"          id="btn-export-all" onclick="exportAllTabs()" disabled title="Exportar todas las pestañas en un solo Excel">&#8595;&#8595; Todas</button>
   </div>
-  <!-- Botón hojas móvil (solo ≤500px) -->
-  <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:6px 10px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:12px;font-weight:500;flex-shrink:0;gap:5px;font-family:var(--font)">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
-    <span id="btn-sheets-label">Hojas</span>
-  </button>
-  <!-- Botón menú móvil (solo visible en ≤500px) -->
-  <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 9px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
-  <!-- Toggle Pills / Tabla -->
-  <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills">
+  <!-- Toggle Pills / Tabla — siempre visible, margen izquierdo auto lo empuja al extremo -->
+  <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills" style="margin-left:auto">
     <span class="pills-toggle-seg seg-table">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       Tabla
@@ -829,6 +825,13 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       Pills
     </span>
   </button>
+  <!-- Botón hojas móvil (solo ≤500px) -->
+  <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:6px 10px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:12px;font-weight:500;flex-shrink:0;gap:5px;font-family:var(--font)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+    <span id="btn-sheets-label">Hojas</span>
+  </button>
+  <!-- Botón menú móvil (solo visible en ≤500px) -->
+  <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 9px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
   <button class="btn" id="btn-session" onclick="openSessionPanel()" title="Sesión guardada" style="padding:5px 9px;font-size:13px">⏱</button>
   <button class="btn" id="btn-focus" onclick="openFocusMenu()" title="Modo enfocado" style="padding:5px 9px;font-size:13px">⊙</button>
   <span id="focus-exit" onclick="exitFocusMode()" style="margin-left:4px">⊙ Salir</span>
@@ -932,7 +935,26 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       </div>
     </div>
   </div>
-  <!-- ── PILLS VIEW ── -->
+  <div id="data-area">
+    <div id="dropzone" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
+      <div class="drop-icon">📊</div>
+      <h2>Arrastra tu archivo Excel aquí</h2>
+      <p style="font-size:12px">o haz clic en <strong>+</strong> en las pestañas</p>
+      <p style="font-size:11px;margin-top:4px;color:var(--muted)">Mirador — Abre varios archivos en pestañas independientes</p>
+    </div>
+    <div id="loading"><div class="spinner"></div><span>Cargando...</span></div>
+    <div id="table-wrap">
+      <div id="vt-scroll">
+        <table class="vt-table" id="vt-body-table">
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="vt-info"></div>
+    </div>
+  </div>
+
+  <!-- ── PILLS VIEW ── (fuera del sidebar, hijo directo de #main) -->
   <div id="pills-view">
     <div class="pills-toolbar">
       <span class="pills-toolbar-count" id="pills-toolbar-count"></span>
@@ -958,25 +980,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       </div>
     </div>
     <div id="pills-grid"></div>
-  </div>
-
-  <div id="data-area">
-    <div id="dropzone" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
-      <div class="drop-icon">📊</div>
-      <h2>Arrastra tu archivo Excel aquí</h2>
-      <p style="font-size:12px">o haz clic en <strong>+</strong> en las pestañas</p>
-      <p style="font-size:11px;margin-top:4px;color:var(--muted)">Mirador — Abre varios archivos en pestañas independientes</p>
-    </div>
-    <div id="loading"><div class="spinner"></div><span>Cargando...</span></div>
-    <div id="table-wrap">
-      <div id="vt-scroll">
-        <table class="vt-table" id="vt-body-table">
-          <thead id="table-head"></thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
-      <div id="vt-info"></div>
-    </div>
   </div>
 </div>
 
@@ -5521,7 +5524,6 @@ function togglePillsMode(){
   _pillsOn = !_pillsOn;
   const btn = $('btn-pills-mode');
   btn.classList.toggle('pills-on', _pillsOn);
-  $('btn-pills-label').textContent = _pillsOn ? 'Pills ON' : 'Pills';
   const pv = $('pills-view');
   const da = $('data-area');
   if(_pillsOn){

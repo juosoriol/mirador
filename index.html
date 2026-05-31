@@ -5898,6 +5898,9 @@ togglePillsMode = function(){
   }
 };
 
+// Mostrar botones de archivo si hay sesión restaurada
+if(T()) _showFileActions();
+
 // Re-render pills cuando cambian los filtros (hook en applyFilters existente)
 const _origApplyFilters = applyFilters;
 applyFilters = function(){

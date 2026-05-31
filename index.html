@@ -740,24 +740,27 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .mpill{border-radius:12px;width:100%;justify-content:flex-start}
   .mpill-d1,.mpill-d2,.mpill-d5,.mpill-d7{width:100%}
   /* Fuentes optimizadas para nombres largos en móvil */
-  /* D7 Glass */
-  .mpill-d7 .pg-name{font-size:14px}
-  .mpill-d7 .pg-sub{font-size:12px}
+  /* D7 Glass: padding reducido + nombre 2 líneas */
+  .mpill-d7{padding:10px 10px}
+  #pills-grid.pg-glass-bg{padding:4px}
+  .mpill-d7 .pg-name{font-size:13px}
+  .mpill-d7 .pg-sub{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d7 .pg-badge{font-size:11px}
   .mpill-d7 .pg-right{max-width:80px}
-  /* D1 ID Card */
-  .mpill-d1 .pd-name{font-size:14px}
+  /* D1 ID Card: nombre 2 líneas */
+  .mpill-d1{padding:10px 12px}
+  .mpill-d1 .pd-name{font-size:13px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d1 .pd-id{font-size:11px}
   .mpill-d1 .pd-badge{font-size:11px;max-width:80px}
   /* D2 Lista */
   .mpill-d2 .pl-name{font-size:13px;font-weight:600}
   .mpill-d2 .pl-id{font-size:11px}
   .mpill-d2 .pl-tag{font-size:10px;max-width:88px}
-  /* D3 Chips */
+  /* D3 Chips — perfecto, solo ajuste menor */
   .mpill-d3 .pc-name{font-size:13px}
   .mpill-d3 .pc-id{font-size:11px}
-  /* D5 Timeline */
-  .mpill-d5 .pt-name{font-size:14px}
+  /* D5 Timeline: nombre 2 líneas */
+  .mpill-d5 .pt-name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d5 .pt-meta{font-size:12px}
   .mpill-d5 .pt-tag{font-size:11px}
   /* Topbar: compacto, sin scroll */

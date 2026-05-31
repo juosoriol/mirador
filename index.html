@@ -1057,6 +1057,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
         </select>
       </div>
       <div class="pills-cfg-row">
+        <span class="pills-cfg-label">Avatar</span>
+        <select class="pills-cfg-select" id="pills-sel-avatar" onchange="renderPillsView()"></select>
+      </div>
+      <div class="pills-cfg-row">
         <span class="pills-cfg-label">Diseño</span>
         <select class="pills-cfg-select" id="pills-sel-design" onchange="renderPillsView()">
           <option value="d7">⬡ Glass · Premium</option>
@@ -5723,6 +5727,15 @@ function _pillsPopulateSelectors(){
   const savedColor = saved?.color;
   if(savedColor) colorSel.value = savedColor;
 
+  // Avatar: mismas opciones que main/sec, default = campo de nombre
+  const avatarSel = $('pills-sel-avatar');
+  if(avatarSel){
+    avatarSel.innerHTML = opts;
+    const smartAvatar = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
+    const savedAvatar = saved?.avatar;
+    avatarSel.value = (savedAvatar && cols.includes(savedAvatar)) ? savedAvatar : (smartAvatar || selSec.value || cols[0]);
+  }
+
   // Diseño: restaurar o default d7
   const designSel = $('pills-sel-design');
   if(designSel){
@@ -5736,6 +5749,7 @@ function _pillsSaveCfg(){
     main:$('pills-sel-main')?.value,
     sec:$('pills-sel-sec')?.value,
     color:$('pills-sel-color')?.value,
+    avatar:$('pills-sel-avatar')?.value,
     design:$('pills-sel-design')?.value
   })); }catch(_){}
 }
@@ -5755,6 +5769,7 @@ function renderPillsView(){
   let mk = $('pills-sel-main')?.value;
   let sk = $('pills-sel-sec')?.value;
   const ck = $('pills-sel-color')?.value;
+  const ak = $('pills-sel-avatar')?.value || sk || mk;
   const design = $('pills-sel-design')?.value || 'd7';
 
   if(!mk || !cols.includes(mk)) mk = cols[0] || '';
@@ -5793,11 +5808,12 @@ function renderPillsView(){
   grid.innerHTML = rows.map((r,i)=>{
     const main = (mk && r[mk]) ? r[mk] : (cols[0]?r[cols[0]]:'—');
     const sec  = (sk && sk!==mk && r[sk]) ? String(r[sk]) : '';
+    const avSrc = (ak && r[ak]) ? String(r[ak]) : (sec || main);
     const dotColor = (ck&&ck!=='none') ? (colorMap[r[ck]||'']||'#475569') : null;
 
     if(design==='d7'){
-      const av = avColor(main);
-      const init = initials(main);
+      const av = avColor(avSrc);
+      const init = initials(avSrc);
       const dotHtml = dotColor ? `<div class="pg-dot" style="color:${dotColor}">●</div><div class="pg-label">${eh(String(r[ck]||''))}</div>` : '';
       return `<div class="mpill-d7" onclick="pillsOpenFicha(${i})">
         <div class="pg-glyph" style="background:${av}">${init}</div>
@@ -5809,8 +5825,8 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d1'){
-      const av = avColor(main);
-      const init = initials(main);
+      const av = avColor(avSrc);
+      const init = initials(avSrc);
       const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</div>` : '';
       return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})">
         <div class="pd-avatar" style="background:${av}">${init}</div>
@@ -5838,8 +5854,8 @@ function renderPillsView(){
       return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})">${dot}<div class="pc-id">${eh(main)}</div><div class="pc-name">${eh(sec||'')}</div></div>`;
     }
     if(design==='d5'){
-      const av = avColor(main);
-      const init = initials(main);
+      const av = avColor(avSrc);
+      const init = initials(avSrc);
       const tags = dotColor ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</span>` : '';
       return `<div class="mpill-d5" onclick="pillsOpenFicha(${i})">
         <div class="pt-circle" style="background:${av}">${init}</div>

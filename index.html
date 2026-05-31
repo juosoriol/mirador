@@ -146,7 +146,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #tabs-empty-text kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;color:var(--text);font-family:var(--font)}
 #tabs-empty-btn{padding:4px 12px;border-radius:var(--r);font-size:12px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .12s}
 #tabs-empty-btn:hover{background:#2563eb33}
-#tab-add{padding:5px 10px 5px;font-size:18px;color:var(--acc);cursor:pointer;line-height:1;margin-bottom:2px;flex-shrink:0;border-radius:4px;transition:background .1s}
+#tab-add{padding:5px 10px 5px;font-size:18px;color:var(--acc);cursor:pointer;line-height:1;margin-bottom:2px;flex-shrink:0;border-radius:4px;transition:background .1s;position:sticky;right:0;background:var(--tabs-bg,#161d2e);z-index:2}
 .tab{display:flex;align-items:center;gap:6px;padding:6px 12px 5px;border-radius:7px 7px 0 0;font-size:12px;cursor:pointer;border:0.5px solid transparent;border-bottom:none;position:relative;bottom:-1px;max-width:280px;min-width:0;flex-shrink:0;transition:background .1s}
 .tab.active{background:var(--bg);border-color:var(--border);color:var(--text)}
 .tab.inactive{background:var(--tab-inactive,#1a2438);color:var(--muted)}.tab.inactive:hover{background:var(--tab-inactive-hover,#1e2d45);color:var(--text)}
@@ -5604,6 +5604,10 @@ function togglePillsMode(){
     $('searchbar').style.display = 'none';
     $('chips-bar').style.display = 'none';
     _pillsPopulateSelectors();
+    // Sincronizar buscador pills con el search actual
+    const curSearch = $('search-input')?.value || '';
+    const inp = $('pills-search-input');
+    if(inp && !inp.value) inp.value = curSearch;
     renderPillsView();
   } else {
     pv.classList.remove('open');
@@ -5615,18 +5619,38 @@ function togglePillsMode(){
 }
 
 // ── POBLAR SELECTORES CON COLUMNAS REALES ────────────────────────────────────
+// Busca la primera columna que coincida con alguno de los patrones (case-insensitive)
+function _pillsFindCol(cols, patterns){
+  for(const p of patterns){
+    const r = new RegExp(p,'i');
+    const found = cols.find(c=>r.test(c));
+    if(found) return found;
+  }
+  return null;
+}
+
 function _pillsPopulateSelectors(){
   const tab = T(); if(!tab||!tab.columns) return;
   const cols = tab.columns;
   const saved = _pillsLoadCfg();
 
-  ['pills-sel-main','pills-sel-sec'].forEach((id,i)=>{
-    const sel = $(id); if(!sel) return;
-    sel.innerHTML = cols.map(c=>`<option value="${eh(c)}">${eh(c)}</option>`).join('');
-    const def = saved?.[i==='0'?'main':'sec'];
-    if(def && cols.includes(def)) sel.value = def;
-    else if(i===1 && cols.length>1) sel.value = cols[1]; // 2nd col as default secondary
-  });
+  const selMain = $('pills-sel-main');
+  const selSec  = $('pills-sel-sec');
+  if(!selMain||!selSec) return;
+
+  const opts = cols.map(c=>`<option value="${eh(c)}">${eh(c)}</option>`).join('');
+  selMain.innerHTML = opts;
+  selSec.innerHTML  = opts;
+
+  // Defaults inteligentes si no hay configuración guardada
+  const smartMain = _pillsFindCol(cols,['c[eé]dula','id','rut','codigo','code','dni','nit']);
+  const smartSec  = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
+
+  const savedMain = saved?.main;
+  const savedSec  = saved?.sec;
+
+  selMain.value = (savedMain && cols.includes(savedMain)) ? savedMain : (smartMain || cols[0]);
+  selSec.value  = (savedSec  && cols.includes(savedSec))  ? savedSec  : (smartSec  || (cols[1]||cols[0]));
 
   // Color por: columnas con pocos únicos (≤20) o primera columna
   const colorSel = $('pills-sel-color');
@@ -5658,15 +5682,28 @@ function pillsToggleConfig(){
 function renderPillsView(){
   const tab = T(); if(!tab) return;
   _pillsSaveCfg();
-  const mk = $('pills-sel-main')?.value;
-  const sk = $('pills-sel-sec')?.value;
+
+  // Fallback: si los selectores no están poblados, poblarlos primero
+  const cols = tab.columns || [];
+  let mk = $('pills-sel-main')?.value;
+  let sk = $('pills-sel-sec')?.value;
   const ck = $('pills-sel-color')?.value;
+
+  // Si el valor no existe como columna real, usar primera/segunda columna
+  if(!mk || !cols.includes(mk)) mk = cols[0] || '';
+  if(!sk || !cols.includes(sk)) sk = cols[1] || cols[0] || '';
 
   // Usar tab.filtered (índices) → filas reales
   const rows = (tab.filtered||[]).map(i=>tab.rawData[i]).filter(Boolean);
   _pillsFilteredCache = rows;
 
-  $('pills-toolbar-count').textContent = rows.length.toLocaleString()+' registros';
+  // Indicador de filtros activos
+  const activeFilters = Object.keys(tab.colFilters||{}).length;
+  const searchActive  = !!(tab.searchText || $('pills-search-input')?.value);
+  const total = tab.rawData?.length || 0;
+  const countTxt = rows.length.toLocaleString() + ' registros' +
+    (activeFilters||searchActive ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
+  $('pills-toolbar-count').innerHTML = countTxt;
 
   // Mapa de colores únicos para la columna de color
   let colorMap = {};
@@ -5677,8 +5714,8 @@ function renderPillsView(){
   }
 
   $('pills-grid').innerHTML = rows.map((r,i)=>{
-    const main = r[mk]||'—';
-    const sec  = mk!==sk ? (r[sk]||'') : '';
+    const main = (mk && r[mk]) ? r[mk] : (cols[0]?r[cols[0]]:'—');
+    const sec  = (sk && sk!==mk && r[sk]) ? r[sk] : '';
     const dot  = (ck&&ck!=='none') ? `<span class="mpill-dot" style="background:${colorMap[r[ck]||'']||'#475569'}"></span>` : '';
     return `<div class="mpill" onclick="pillsOpenFicha(${i})">${dot}<span class="mpill-main">${eh(main)}</span>${sec?`<span class="mpill-sec">${eh(sec)}</span>`:''}</div>`;
   }).join('');

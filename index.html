@@ -644,12 +644,61 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 #pills-search-input:focus{border-color:var(--acc)!important}
 #pills-search-input::placeholder{color:var(--muted)}
 #pills-grid{display:flex;flex-wrap:wrap;gap:7px}
+#pills-grid.pg-col{flex-direction:column;flex-wrap:nowrap;gap:6px}
+#pills-grid.pg-wrap{flex-wrap:wrap;flex-direction:row}
+/* ── D1: ID Card ── */
 .mpill{display:inline-flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;transition:background .12s,border-color .12s;user-select:none;min-height:38px;-webkit-tap-highlight-color:transparent}
 .mpill:hover{background:var(--acc-dim);border-color:var(--acc-text)}
 .mpill:active{background:var(--acc-dim);border-color:var(--acc-text)}
 .mpill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .mpill-main{font-size:12px;font-weight:600;color:var(--text)}
 .mpill-sec{font-size:10px;color:var(--muted)}
+/* D1: ID Card full */
+.mpill-d1{display:flex;align-items:center;gap:12px;background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%}
+.mpill-d1:hover{border-color:var(--acc-text);background:var(--acc-dim);transform:translateY(-1px)}
+.mpill-d1 .pd-avatar{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;color:#fff}
+.mpill-d1 .pd-body{flex:1;min-width:0}
+.mpill-d1 .pd-id{font-size:10px;color:var(--muted);letter-spacing:.04em}
+.mpill-d1 .pd-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:1px 0}
+.mpill-d1 .pd-sub{font-size:11px;color:var(--muted)}
+.mpill-d1 .pd-badge{margin-left:auto;border-radius:20px;padding:3px 9px;font-size:10px;flex-shrink:0;background:var(--s2);color:var(--muted)}
+/* D2: Lista compacta */
+.mpill-d2{display:flex;align-items:center;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:10px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%}
+.mpill-d2:hover{background:var(--acc-dim);border-color:var(--acc-text)}
+.mpill-d2 .pl-num{font-size:11px;color:var(--muted);width:26px;text-align:right;flex-shrink:0}
+.mpill-d2 .pl-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.mpill-d2 .pl-id{font-size:11px;color:var(--muted);font-family:monospace;min-width:70px;flex-shrink:0}
+.mpill-d2 .pl-name{font-size:13px;color:var(--text);font-weight:500;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d2 .pl-tag{font-size:10px;background:var(--s2);border-radius:5px;padding:2px 7px;color:var(--muted);flex-shrink:0}
+.mpill-d2 .pl-arr{color:var(--border);font-size:13px;flex-shrink:0}
+/* D3: Chips (wrap) */
+.mpill-d3{display:inline-flex;align-items:center;gap:7px;background:var(--s1);border:1px solid var(--border);border-radius:999px;padding:7px 14px;cursor:pointer;transition:all .12s;user-select:none;-webkit-tap-highlight-color:transparent}
+.mpill-d3:hover{background:var(--acc-dim);border-color:var(--acc-text)}
+.mpill-d3 .pc-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.mpill-d3 .pc-id{font-size:11px;color:var(--muted);font-family:monospace}
+.mpill-d3 .pc-name{font-size:12px;color:var(--text);font-weight:500}
+/* D5: Timeline */
+.mpill-d5{display:flex;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%}
+.mpill-d5:last-child{border-bottom:none}
+.mpill-d5:hover{background:var(--acc-dim);border-radius:8px}
+.mpill-d5 .pt-circle{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;color:#fff}
+.mpill-d5 .pt-body{flex:1;min-width:0;padding-top:2px}
+.mpill-d5 .pt-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d5 .pt-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d5 .pt-tags{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap}
+.mpill-d5 .pt-tag{font-size:10px;border-radius:4px;padding:2px 7px}
+/* D7: Glass / Premium */
+.mpill-d7{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .15s;user-select:none;-webkit-tap-highlight-color:transparent;width:100%}
+.mpill-d7:hover{background:rgba(255,255,255,.08);border-color:rgba(139,92,246,.5)}
+.mpill-d7 .pg-glyph{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;color:#fff}
+.mpill-d7 .pg-body{flex:1;min-width:0}
+.mpill-d7 .pg-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d7 .pg-sub{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d7 .pg-right{text-align:right;flex-shrink:0;min-width:48px}
+.mpill-d7 .pg-dot{font-size:14px;line-height:1}
+.mpill-d7 .pg-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:1px}
+/* Wrapper glass con gradiente de fondo */
+#pills-grid.pg-glass-bg{background:linear-gradient(135deg,var(--bg) 0%,var(--s1) 100%);border-radius:14px;padding:8px}
 /* ── FICHA BOTTOM SHEET ── */
 #pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
 #pills-ficha-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55);backdrop-filter:blur(3px)}
@@ -689,7 +738,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 @media(max-width:500px){
   /* Pills: columna única en móvil, sin cortes */
   #pills-grid{display:flex;flex-direction:column;gap:6px}
+  #pills-grid.pg-wrap{flex-direction:row;flex-wrap:wrap}
   .mpill{border-radius:12px;width:100%;justify-content:flex-start}
+  .mpill-d1,.mpill-d2,.mpill-d5,.mpill-d7{width:100%}
   /* Topbar: compacto, sin scroll */
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
@@ -1003,6 +1054,16 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
         <span class="pills-cfg-label">Color por</span>
         <select class="pills-cfg-select" id="pills-sel-color" onchange="renderPillsView()">
           <option value="none">Sin color</option>
+        </select>
+      </div>
+      <div class="pills-cfg-row">
+        <span class="pills-cfg-label">Diseño</span>
+        <select class="pills-cfg-select" id="pills-sel-design" onchange="renderPillsView()">
+          <option value="d7">⬡ Glass · Premium</option>
+          <option value="d1">▣ ID Card</option>
+          <option value="d2">≡ Lista compacta</option>
+          <option value="d3">○ Chips</option>
+          <option value="d5">◎ Timeline</option>
         </select>
       </div>
     </div>
@@ -5661,6 +5722,12 @@ function _pillsPopulateSelectors(){
   });
   const savedColor = saved?.color;
   if(savedColor) colorSel.value = savedColor;
+
+  // Diseño: restaurar o default d7
+  const designSel = $('pills-sel-design');
+  if(designSel){
+    designSel.value = saved?.design || 'd7';
+  }
 }
 
 function _pillsLoadCfg(){ try{ return JSON.parse(localStorage.getItem(PILLS_KEY)||'null'); }catch(_){return null;} }
@@ -5668,7 +5735,8 @@ function _pillsSaveCfg(){
   try{ localStorage.setItem(PILLS_KEY, JSON.stringify({
     main:$('pills-sel-main')?.value,
     sec:$('pills-sel-sec')?.value,
-    color:$('pills-sel-color')?.value
+    color:$('pills-sel-color')?.value,
+    design:$('pills-sel-design')?.value
   })); }catch(_){}
 }
 
@@ -5683,21 +5751,18 @@ function renderPillsView(){
   const tab = T(); if(!tab) return;
   _pillsSaveCfg();
 
-  // Fallback: si los selectores no están poblados, poblarlos primero
   const cols = tab.columns || [];
   let mk = $('pills-sel-main')?.value;
   let sk = $('pills-sel-sec')?.value;
   const ck = $('pills-sel-color')?.value;
+  const design = $('pills-sel-design')?.value || 'd7';
 
-  // Si el valor no existe como columna real, usar primera/segunda columna
   if(!mk || !cols.includes(mk)) mk = cols[0] || '';
   if(!sk || !cols.includes(sk)) sk = cols[1] || cols[0] || '';
 
-  // Usar tab.filtered (índices) → filas reales
   const rows = (tab.filtered||[]).map(i=>tab.rawData[i]).filter(Boolean);
   _pillsFilteredCache = rows;
 
-  // Indicador de filtros activos
   const activeFilters = Object.keys(tab.colFilters||{}).length;
   const searchActive  = !!(tab.searchText || $('pills-search-input')?.value);
   const total = tab.rawData?.length || 0;
@@ -5705,19 +5770,89 @@ function renderPillsView(){
     (activeFilters||searchActive ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
   $('pills-toolbar-count').innerHTML = countTxt;
 
-  // Mapa de colores únicos para la columna de color
+  const palette=['#22c55e','#f59e0b','#f87171','#60a5fa','#c084fc','#34d399','#fb923c','#a78bfa'];
   let colorMap = {};
   if(ck && ck!=='none'){
-    const palette=['#22c55e','#f59e0b','#f87171','#60a5fa','#c084fc','#34d399','#fb923c','#a78bfa'];
     const uniqVals=[...new Set(rows.map(r=>r[ck]||''))];
     uniqVals.forEach((v,i)=>{ colorMap[v]=palette[i%palette.length]; });
   }
 
-  $('pills-grid').innerHTML = rows.map((r,i)=>{
+  // Iniciales de avatar (2 letras del campo principal)
+  function initials(str){ const w=String(str||'').trim().split(/\s+/); return w.length>=2?(w[0][0]+w[w.length-1][0]).toUpperCase():(str||'?')[0].toUpperCase(); }
+  // Color de avatar determinista por valor
+  const avPalette=['#7c3aed','#2563eb','#059669','#b45309','#be123c','#0e7490','#7c3aed','#6d28d9'];
+  function avColor(str){ let h=0; for(let c of String(str||'')) h=(h*31+c.charCodeAt(0))&0xffff; return avPalette[h%avPalette.length]; }
+
+  const grid = $('pills-grid');
+  // Clases de layout por diseño
+  grid.className = '';
+  if(design==='d3'){ grid.classList.add('pg-wrap'); }
+  else if(design==='d7'){ grid.classList.add('pg-col','pg-glass-bg'); }
+  else { grid.classList.add('pg-col'); }
+
+  grid.innerHTML = rows.map((r,i)=>{
     const main = (mk && r[mk]) ? r[mk] : (cols[0]?r[cols[0]]:'—');
-    const sec  = (sk && sk!==mk && r[sk]) ? r[sk] : '';
-    const dot  = (ck&&ck!=='none') ? `<span class="mpill-dot" style="background:${colorMap[r[ck]||'']||'#475569'}"></span>` : '';
-    return `<div class="mpill" onclick="pillsOpenFicha(${i})">${dot}<span class="mpill-main">${eh(main)}</span>${sec?`<span class="mpill-sec">${eh(sec)}</span>`:''}</div>`;
+    const sec  = (sk && sk!==mk && r[sk]) ? String(r[sk]) : '';
+    const dotColor = (ck&&ck!=='none') ? (colorMap[r[ck]||'']||'#475569') : null;
+
+    if(design==='d7'){
+      const av = avColor(main);
+      const init = initials(main);
+      const dotHtml = dotColor ? `<div class="pg-dot" style="color:${dotColor}">●</div><div class="pg-label">${eh(String(r[ck]||''))}</div>` : '';
+      return `<div class="mpill-d7" onclick="pillsOpenFicha(${i})">
+        <div class="pg-glyph" style="background:${av}">${init}</div>
+        <div class="pg-body">
+          <div class="pg-name">${eh(main)}</div>
+          ${sec?`<div class="pg-sub">${eh(sec)}</div>`:''}
+        </div>
+        ${dotColor?`<div class="pg-right">${dotHtml}</div>`:''}
+      </div>`;
+    }
+    if(design==='d1'){
+      const av = avColor(main);
+      const init = initials(main);
+      const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</div>` : '';
+      return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})">
+        <div class="pd-avatar" style="background:${av}">${init}</div>
+        <div class="pd-body">
+          <div class="pd-id">${eh(mk)} · ${eh(main)}</div>
+          <div class="pd-name">${sec||main}</div>
+          ${sec?`<div class="pd-sub">${eh(sec)}</div>`:''}
+        </div>
+        ${badge}
+      </div>`;
+    }
+    if(design==='d2'){
+      const dot = dotColor ? `<div class="pl-dot" style="background:${dotColor}"></div>` : `<div class="pl-dot" style="background:#334155"></div>`;
+      return `<div class="mpill-d2" onclick="pillsOpenFicha(${i})">
+        <div class="pl-num">${i+1}</div>
+        ${dot}
+        <div class="pl-id">${eh(main)}</div>
+        <div class="pl-name">${eh(sec||main)}</div>
+        ${dotColor?`<div class="pl-tag" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</div>`:''}
+        <div class="pl-arr">›</div>
+      </div>`;
+    }
+    if(design==='d3'){
+      const dot = dotColor ? `<div class="pc-dot" style="background:${dotColor}"></div>` : '';
+      return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})">${dot}<div class="pc-id">${eh(main)}</div><div class="pc-name">${eh(sec||'')}</div></div>`;
+    }
+    if(design==='d5'){
+      const av = avColor(main);
+      const init = initials(main);
+      const tags = dotColor ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor}">${eh(String(r[ck]||''))}</span>` : '';
+      return `<div class="mpill-d5" onclick="pillsOpenFicha(${i})">
+        <div class="pt-circle" style="background:${av}">${init}</div>
+        <div class="pt-body">
+          <div class="pt-name">${eh(sec||main)}</div>
+          <div class="pt-meta">${eh(mk)} ${eh(main)}${sec?' · '+eh(sec):''}</div>
+          ${tags?`<div class="pt-tags">${tags}</div>`:''}
+        </div>
+      </div>`;
+    }
+    // fallback: chip original
+    const dotHtml = dotColor ? `<span class="mpill-dot" style="background:${dotColor}"></span>` : '';
+    return `<div class="mpill" onclick="pillsOpenFicha(${i})">${dotHtml}<span class="mpill-main">${eh(main)}</span>${sec?`<span class="mpill-sec">${eh(sec)}</span>`:''}</div>`;
   }).join('');
 }
 

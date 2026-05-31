@@ -693,9 +693,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d7 .pg-body{flex:1;min-width:0}
 .mpill-d7 .pg-name{font-size:15px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mpill-d7 .pg-sub{font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mpill-d7 .pg-right{text-align:right;flex-shrink:0;max-width:96px;min-width:40px;overflow:hidden}
-.mpill-d7 .pg-dot{font-size:13px;line-height:1}
-.mpill-d7 .pg-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mpill-d7 .pg-right{flex-shrink:0;max-width:100px;min-width:0;display:flex;align-items:center;justify-content:flex-end}
+.mpill-d7 .pg-badge{font-size:11px;border-radius:6px;padding:3px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;font-weight:500}
 /* Wrapper glass con gradiente de fondo */
 #pills-grid.pg-glass-bg{background:linear-gradient(135deg,var(--bg) 0%,var(--s1) 100%);border-radius:14px;padding:8px}
 /* ── FICHA BOTTOM SHEET ── */
@@ -743,7 +742,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Fuentes más legibles en móvil */
   .mpill-d7 .pg-name{font-size:16px}
   .mpill-d7 .pg-sub{font-size:13px}
-  .mpill-d7 .pg-label{font-size:11px}
+  .mpill-d7 .pg-badge{font-size:12px}
   .mpill-d1 .pd-name{font-size:16px}
   .mpill-d1 .pd-id{font-size:12px}
   .mpill-d1 .pd-badge{font-size:12px}
@@ -5839,14 +5838,14 @@ function renderPillsView(){
     if(design==='d7'){
       const av = avColor(avSrc);
       const init = initials(avSrc);
-      const dotHtml = dotColor ? `<div class="pg-dot" style="color:${dotColor}">●</div><div class="pg-label">${eh(String(r[ck]||''))}</div>` : '';
+      const badgeVal = dotColor ? eh(String(r[ck]||'')) : '';
       return `<div class="mpill-d7" onclick="pillsOpenFicha(${i})">
         <div class="pg-glyph" style="background:${av}">${init}</div>
         <div class="pg-body">
           <div class="pg-name">${eh(main)}</div>
           ${sec?`<div class="pg-sub">${eh(sec)}</div>`:''}
         </div>
-        ${dotColor?`<div class="pg-right">${dotHtml}</div>`:''}
+        ${badgeVal?`<div class="pg-right"><div class="pg-badge" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${badgeVal}</div></div>`:''}
       </div>`;
     }
     if(design==='d1'){

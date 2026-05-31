@@ -677,7 +677,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #pills-grid{display:flex;flex-direction:column;gap:6px}
   .mpill{border-radius:12px;width:100%;justify-content:flex-start}
   /* Topbar: compacto, sin scroll */
-  #topbar{padding:0 10px;gap:6px;height:50px;padding-top:env(safe-area-inset-top)}
+  #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
   #topbar-breadcrumb{display:none!important}
   /* Ocultar botones secundarios del topbar en móvil */
@@ -725,7 +725,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .ms-dot{width:8px;height:8px;border-radius:50%;background:var(--s3);flex-shrink:0}
   .ms-item.active .ms-dot{background:var(--acc-text)}
   /* Statusbar: simplificar */
-  #statusbar{padding:0 10px;height:26px;padding-bottom:env(safe-area-inset-bottom)}
+  #statusbar{padding:0 10px;height:calc(28px + env(safe-area-inset-bottom,0px));padding-bottom:calc(4px + env(safe-area-inset-bottom,0px))}
   #statusbar>span:last-child{display:none} /* ocultar hint de teclado */
   #statusbar .sv{font-size:11px}
   /* Pills view ajustes */
@@ -738,7 +738,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Dropzone centrado */
   #dropzone h2{font-size:16px}
   /* Menú móvil overlay */
-  #mobile-menu{display:none;position:fixed;top:50px;right:8px;z-index:900;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:180px;flex-direction:column}
+  #mobile-menu{display:none;position:fixed;top:calc(50px + env(safe-area-inset-top,0px));right:8px;z-index:900;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:180px;flex-direction:column}
   #mobile-menu.open{display:flex}
   .mm-item{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13px;color:var(--text);cursor:pointer;transition:background .1s;font-family:var(--font);border:none;background:none;width:100%;text-align:left}
   .mm-item:active{background:var(--s2)}

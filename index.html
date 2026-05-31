@@ -185,7 +185,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .spill:hover{filter:brightness(1.2);transform:scale(1.05)}
 .spill-more:hover{background:var(--s3)!important;color:var(--text)!important}
 #chips-bar{display:flex;align-items:center;gap:6px;padding:5px 14px;background:var(--s1);border-top:none;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:38px;transition:height .35s cubic-bezier(.4,0,.2,1);-webkit-overflow-scrolling:touch}
-#chips-bar.chips-expanded{height:auto;flex-wrap:wrap;overflow:visible}
+#chips-bar.chips-expanded{height:auto;max-height:120px;flex-wrap:wrap;overflow-y:auto;overflow-x:hidden}
 #chips-toggle{display:none;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;border:0.5px solid var(--border2);color:var(--acc-text);cursor:pointer;background:var(--acc-dim);white-space:nowrap;transition:background .12s;user-select:none;flex-shrink:0;margin-left:auto}
 #chips-toggle:hover{background:var(--s2)}
 #chips-toggle svg{transition:transform .3s}
@@ -283,7 +283,7 @@ input[type=date]{width:130px}
 .fm-ctx-item.danger{color:var(--danger)}
 #data-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
 #table-wrap{flex:1;display:none;flex-direction:column;overflow:hidden}
-#vt-scroll{flex:1;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
+#vt-scroll{flex:1;overflow:auto;position:relative}
 .vt-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12px}
 thead th{position:-webkit-sticky;position:sticky;top:0;z-index:2;background:var(--s2);color:var(--muted);font-weight:500;font-size:11px;padding:7px 11px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none;text-transform:uppercase;letter-spacing:.03em;min-width:80px;max-width:240px}
 thead th:hover{color:var(--text);background:var(--s3)}
@@ -440,6 +440,17 @@ input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radiu
 .fav-del{padding:3px 7px;border-radius:var(--r);font-size:14px;background:none;border:none;color:var(--muted);cursor:pointer}
 .fav-del:hover{color:var(--danger)}
 #fav-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0}
+/* Ocultar elementos solo-móvil por defecto */
+#mobile-menu{display:none}
+#mobile-sheets-overlay{display:none}
+/* Panel de acciones (reemplaza botones individuales en topbar) */
+#actions-panel{display:none;position:fixed;z-index:800;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:200px;flex-direction:column}
+#actions-panel.open{display:flex}
+.ap-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--text);cursor:pointer;transition:background .1s;font-family:var(--font);border:none;background:none;width:100%;text-align:left;white-space:nowrap}
+.ap-item:hover{background:var(--s2)}
+.ap-item:disabled{opacity:.35;cursor:not-allowed}
+.ap-item.warn{color:#fcd34d}
+.ap-sep{height:1px;background:var(--border);margin:4px 0}
 #toast{position:absolute;bottom:44px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:7px 16px;font-size:12px;color:var(--text);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.show:has(span[onclick]){pointer-events:auto}
@@ -683,13 +694,11 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
   #topbar-breadcrumb{display:none!important}
-  /* Ocultar botones secundarios del topbar en móvil */
-  #btn-graph,#btn-cond,#btn-views,#btn-cols,#btn-copy,#btn-refresh,
-  #btn-export,#btn-export-all,#btn-session,#btn-focus,#btn-theme,#focus-exit{display:none!important}
-  /* Mostrar botón menú móvil y pills */
+  /* Ocultar en móvil: sesión, enfoque, tema (van en menú ⋯) */
+  #btn-session,#btn-focus,#btn-theme,#focus-exit{display:none!important}
+  /* Mostrar botón menú ⋯ en móvil */
   #btn-mobile-menu{display:inline-flex!important}
   #btn-pills-mode{margin-left:0!important}
-  #topbar-actions{display:none}
   /* Tabs: más compactas */
   #tabs-bar{min-height:38px;padding:4px 8px 0}
   .tab{padding:5px 10px 4px;max-width:160px}
@@ -807,17 +816,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     <span id="tb-sheetname" style="color:var(--topbar-text,#e2e8f0);font-weight:500"></span>
     <span id="tb-rowinfo" style="font-size:10px;color:var(--topbar-muted);margin-left:2px"></span>
   </div>
-  <div id="topbar-actions">
-    <button class="btn" id="btn-graph"   onclick="openGraphPanel()" disabled title="Gráfico">&#128202; Gráfico</button>
-    <button class="btn warn-btn" id="btn-cond"  onclick="openCondModal()" disabled>⬛ Colores</button>
-    <button class="btn"          id="btn-views" onclick="openViewsPanel()" title="Vistas">&#128065; Vistas</button>
-    <button class="btn"          id="btn-cols"  onclick="openColPanel()"  disabled><svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="flex-shrink:0"><rect x="1" y="1" width="3.5" height="11" rx="1" fill="currentColor" opacity=".9"/><rect x="5.5" y="1" width="3" height="11" rx="1" fill="currentColor" opacity=".6"/><rect x="9.5" y="1" width="2.5" height="11" rx="1" fill="currentColor" opacity=".35"/></svg> Columnas</button>
-    <button class="btn"          id="btn-copy"  onclick="copySelection()" disabled style="display:none">&#10697; Copiar</button>
-    <button class="btn"          id="btn-refresh" onclick="openRefreshModal()" disabled title="Actualizar / Auto-refresh">&#8635; Actualizar</button>
-    <button class="btn success"  id="btn-export" onclick="exportExcel()"  disabled>&#8595; Exportar</button>
-    <button class="btn"          id="btn-export-all" onclick="exportAllTabs()" disabled title="Exportar todas las pestañas en un solo Excel">&#8595;&#8595; Todas</button>
-  </div>
-  <!-- Toggle Pills / Tabla — siempre visible, margen izquierdo auto lo empuja al extremo -->
+  <!-- Toggle Pills / Tabla — siempre visible -->
   <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills" style="margin-left:auto">
     <span class="pills-toggle-seg seg-table">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -828,17 +827,34 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       Pills
     </span>
   </button>
-  <!-- Botón hojas móvil (solo ≤500px) -->
+  <!-- Botón hojas (solo móvil ≤500px) -->
   <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:6px 10px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:12px;font-weight:500;flex-shrink:0;gap:5px;font-family:var(--font)">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
     <span id="btn-sheets-label">Hojas</span>
   </button>
-  <!-- Botón menú móvil (solo visible en ≤500px) -->
-  <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 9px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
+  <!-- Botón Exportar — acción primaria, siempre visible cuando hay datos -->
+  <button class="btn success" id="btn-export" onclick="exportExcel()" disabled style="display:none">&#8595; Exportar</button>
+  <!-- Botón Acciones — panel con todas las herramientas -->
+  <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Herramientas" style="padding:5px 11px;display:none">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+    Acciones
+  </button>
+  <!-- Menú móvil ⋯ (solo ≤500px, para acciones secundarias) -->
+  <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 10px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
   <button class="btn" id="btn-session" onclick="openSessionPanel()" title="Sesión guardada" style="padding:5px 9px;font-size:13px">⏱</button>
   <button class="btn" id="btn-focus" onclick="openFocusMenu()" title="Modo enfocado" style="padding:5px 9px;font-size:13px">⊙</button>
   <span id="focus-exit" onclick="exitFocusMode()" style="margin-left:4px">⊙ Salir</span>
   <button class="btn" id="btn-theme" onclick="openThemeModal()" title="Cambiar tema" style="padding:5px 9px;font-size:15px">🎨</button>
+  <!-- Botones ocultos conservados para compatibilidad con el código existente -->
+  <div id="topbar-actions" style="display:none">
+    <button class="btn" id="btn-graph"   onclick="openGraphPanel()" disabled>Gráfico</button>
+    <button class="btn warn-btn" id="btn-cond" onclick="openCondModal()" disabled>Colores</button>
+    <button class="btn" id="btn-views"   onclick="openViewsPanel()">Vistas</button>
+    <button class="btn" id="btn-cols"    onclick="openColPanel()" disabled>Columnas</button>
+    <button class="btn" id="btn-copy"    onclick="copySelection()" disabled>Copiar</button>
+    <button class="btn" id="btn-refresh" onclick="openRefreshModal()" disabled>Actualizar</button>
+    <button class="btn" id="btn-export-all" onclick="exportAllTabs()" disabled>Todas</button>
+  </div>
   <!-- Hidden extras -->
   <button id="btn-copy-all" onclick="copyFiltered()" style="display:none" disabled></button>
   <button id="btn-fav"      onclick="openViewsPanel()" style="display:none" disabled></button>
@@ -1173,16 +1189,24 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   </div>
 </div>
 
-<!-- ── MENÚ MÓVIL ── -->
+<!-- ── PANEL DE ACCIONES (desktop + móvil) ── -->
+<div id="actions-panel">
+  <button class="ap-item" id="ap-graph"   onclick="openGraphPanel();closeActionsPanel()" disabled>📊 Gráfico</button>
+  <button class="ap-item ap-warn" id="ap-cond" onclick="openCondModal();closeActionsPanel()" disabled style="color:#fcd34d">⬛ Colores condicionales</button>
+  <button class="ap-item" id="ap-views"   onclick="openViewsPanel();closeActionsPanel()">👁 Vistas guardadas</button>
+  <button class="ap-item" id="ap-cols"    onclick="openColPanel();closeActionsPanel()" disabled>▦ Columnas</button>
+  <div class="ap-sep"></div>
+  <button class="ap-item" id="ap-export"  onclick="exportExcel();closeActionsPanel()" disabled>↓ Exportar filtrado</button>
+  <button class="ap-item" id="ap-export-all" onclick="exportAllTabs();closeActionsPanel()" disabled>↓↓ Exportar todas las pestañas</button>
+  <button class="ap-item" id="ap-refresh" onclick="openRefreshModal();closeActionsPanel()" disabled>↺ Actualizar / Auto-refresh</button>
+  <div class="ap-sep"></div>
+  <button class="ap-item" onclick="openThemeModal();closeActionsPanel()">🎨 Cambiar tema</button>
+  <button class="ap-item" onclick="openSessionPanel();closeActionsPanel()">⏱ Sesión guardada</button>
+  <button class="ap-item" onclick="openFocusMenu();closeActionsPanel()">⊙ Modo enfoque</button>
+</div>
+
+<!-- ── MENÚ MÓVIL (solo ≤500px, para acciones secundarias sin archivo) ── -->
 <div id="mobile-menu">
-  <button class="mm-item" id="mm-graph"   onclick="openGraphPanel();closeMobileMenu()" disabled>📊 Gráfico</button>
-  <button class="mm-item" id="mm-cond"    onclick="openCondModal();closeMobileMenu()"  disabled>⬛ Colores</button>
-  <button class="mm-item" id="mm-views"   onclick="openViewsPanel();closeMobileMenu()">👁 Vistas</button>
-  <button class="mm-item" id="mm-cols"    onclick="openColPanel();closeMobileMenu()"   disabled>▦ Columnas</button>
-  <div class="mm-sep"></div>
-  <button class="mm-item" id="mm-export"  onclick="exportExcel();closeMobileMenu()"   disabled>↓ Exportar</button>
-  <button class="mm-item" id="mm-refresh" onclick="openRefreshModal();closeMobileMenu()" disabled>↺ Actualizar</button>
-  <div class="mm-sep"></div>
   <button class="mm-item" onclick="openThemeModal();closeMobileMenu()">🎨 Tema</button>
   <button class="mm-item" onclick="openSessionPanel();closeMobileMenu()">⏱ Sesión</button>
 </div>
@@ -4162,6 +4186,7 @@ function enableControls(on){
   ['btn-export','btn-export-all','btn-cond','btn-copy','btn-copy-all','btn-fav','btn-clear','btn-cols','btn-date-cols',
    'btn-graph','btn-refresh','btn-clear-inline','btn-clear-chips','chk-regex','chk-excl','btn-regex-flags','search-input','search-col']
     .forEach(id=>{const e=$(id);if(e)e.disabled=!on});
+  if(on) _showFileActions();
   updateBreadcrumb();
 }
 function updateStatusBar(){
@@ -5766,6 +5791,42 @@ function _updateMobileSheetsBtn(){
   const tab = T();
   const lbl = $('btn-sheets-label');
   if(lbl && tab?.activeSheet) lbl.textContent = tab.activeSheet.length > 10 ? tab.activeSheet.slice(0,9)+'…' : tab.activeSheet;
+}
+
+// ── PANEL DE ACCIONES ────────────────────────────────────────────────────────
+function toggleActionsPanel(){
+  const p=$('actions-panel');
+  if(!p) return;
+  if(p.classList.contains('open')){ closeActionsPanel(); return; }
+  // Sincronizar disabled de cada item con el botón oculto correspondiente
+  [['ap-graph','btn-graph'],['ap-cond','btn-cond'],['ap-cols','btn-cols'],
+   ['ap-export','btn-export'],['ap-export-all','btn-export-all'],['ap-refresh','btn-refresh']
+  ].forEach(([ap,btn])=>{ const a=$$(ap),b=$$(btn); if(a&&b) a.disabled=b.disabled; });
+  // Posicionar debajo del botón Acciones
+  const btn=$('btn-actions');
+  const r=btn?.getBoundingClientRect();
+  if(r){
+    const panW=220;
+    let left=r.right-panW;
+    if(left<8) left=8;
+    p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
+    if(window.innerWidth<=500){ p.style.left='8px'; p.style.width=(window.innerWidth-16)+'px'; }
+  } else { p.style.right='8px'; p.style.top='60px'; }
+  p.classList.add('open');
+  setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
+}
+function closeActionsPanel(){ $('actions-panel')?.classList.remove('open'); }
+function _closeActionsPanelOutside(e){
+  const p=$('actions-panel');
+  if(p&&!p.contains(e.target)&&e.target.id!=='btn-actions') closeActionsPanel();
+  else if(p?.classList.contains('open')) setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
+}
+
+// Mostrar botones "Exportar" y "Acciones" cuando hay datos cargados
+function _showFileActions(){
+  $('btn-export').style.display='';
+  $('btn-actions').style.display='';
+  $('btn-mobile-sheets').style.display='';  // Hojas visible en móvil
 }
 
 // ── MENÚ MÓVIL ───────────────────────────────────────────────────────────────

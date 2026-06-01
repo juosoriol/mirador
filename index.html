@@ -698,8 +698,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mpill-d7 .pg-badge{font-size:11px;border-radius:6px;padding:3px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px;font-weight:500}
 /* Wrapper glass con gradiente de fondo */
 #pills-grid.pg-glass-bg{background:linear-gradient(135deg,var(--bg) 0%,var(--s1) 100%);border-radius:14px;padding:8px}
-/* Chips-bar dentro de pills-view en móvil */
-#chips-bar.pills-mode{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;padding:6px 10px;height:auto;flex-wrap:wrap;overflow-x:hidden;overflow-y:visible}
+/* Chips-bar dentro de pills-view */
+#chips-bar.pills-mode{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;padding:6px 10px;height:auto;flex-wrap:wrap;overflow-x:auto;overflow-y:visible}
 #chips-bar.pills-mode.chips-collapsed{display:none!important}
 /* ── FICHA BOTTOM SHEET ── */
 #pills-ficha-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
@@ -5711,17 +5711,20 @@ function togglePillsMode(){
     da.style.display = 'none';
     $('searchbar').style.display = 'none';
 
-    if(isMobile && cb){
+    if(cb){
       // Mover chips-bar dentro de pills-view (reutiliza toda la lógica de filtros)
       _pillsCbParent = cb.parentNode;
       _pillsCbNext   = cb.nextSibling;
-      cb.classList.add('pills-mode','chips-collapsed'); // empieza oculto
+      cb.classList.add('pills-mode');
+      if(isMobile){
+        cb.classList.add('chips-collapsed'); // móvil: oculto por defecto, toggle via botón
+        _pillsMfOpen = false;
+        _pillsUpdateFilterBtn();
+      } else {
+        cb.classList.remove('chips-collapsed'); // desktop: siempre visible
+      }
       cb.style.display = '';
       pv.insertBefore(cb, $('pills-grid'));
-      _pillsMfOpen = false;
-      _pillsUpdateFilterBtn();
-    } else {
-      cb.style.display = 'none';
     }
 
     _pillsPopulateSelectors();

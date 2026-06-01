@@ -5734,10 +5734,10 @@ function togglePillsMode(){
     // Asegurar que tab.filtered esté poblado (puede estar vacío en sesión restaurada)
     const tab0 = T();
     if(tab0 && tab0.rawData.length > 0 && tab0.filtered.length === 0){
-      applyFilters();
+      applyFilters(); // esto llama renderTabs() al final via override
     } else {
       renderPillsView();
-      if(typeof updateActiveTabCount === 'function') updateActiveTabCount();
+      if(typeof renderTabs === 'function') renderTabs();
     }
   } else {
     pv.classList.remove('open');
@@ -6220,8 +6220,8 @@ applyFilters = function(){
   if(_pillsOn){
     renderPillsView();
     _pillsUpdateFilterBtn();
-    // Garantizar que el badge de la pestaña se actualice aunque renderTable() falle con data-area oculto
-    if(typeof updateActiveTabCount === 'function') updateActiveTabCount();
+    // renderTabs() para actualizar badge de pestaña (updateActiveTabCount usa selector roto)
+    if(typeof renderTabs === 'function') renderTabs();
   }
 };
 </script>

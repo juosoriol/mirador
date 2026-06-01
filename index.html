@@ -5731,8 +5731,14 @@ function togglePillsMode(){
     const curSearch = $('search-input')?.value || '';
     const inp = $('pills-search-input');
     if(inp && !inp.value) inp.value = curSearch;
-    renderPillsView();
-    if(typeof updateActiveTabCount === 'function') updateActiveTabCount();
+    // Asegurar que tab.filtered esté poblado (puede estar vacío en sesión restaurada)
+    const tab0 = T();
+    if(tab0 && tab0.rawData.length > 0 && tab0.filtered.length === 0){
+      applyFilters();
+    } else {
+      renderPillsView();
+      if(typeof updateActiveTabCount === 'function') updateActiveTabCount();
+    }
   } else {
     pv.classList.remove('open');
     da.style.display = '';

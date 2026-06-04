@@ -6385,6 +6385,17 @@ const _fbConfig = {
 firebase.initializeApp(_fbConfig);
 const _fbAuth = firebase.auth();
 const _fbDb   = firebase.firestore();
+
+// Forzar configuración de Firestore
+_fbDb.settings({
+  cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
+  ignoreUndefinedProperties: true
+});
+
+// Habilitar persistencia offline (puede ayudar con problemas de red)
+_fbDb.enablePersistence({ synchronizeTabs: true })
+  .catch(err => console.warn('[Firestore] Persistencia no habilitada:', err.code));
+
 let _fbUser     = null;
 let _fbUserRole = null; // 'admin' | 'user'
 

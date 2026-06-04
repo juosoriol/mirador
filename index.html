@@ -6398,8 +6398,12 @@ _fbAuth.onAuthStateChanged(async user => {
     // Leer rol desde Firestore
     try {
       console.log('[Auth] Usuario autenticado:', user.email, 'UID:', user.uid);
-      const doc = await _fbDb.collection('users').doc(user.uid).get();
-      console.log('[Firestore] Documento existe:', doc.exists);
+      console.log('[Firestore] Intentando leer documento en ruta: users/' + user.uid);
+      const docRef = _fbDb.collection('users').doc(user.uid);
+      console.log('[Firestore] Referencia del documento:', docRef.path);
+      const doc = await docRef.get();
+      console.log('[Firestore] Documento obtenido. Existe:', doc.exists);
+      console.log('[Firestore] Metadata del documento:', doc.metadata);
       if(!doc.exists){
         // Usuario no registrado → denegar
         console.error('[Auth] Usuario no tiene documento en Firestore');

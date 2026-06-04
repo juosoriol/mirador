@@ -5452,7 +5452,7 @@ function initFocusModes(){
     // Global typing: if no input focused and a printable char is pressed, focus search
     const active=document.activeElement;
     const inInput=active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'||active.isContentEditable);
-    if(!inInput&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key.length===1&&T()?.rawData.length){
+    if(!inInput&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key?.length===1&&T()?.rawData?.length){
       const si=$('search-input');
       if(si&&!si.disabled){
         si.focus();

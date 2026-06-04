@@ -6415,32 +6415,25 @@ _fbAuth.onAuthStateChanged(async user => {
       const doc = await docRef.get();
       console.log('[Firestore] Documento obtenido. Existe:', doc.exists);
       console.log('[Firestore] Metadata del documento:', doc.metadata);
+      let data;
       if(!doc.exists){
         // Usuario no registrado → crear documento automáticamente
         console.warn('[Auth] Usuario sin documento, creando...');
         const isFirstUser = (await _fbDb.collection('users').get()).empty;
-        const newUserData = {
+        data = {
           email: user.email,
           role: isFirstUser ? 'admin' : 'user', // Primer usuario = admin
           active: true,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           name: user.displayName || user.email.split('@')[0]
         };
-        await docRef.set(newUserData);
-        console.log('[Auth] Documento creado:', newUserData);
-        _fbUserRole = newUserData.role;
+        await docRef.set(data);
+        console.log('[Auth] Documento creado:', data);
       } else {
-        const data = doc.data();
+        data = doc.data();
         console.log('[Firestore] Datos del usuario:', data);
-        if(data.active === false){
-          _fbAuth.signOut();
-          _fbShowLoginError('Tu cuenta está desactivada. Contacta al administrador.');
-          return;
-        }
-        _fbUserRole = data.role || 'user';
       }
-      const data = doc.data();
-      console.log('[Firestore] Datos del usuario:', data);
+
       if(data.active === false){
         _fbAuth.signOut();
         _fbShowLoginError('Tu cuenta está desactivada. Contacta al administrador.');

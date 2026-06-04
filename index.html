@@ -6397,24 +6397,29 @@ _fbAuth.onAuthStateChanged(async user => {
   if(user){
     // Leer rol desde Firestore
     try {
+      console.log('[Auth] Usuario autenticado:', user.email, 'UID:', user.uid);
       const doc = await _fbDb.collection('users').doc(user.uid).get();
+      console.log('[Firestore] Documento existe:', doc.exists);
       if(!doc.exists){
         // Usuario no registrado → denegar
+        console.error('[Auth] Usuario no tiene documento en Firestore');
         _fbAuth.signOut();
         _fbShowLoginError('Tu cuenta no está registrada. Contacta al administrador.');
         return;
       }
       const data = doc.data();
+      console.log('[Firestore] Datos del usuario:', data);
       if(data.active === false){
         _fbAuth.signOut();
         _fbShowLoginError('Tu cuenta está desactivada. Contacta al administrador.');
         return;
       }
       _fbUserRole = data.role || 'user';
+      console.log('[Auth] Rol asignado:', _fbUserRole);
       // Actualizar último acceso
-      _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() });
+      _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
     } catch(e){
-      console.warn('Firestore error:', e);
+      console.error('[Firestore] Error leyendo documento:', e);
       _fbUserRole = 'user';
     }
     document.getElementById('login-screen').classList.add('hidden');

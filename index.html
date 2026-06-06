@@ -6835,10 +6835,25 @@ async function openCloudDoc(docId){
     const body = document.getElementById('docs-body');
     body.innerHTML = '<div class="docs-uploading">Descargando documento...<div class="docs-progress"><div class="docs-progress-bar" style="width:50%"></div></div></div>';
 
-    // Descargar desde Storage
-    const response = await fetch(data.downloadURL);
-    const blob = await response.blob();
-    const file = new File([blob], data.fileName, { type: blob.type });
+    // Descargar desde Storage usando Firebase SDK directamente
+    const storageRef = _fbStorage.ref(data.storagePath);
+    const downloadURL = await storageRef.getDownloadURL();
+
+    // Descargar el blob
+    const xhr = new XMLHttpRequest();
+    xhr.responseType = 'blob';
+
+    await new Promise((resolve, reject) => {
+      xhr.onload = resolve;
+      xhr.onerror = reject;
+      xhr.open('GET', downloadURL);
+      xhr.send();
+    });
+
+    const blob = xhr.response;
+    const file = new File([blob], data.fileName, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
 
     closeDocsPanel();
 

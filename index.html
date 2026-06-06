@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -858,6 +858,13 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Stats bar más compacta */
   .scard-val{font-size:16px}
   .scard-label{font-size:10px}
+  /* Tabla: scroll horizontal + táctil suave */
+  #vt-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+  .vt-table{font-size:11px}
+  .vt-cell{padding:6px 8px;white-space:nowrap}
+  /* Asegurar área de contenido scrollable */
+  #data-area{overflow:hidden;touch-action:pan-x pan-y}
+  #table-wrap{overflow:hidden}
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}

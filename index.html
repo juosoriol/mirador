@@ -6790,7 +6790,7 @@ async function openDocsPanel(){
     const html = docs.map(doc => {
       const date = doc.uploadedAt?.toDate();
       const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
-      const sizeStr = (doc.size / 1024 / 1024).toFixed(2) + ' MB';
+      const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
       const userName = _fbUserRole === 'admin' && doc.userId !== _fbUser.uid ?
                        `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${users[doc.userId]?.email || 'Usuario'})</span>` : '';
 

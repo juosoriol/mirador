@@ -860,10 +860,11 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #tabs-bar::-webkit-scrollbar{height:6px}
   #tabs-bar::-webkit-scrollbar-track{background:var(--tabs-bg)}
   #tabs-bar::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
-  .tab{padding:5px 10px 4px;max-width:200px;min-width:140px;touch-action:manipulation}
+  .tab{padding:5px 8px 4px;max-width:200px;min-width:140px;touch-action:manipulation}
   .tab-name{font-size:11px;font-weight:500;flex:1!important;min-width:60px!important}
-  .tab-count{font-size:9px!important}
-  .tab-star,.tab-close{font-size:14px!important}
+  .tab-count{font-size:9px!important;padding:2px 5px!important}
+  /* Estrella y cerrar: ocultar en móvil (demasiado pequeño para tocar) */
+  .tab-star,.tab-close{display:none!important}
   #tabs-empty-text{font-size:11px}
   #tabs-empty-btn{padding:3px 10px;font-size:11px}
   /* Stats bar: scroll horizontal, tarjetas más pequeñas */
@@ -1600,9 +1601,11 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       <button onclick="closeActionsPanel()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
     </div>
   </div>
+  <!-- PRIMERA OPCIÓN: Favoritos/Vistas guardadas -->
+  <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
+  <div class="ap-sep"></div>
   <button class="ap-item" id="ap-graph"   onclick="openGraphPanel();closeActionsPanel()" disabled>📊 Gráfico</button>
   <button class="ap-item ap-warn" id="ap-cond" onclick="openCondModal();closeActionsPanel()" disabled style="color:#fcd34d">⬛ Colores condicionales</button>
-  <button class="ap-item" id="ap-views"   onclick="openViewsPanel();closeActionsPanel()">👁 Vistas guardadas</button>
   <button class="ap-item" id="ap-cols"    onclick="openColPanel();closeActionsPanel()" disabled>▦ Columnas</button>
   <div class="ap-sep"></div>
   <button class="ap-item" id="ap-export"  onclick="exportExcel();closeActionsPanel()" disabled>↓ Exportar filtrado</button>

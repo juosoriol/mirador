@@ -6857,12 +6857,29 @@ async function openCloudDoc(docId){
 
     closeDocsPanel();
 
-    // Cargar el archivo en la app usando un input simulado
-    const dt = new DataTransfer();
-    dt.items.add(file);
+    // Cargar el archivo en la app
+    // Trigger del input file para que la app procese el archivo
     const input = document.getElementById('file-input');
-    input.files = dt.files;
-    openFileTab(input);
+
+    // Usar DataTransfer para simular selección de archivo
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+
+      // Disparar el evento onchange manualmente
+      const event = new Event('change', { bubbles: true });
+      input.dispatchEvent(event);
+    } catch(e) {
+      // Fallback si DataTransfer no funciona en este navegador
+      console.warn('DataTransfer no disponible, usando método alternativo');
+      // Crear array de archivos manualmente
+      if(typeof openFileTab === 'function') {
+        // Llamar directamente con el objeto file simulado
+        const fakeInput = { files: [file] };
+        openFileTab(fakeInput);
+      }
+    }
   } catch(e){
     console.error('Error abriendo documento:', e);
     alert('Error al abrir: ' + e.message);

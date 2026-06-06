@@ -972,6 +972,35 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .admin-user-btn{padding:6px 10px;font-size:11px;border-radius:6px;border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit}
 .admin-user-btn:hover{background:var(--s3);border-color:var(--border2)}
 .admin-user-btn.danger:hover{background:#450a0a;border-color:#7f1d1d;color:#f87171}
+
+/* Panel Mis Documentos */
+#docs-panel{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#docs-panel.open{display:flex}
+.docs-modal{background:var(--s1);border:1px solid var(--border);border-radius:16px;width:100%;max-width:900px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 80px rgba(0,0,0,.6)}
+.docs-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.docs-title{font-size:18px;font-weight:600;color:var(--text)}
+.docs-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:24px;line-height:1;padding:0;width:32px;height:32px;border-radius:8px;transition:all .15s}
+.docs-close:hover{background:var(--s2);color:var(--text)}
+.docs-body{overflow-y:auto;flex:1;padding:20px 24px}
+.docs-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px}
+.docs-list{display:flex;flex-direction:column;gap:10px}
+.doc-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;transition:all .15s;cursor:pointer}
+.doc-item:hover{background:var(--s3);border-color:var(--border2)}
+.doc-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-info{flex:1;min-width:0}
+.doc-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.doc-size{font-size:11px;color:var(--muted);padding:3px 8px;background:var(--s3);border-radius:6px;flex-shrink:0}
+.doc-actions{display:flex;gap:6px;flex-shrink:0}
+.doc-btn{padding:7px 12px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;font-weight:500}
+.doc-btn:hover{background:var(--s3);border-color:var(--border2)}
+.doc-btn.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
+.doc-btn.primary:hover{filter:brightness(1.1)}
+.doc-btn.danger{color:#f87171;border-color:#7f1d1d44}
+.doc-btn.danger:hover{background:#450a0a;border-color:#7f1d1d}
+.docs-uploading{text-align:center;padding:20px;color:var(--muted);font-size:13px}
+.docs-progress{width:100%;height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin-top:10px}
+.docs-progress-bar{height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);transition:width .3s}
 </style>
 </head>
 <body style="position:relative">
@@ -1050,6 +1079,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:5px 8px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--topbar-text,var(--text));cursor:pointer;font-size:11px;font-weight:500;flex-shrink:0;gap:4px;font-family:var(--font);max-width:100px;overflow:hidden">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     <span id="btn-sheets-label" style="white-space:nowrap">Hojas</span>
+  </button>
+  <!-- Botones de documentos en la nube -->
+  <button class="btn" id="btn-save-cloud" onclick="saveToCloud()" title="Guardar en la nube" style="display:none;padding:5px 11px;background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#10b981">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Guardar
+  </button>
+  <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos" style="padding:5px 11px">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Documentos
   </button>
   <!-- Botón Exportar — acción primaria, siempre visible cuando hay datos -->
   <button class="btn success" id="btn-export" onclick="exportExcel()" disabled style="display:none">&#8595; Exportar</button>
@@ -1145,6 +1183,19 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   <button id="btn-date-cols" style="display:none"></button>
   <button class="btn" id="btn-clear-inline" onclick="clearFilters()" disabled title="Limpiar filtros" style="padding:5px 8px;font-size:12px;margin-left:auto">✕ Limpiar</button>
   <button id="focus-exit-search" onclick="exitFocusMode()" style="display:none;padding:4px 10px;border-radius:4px;font-size:10px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc);cursor:pointer;margin-left:4px">⊙ Salir enfoque</button>
+</div>
+
+<!-- Panel Mis Documentos -->
+<div id="docs-panel">
+  <div class="docs-modal">
+    <div class="docs-header">
+      <span class="docs-title">📂 Mis documentos</span>
+      <button class="docs-close" onclick="closeDocsPanel()">×</button>
+    </div>
+    <div class="docs-body" id="docs-body">
+      <div class="docs-empty">Cargando...</div>
+    </div>
+  </div>
 </div>
 
 <div id="main">
@@ -6378,8 +6429,9 @@ const _fbConfig = {
 };
 
 firebase.initializeApp(_fbConfig);
-const _fbAuth = firebase.auth();
-const _fbDb   = firebase.firestore();
+const _fbAuth    = firebase.auth();
+const _fbDb      = firebase.firestore();
+const _fbStorage = firebase.storage();
 
 // Forzar configuración de Firestore
 _fbDb.settings({
@@ -6651,6 +6703,181 @@ async function fbToggleActive(uid, currentlyActive){
   document.getElementById('fb-admin-overlay').remove();
   setTimeout(fbOpenAdminPanel, 200);
 }
+
+// ── DOCUMENTOS EN LA NUBE ──────────────────────────────────────────────────
+async function saveToCloud(){
+  if(!_fbUser){ alert('Debes iniciar sesión primero.'); return; }
+  const tab = T();
+  if(!tab || !tab.rawData.length){ alert('No hay datos para guardar.'); return; }
+  if(!tab._file){ alert('Este archivo no se puede guardar (no hay archivo original).'); return; }
+
+  const fileName = tab.fileName || 'documento.xlsx';
+  const file = tab._file;
+
+  if(file.size > 10 * 1024 * 1024){
+    alert('El archivo es demasiado grande (máximo 10MB).');
+    return;
+  }
+
+  if(!confirm(`¿Guardar "${fileName}" en la nube?`)) return;
+
+  const btn = document.getElementById('btn-save-cloud');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Guardando...';
+
+  try {
+    // Subir a Storage
+    const storageRef = _fbStorage.ref(`users/${_fbUser.uid}/${fileName}`);
+    const uploadTask = storageRef.put(file);
+
+    await uploadTask;
+    const downloadURL = await storageRef.getDownloadURL();
+
+    // Guardar metadata en Firestore
+    await _fbDb.collection('documents').add({
+      userId: _fbUser.uid,
+      fileName: fileName,
+      size: file.size,
+      storagePath: `users/${_fbUser.uid}/${fileName}`,
+      downloadURL: downloadURL,
+      uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      sheets: tab.wb?.SheetNames || []
+    });
+
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    alert('✅ Documento guardado correctamente.');
+  } catch(e){
+    console.error('Error guardando documento:', e);
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    alert('Error al guardar: ' + e.message);
+  }
+}
+
+async function openDocsPanel(){
+  if(!_fbUser){ alert('Debes iniciar sesión primero.'); return; }
+
+  document.getElementById('docs-panel').classList.add('open');
+  const body = document.getElementById('docs-body');
+  body.innerHTML = '<div class="docs-uploading">Cargando documentos...</div>';
+
+  try {
+    let query = _fbDb.collection('documents');
+
+    // Si no es admin, solo ver sus documentos
+    if(_fbUserRole !== 'admin'){
+      query = query.where('userId', '==', _fbUser.uid);
+    }
+
+    const snap = await query.orderBy('uploadedAt', 'desc').get();
+
+    if(snap.empty){
+      body.innerHTML = '<div class="docs-empty">📂 No hay documentos guardados.<br><br><span style="font-size:12px;color:var(--muted)">Abre un archivo Excel y haz click en "Guardar" para subirlo a la nube.</span></div>';
+      return;
+    }
+
+    const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
+
+    // Obtener nombres de usuarios si es admin
+    let users = {};
+    if(_fbUserRole === 'admin'){
+      const userSnap = await _fbDb.collection('users').get();
+      userSnap.docs.forEach(d => users[d.id] = d.data());
+    }
+
+    const html = docs.map(doc => {
+      const date = doc.uploadedAt?.toDate();
+      const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
+      const sizeStr = (doc.size / 1024 / 1024).toFixed(2) + ' MB';
+      const userName = _fbUserRole === 'admin' && doc.userId !== _fbUser.uid ?
+                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${users[doc.userId]?.email || 'Usuario'})</span>` : '';
+
+      return `
+        <div class="doc-item">
+          <div class="doc-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div class="doc-info">
+            <div class="doc-name">${doc.fileName || 'Sin nombre'}${userName}</div>
+            <div class="doc-meta">${dateStr} • ${doc.sheets?.length || 0} hoja(s)</div>
+          </div>
+          <div class="doc-size">${sizeStr}</div>
+          <div class="doc-actions">
+            <button class="doc-btn primary" onclick="openCloudDoc('${doc.id}')">Abrir</button>
+            ${doc.userId === _fbUser.uid || _fbUserRole === 'admin' ?
+              `<button class="doc-btn danger" onclick="deleteCloudDoc('${doc.id}', '${doc.storagePath}')">Eliminar</button>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    body.innerHTML = `<div class="docs-list">${html}</div>`;
+  } catch(e){
+    console.error('Error cargando documentos:', e);
+    body.innerHTML = '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' + e.message + '</div>';
+  }
+}
+
+function closeDocsPanel(){
+  document.getElementById('docs-panel').classList.remove('open');
+}
+
+async function openCloudDoc(docId){
+  try {
+    const doc = await _fbDb.collection('documents').doc(docId).get();
+    if(!doc.exists){ alert('Documento no encontrado.'); return; }
+
+    const data = doc.data();
+    const body = document.getElementById('docs-body');
+    body.innerHTML = '<div class="docs-uploading">Descargando documento...<div class="docs-progress"><div class="docs-progress-bar" style="width:50%"></div></div></div>';
+
+    // Descargar desde Storage
+    const response = await fetch(data.downloadURL);
+    const blob = await response.blob();
+    const file = new File([blob], data.fileName, { type: blob.type });
+
+    closeDocsPanel();
+
+    // Cargar el archivo en la app
+    handleFile(file);
+  } catch(e){
+    console.error('Error abriendo documento:', e);
+    alert('Error al abrir: ' + e.message);
+    openDocsPanel();
+  }
+}
+
+async function deleteCloudDoc(docId, storagePath){
+  if(!confirm('¿Eliminar este documento de la nube?')) return;
+
+  try {
+    // Eliminar de Storage
+    await _fbStorage.ref(storagePath).delete();
+
+    // Eliminar metadata de Firestore
+    await _fbDb.collection('documents').doc(docId).delete();
+
+    // Refrescar lista
+    openDocsPanel();
+  } catch(e){
+    console.error('Error eliminando documento:', e);
+    alert('Error al eliminar: ' + e.message);
+  }
+}
+
+// Mostrar botón "Guardar" cuando hay archivo cargado
+const _origHandleFile = handleFile;
+handleFile = function(file){
+  _origHandleFile.apply(this, arguments);
+  if(_fbUser){
+    const btn = document.getElementById('btn-save-cloud');
+    if(btn) btn.style.display = '';
+  }
+};
 </script>
 </body>
 </html>

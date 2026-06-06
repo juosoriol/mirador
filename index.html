@@ -778,15 +778,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
   #topbar-breadcrumb{display:none!important}
-  /* Ocultar en móvil: sesión, enfoque, tema, exportar (van en ⋯) */
+  /* Ocultar en móvil: sesión, enfoque, tema, exportar, menú ⋯ (hamburguesa los reemplaza) */
   #btn-session,#btn-focus,#btn-theme,#focus-exit,
-  #btn-export{display:none!important}
-  /* Mostrar botón menú ⋯ en móvil */
-  #btn-mobile-menu{display:inline-flex!important}
+  #btn-export,#btn-mobile-menu{display:none!important}
   #btn-pills-mode{margin-left:0!important}
-  /* Botón Acciones hamburguesa en móvil */
-  #btn-actions{padding:6px 10px!important}
+  /* Botón Acciones hamburguesa en móvil - SIEMPRE VISIBLE */
+  #btn-actions{padding:6px 10px!important;display:inline-flex!important}
   #btn-actions svg{width:18px!important;height:18px!important}
+  /* Botón Pills/Tabla más compacto */
+  #btn-pills-mode{font-size:11px;padding:4px 8px!important}
   /* Panel acciones en móvil: sidebar retráctil izquierdo */
   #actions-panel{position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important}
   #actions-panel.open{left:0!important}

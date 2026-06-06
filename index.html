@@ -775,19 +775,88 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .mpill-d5 .pt-name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d5 .pt-meta{font-size:12px}
   .mpill-d5 .pt-tag{font-size:11px}
-  /* Topbar: compacto, sin scroll */
-  #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
-  .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
+  /* Topbar móvil: 2 filas - fila 1: logo+nombre, fila 2: hamburguesa izq + hojas/docs derecha */
+  #topbar{
+    flex-wrap:wrap!important;
+    padding:0 10px!important;
+    gap:0!important;
+    height:auto!important;
+    padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
+    padding-bottom:8px!important;
+  }
+
+  /* Fila 1: Logo + Nombre - ocupan 100% width, centrados */
+  #topbar .logo{
+    order:1;
+    width:28px!important;
+    height:28px!important;
+    margin:0 auto 8px!important;
+    flex-basis:100%;
+    position:relative;
+  }
+  /* Logo móvil: ocultar SVG desktop y mostrar emoji */
+  #topbar .logo svg{display:none!important}
+  #topbar .logo::before{
+    content:'📱';
+    font-size:18px;
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #topbar .app-title{
+    order:2;
+    flex-basis:100%;
+    text-align:center!important;
+    margin:0 0 12px 0!important;
+    font-size:14px!important;
+    font-weight:600!important;
+  }
+  .app-title span{display:none!important}
   #topbar-breadcrumb{display:none!important}
-  /* Ocultar en móvil: sesión, enfoque, tema, exportar, menú ⋯, admin, avatar (hamburguesa los reemplaza) */
-  #btn-session,#btn-focus,#btn-theme,#focus-exit,
-  #btn-export,#btn-mobile-menu,#fb-admin-btn,#fb-user-badge{display:none!important}
-  #btn-pills-mode{margin-left:0!important}
-  /* Botón Acciones hamburguesa en móvil - SIEMPRE VISIBLE */
-  #btn-actions{padding:6px 10px!important;display:inline-flex!important}
-  #btn-actions svg{width:18px!important;height:18px!important}
-  /* Botón Pills/Tabla más compacto */
-  #btn-pills-mode{font-size:11px;padding:4px 8px!important}
+
+  /* Ocultar elementos desktop */
+  #btn-session,#btn-focus,#btn-theme,#focus-exit,#btn-export,
+  #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,#btn-pills-mode{display:none!important}
+
+  /* Fila 2: Hamburguesa izquierda */
+  #btn-actions{
+    order:10;
+    padding:8px 12px!important;
+    display:inline-flex!important;
+    margin-right:4px!important;
+  }
+  #btn-actions svg{width:20px!important;height:20px!important}
+
+  /* Botón Abrir archivo (solo móvil) */
+  #btn-open-file{
+    display:inline-flex!important;
+    order:11;
+    padding:6px 10px!important;
+    font-size:11px!important;
+    gap:4px;
+    background:rgba(59,130,246,0.15)!important;
+    border-color:rgba(59,130,246,0.4)!important;
+    color:#60a5fa!important;
+  }
+  #btn-open-file svg{width:14px!important;height:14px!important}
+
+  /* Fila 2: Documentos y Hojas derecha */
+  #btn-my-docs{
+    order:20;
+    padding:6px 10px!important;
+    font-size:11px!important;
+    margin-left:auto!important;
+  }
+  #btn-my-docs svg{width:16px!important;height:16px!important}
+
+  #btn-mobile-sheets{
+    display:inline-flex!important;
+    order:21;
+    padding:6px 10px!important;
+    font-size:11px!important;
+  }
   /* Panel acciones en móvil: sidebar retráctil izquierdo */
   #actions-panel{display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important}
   #actions-panel.open{left:0!important}
@@ -796,8 +865,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #tabs-bar::-webkit-scrollbar{height:6px}
   #tabs-bar::-webkit-scrollbar-track{background:var(--tabs-bg)}
   #tabs-bar::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
-  .tab{padding:5px 10px 4px;max-width:160px;touch-action:manipulation}
-  .tab-name{font-size:10px}
+  .tab{padding:5px 10px 4px;max-width:200px;min-width:140px;touch-action:manipulation}
+  .tab-name{font-size:11px;font-weight:500;flex:1!important;min-width:60px!important}
+  .tab-count{font-size:9px!important}
+  .tab-star,.tab-close{font-size:14px!important}
   #tabs-empty-text{font-size:11px}
   #tabs-empty-btn{padding:3px 10px;font-size:11px}
   /* Stats bar: scroll horizontal, tarjetas más pequeñas */
@@ -1102,6 +1173,16 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
       Pills
     </span>
+  </button>
+  <!-- Botón abrir archivo desde dispositivo (móvil) -->
+  <button id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <path d="M12 11v6"/>
+      <path d="M9 14l3-3 3 3"/>
+    </svg>
+    Abrir
   </button>
   <!-- Botón hojas (solo móvil ≤500px) -->
   <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:5px 8px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--topbar-text,var(--text));cursor:pointer;font-size:11px;font-weight:500;flex-shrink:0;gap:4px;font-family:var(--font);max-width:100px;overflow:hidden">

@@ -6832,53 +6832,25 @@ async function openCloudDoc(docId){
     if(!doc.exists){ alert('Documento no encontrado.'); return; }
 
     const data = doc.data();
-    const body = document.getElementById('docs-body');
-    body.innerHTML = '<div class="docs-uploading">Descargando documento...<div class="docs-progress"><div class="docs-progress-bar" style="width:50%"></div></div></div>';
-
-    // Descargar desde Storage usando el método getBytes de Firebase (maneja CORS internamente)
-    const storageRef = _fbStorage.ref(data.storagePath);
-
-    // getBytes devuelve un ArrayBuffer
-    const maxDownloadSize = 10 * 1024 * 1024; // 10MB
-    const arrayBuffer = await storageRef.getBytes(maxDownloadSize);
-
-    // Convertir a Blob
-    const blob = new Blob([arrayBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const file = new File([blob], data.fileName, {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-
     closeDocsPanel();
 
-    // Cargar el archivo en la app
-    // Trigger del input file para que la app procese el archivo
-    const input = document.getElementById('file-input');
+    // Obtener URL de descarga de Firebase Storage
+    const storageRef = _fbStorage.ref(data.storagePath);
+    const downloadURL = await storageRef.getDownloadURL();
 
-    // Usar DataTransfer para simular selección de archivo
-    try {
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
+    // Crear link temporal para descargar el archivo
+    const link = document.createElement('a');
+    link.href = downloadURL;
+    link.download = data.fileName || 'documento.xlsx';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
-      // Disparar el evento onchange manualmente
-      const event = new Event('change', { bubbles: true });
-      input.dispatchEvent(event);
-    } catch(e) {
-      // Fallback si DataTransfer no funciona en este navegador
-      console.warn('DataTransfer no disponible, usando método alternativo');
-      // Crear array de archivos manualmente
-      if(typeof openFileTab === 'function') {
-        // Llamar directamente con el objeto file simulado
-        const fakeInput = { files: [file] };
-        openFileTab(fakeInput);
-      }
-    }
+    alert(`📥 Descargando "${data.fileName}".\n\nUna vez descargado, ábrelo con el botón "📂 Abrir archivo" para verlo en Mirador.`);
   } catch(e){
     console.error('Error abriendo documento:', e);
     alert('Error al abrir: ' + e.message);
-    openDocsPanel();
   }
 }
 

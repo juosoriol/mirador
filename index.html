@@ -787,8 +787,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Botón Acciones compacto en móvil */
   #btn-actions{padding:5px 9px!important;font-size:12px}
   #btn-actions svg{width:12px;height:12px}
-  /* Panel acciones en móvil: bottom sheet */
-  #actions-panel{position:fixed;bottom:0;left:0;right:0;top:auto;border-radius:16px 16px 0 0;max-height:60vh;min-width:0;width:100%;border-bottom:none}
+  /* Panel acciones en móvil: bottom sheet (usar !important para sobreescribir JS) */
+  #actions-panel{position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;border-radius:16px 16px 0 0!important;max-height:60vh!important;min-width:0!important;width:100%!important;border-bottom:none!important}
   /* Tabs: más compactas */
   #tabs-bar{min-height:38px;padding:4px 8px 0}
   .tab{padding:5px 10px 4px;max-width:160px}

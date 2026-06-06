@@ -6835,22 +6835,17 @@ async function openCloudDoc(docId){
     const body = document.getElementById('docs-body');
     body.innerHTML = '<div class="docs-uploading">Descargando documento...<div class="docs-progress"><div class="docs-progress-bar" style="width:50%"></div></div></div>';
 
-    // Descargar desde Storage usando Firebase SDK directamente
+    // Descargar desde Storage usando el método getBytes de Firebase (maneja CORS internamente)
     const storageRef = _fbStorage.ref(data.storagePath);
-    const downloadURL = await storageRef.getDownloadURL();
 
-    // Descargar el blob
-    const xhr = new XMLHttpRequest();
-    xhr.responseType = 'blob';
+    // getBytes devuelve un ArrayBuffer
+    const maxDownloadSize = 10 * 1024 * 1024; // 10MB
+    const arrayBuffer = await storageRef.getBytes(maxDownloadSize);
 
-    await new Promise((resolve, reject) => {
-      xhr.onload = resolve;
-      xhr.onerror = reject;
-      xhr.open('GET', downloadURL);
-      xhr.send();
+    // Convertir a Blob
+    const blob = new Blob([arrayBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });
-
-    const blob = xhr.response;
     const file = new File([blob], data.fileName, {
       type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     });

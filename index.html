@@ -6842,8 +6842,12 @@ async function openCloudDoc(docId){
 
     closeDocsPanel();
 
-    // Cargar el archivo en la app
-    handleFile(file);
+    // Cargar el archivo en la app usando un input simulado
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    const input = document.getElementById('file-input');
+    input.files = dt.files;
+    openFileTab(input);
   } catch(e){
     console.error('Error abriendo documento:', e);
     alert('Error al abrir: ' + e.message);
@@ -6870,9 +6874,9 @@ async function deleteCloudDoc(docId, storagePath){
 }
 
 // Mostrar botón "Guardar" cuando hay archivo cargado
-const _origHandleFile = handleFile;
-handleFile = function(file){
-  _origHandleFile.apply(this, arguments);
+const _origOpenFileTab = openFileTab;
+openFileTab = function(input){
+  _origOpenFileTab.apply(this, arguments);
   if(_fbUser){
     const btn = document.getElementById('btn-save-cloud');
     if(btn) btn.style.display = '';

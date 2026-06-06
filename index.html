@@ -6832,25 +6832,36 @@ async function openCloudDoc(docId){
     if(!doc.exists){ alert('Documento no encontrado.'); return; }
 
     const data = doc.data();
-    closeDocsPanel();
+    const body = document.getElementById('docs-body');
+    body.innerHTML = '<div class="docs-uploading">Descargando documento...<div class="docs-progress"><div class="docs-progress-bar" style="width:50%"></div></div></div>';
 
-    // Obtener URL de descarga de Firebase Storage
+    // Obtener URL de descarga con CORS configurado
     const storageRef = _fbStorage.ref(data.storagePath);
     const downloadURL = await storageRef.getDownloadURL();
 
-    // Crear link temporal para descargar el archivo
-    const link = document.createElement('a');
-    link.href = downloadURL;
-    link.download = data.fileName || 'documento.xlsx';
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Descargar con fetch (ahora funciona gracias a CORS)
+    const response = await fetch(downloadURL);
+    const blob = await response.blob();
 
-    alert(`📥 Descargando "${data.fileName}".\n\nUna vez descargado, ábrelo con el botón "📂 Abrir archivo" para verlo en Mirador.`);
+    const file = new File([blob], data.fileName, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+
+    closeDocsPanel();
+
+    // Simular selección de archivo y abrir en la app
+    const input = document.getElementById('file-input');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+
+    // Disparar evento onchange
+    const event = new Event('change', { bubbles: true });
+    input.dispatchEvent(event);
   } catch(e){
     console.error('Error abriendo documento:', e);
     alert('Error al abrir: ' + e.message);
+    openDocsPanel();
   }
 }
 

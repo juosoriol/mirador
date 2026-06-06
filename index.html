@@ -6342,16 +6342,21 @@ function toggleActionsPanel(){
   [['ap-graph','btn-graph'],['ap-cond','btn-cond'],['ap-cols','btn-cols'],
    ['ap-export','btn-export'],['ap-export-all','btn-export-all'],['ap-refresh','btn-refresh']
   ].forEach(([ap,btn])=>{ const a=$$(ap),b=$$(btn); if(a&&b) a.disabled=b.disabled; });
-  // Posicionar debajo del botón Acciones
-  const btn=$('btn-actions');
-  const r=btn?.getBoundingClientRect();
-  if(r){
-    const panW=220;
-    let left=r.right-panW;
-    if(left<8) left=8;
-    p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
-    if(window.innerWidth<=500){ p.style.left='8px'; p.style.width=(window.innerWidth-16)+'px'; }
-  } else { p.style.right='8px'; p.style.top='60px'; }
+
+  // En móvil: bottom sheet (CSS maneja posición)
+  if(window.innerWidth <= 500){
+    p.style.left=''; p.style.top=''; p.style.right=''; p.style.width='';
+  } else {
+    // Desktop: posicionar debajo del botón Acciones
+    const btn=$('btn-actions');
+    const r=btn?.getBoundingClientRect();
+    if(r){
+      const panW=220;
+      let left=r.right-panW;
+      if(left<8) left=8;
+      p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
+    } else { p.style.right='8px'; p.style.top='60px'; }
+  }
   p.classList.add('open');
   setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
 }

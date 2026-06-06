@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Mirador — Pills + Ficha</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0f172a;--s1:#1e293b;--s2:#334155;--s3:#475569;
+  --border:#334155;--acc:#3b82f6;--acc-dim:#1d4ed833;--acc-text:#60a5fa;
+  --text:#e2e8f0;--muted:#94a3b8;--dim:#64748b;
+  --success:#22c55e;--warn:#f59e0b;--danger:#f87171;
+  --r:10px;--font:'Segoe UI',system-ui,sans-serif;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;overscroll-behavior:none}
+body{display:flex;flex-direction:column;overflow:hidden}
+
+/* ── TOPBAR ── */
+#topbar{display:flex;align-items:center;gap:8px;padding:0 12px;height:52px;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0;padding-top:env(safe-area-inset-top)}
+.logo{width:28px;height:28px;background:var(--acc);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.app-title{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap}.app-title span{color:var(--acc-text)}
+
+/* ── TOGGLE PILLS ── */
+#btn-pills-mode{display:flex;align-items:center;gap:6px;margin-left:auto;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--s1);color:var(--muted);cursor:pointer;transition:all .2s;user-select:none;flex-shrink:0;min-height:36px}
+#btn-pills-mode.on{background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text)}
+#btn-pills-mode svg{transition:transform .2s}
+
+/* ── SEARCHBAR ── */
+#searchbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0}
+#search-input{flex:1;background:var(--bg);border:1.5px solid var(--border);border-radius:20px;padding:8px 14px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);transition:border-color .15s;min-width:0}
+#search-input:focus{border-color:var(--acc)}
+#search-input::placeholder{color:var(--dim)}
+#search-count{font-size:11px;color:var(--dim);white-space:nowrap;flex-shrink:0}
+
+/* ── MAIN ── */
+#main{flex:1;overflow:hidden;position:relative}
+
+/* ── TABLE VIEW ── */
+#view-table{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.fake-table{width:100%;border-collapse:collapse;min-width:500px}
+.fake-table th{background:var(--s1);padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:1}
+.fake-table td{padding:10px 14px;border-bottom:1px solid var(--s1);font-size:12px;color:#cbd5e1}
+.fake-table tr:active td{background:var(--s1)}
+.s-pill{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600}
+
+/* ── PILLS VIEW ── */
+#view-pills{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px}
+.pills-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+.pills-count{font-size:11px;color:var(--dim)}
+.config-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid var(--border);background:var(--s1);color:var(--muted);cursor:pointer;min-height:34px;flex-shrink:0}
+.config-btn.on{border-color:var(--acc-text);color:var(--acc-text);background:var(--acc-dim)}
+
+/* Config panel */
+#config-panel{display:none;flex-direction:column;gap:10px;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:12px}
+.cfg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cfg-label{font-size:11px;color:var(--dim);flex-shrink:0;min-width:120px}
+.cfg-select{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 8px;outline:none;cursor:pointer;font-family:var(--font)}
+.cfg-select:focus{border-color:var(--acc)}
+
+/* Pills grid — mobile-first */
+#pills-grid{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:8px 14px;cursor:pointer;transition:background .12s,border-color .12s;user-select:none;min-height:40px;-webkit-tap-highlight-color:transparent}
+.pill:active{background:var(--acc-dim);border-color:var(--acc-text)}
+.pill-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.pill-main{font-size:13px;font-weight:600;color:var(--text)}
+.pill-sec{font-size:11px;color:var(--dim)}
+
+/* ── FICHA BOTTOM SHEET ── */
+#ficha-overlay{position:fixed;inset:0;z-index:600;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;transition:background .25s}
+#ficha-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55)}
+#ficha-panel{background:var(--s1);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:90vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);padding-bottom:calc(12px + var(--safe-bottom))}
+#ficha-overlay.open #ficha-panel{transform:translateY(0)}
+
+/* Handle + swipe hint */
+.ficha-handle-wrap{display:flex;justify-content:center;padding:10px 0 4px;cursor:grab;flex-shrink:0}
+.ficha-handle{width:40px;height:4px;background:var(--s2);border-radius:2px}
+
+/* Ficha header */
+.ficha-header{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;flex-shrink:0}
+.ficha-avatar{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+.ficha-name{font-size:16px;font-weight:700;color:var(--text);line-height:1.2}
+.ficha-role{font-size:12px;color:var(--muted);margin-top:3px}
+.ficha-close{margin-left:auto;background:var(--s2);border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* Ficha nav — swipe hint on mobile */
+.ficha-nav{display:flex;align-items:center;justify-content:space-between;padding:0 16px 10px;flex-shrink:0;gap:8px}
+.ficha-nav-btn{display:flex;align-items:center;gap:4px;padding:8px 14px;border-radius:10px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;min-height:38px;flex:1;justify-content:center;transition:all .12s}
+.ficha-nav-btn:active:not(:disabled){background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text)}
+.ficha-nav-btn:disabled{opacity:.25;cursor:not-allowed}
+.ficha-counter{font-size:11px;color:var(--dim);white-space:nowrap;text-align:center;flex-shrink:0}
+
+/* Divider */
+.ficha-divider{height:1px;background:var(--border);margin:0 16px;flex-shrink:0}
+
+/* Ficha body — scrollable list */
+.ficha-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:4px 16px 12px}
+.ficha-body::-webkit-scrollbar{width:3px}
+.ficha-body::-webkit-scrollbar-thumb{background:var(--s2);border-radius:2px}
+.ficha-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--s3);padding:14px 0 6px}
+.ficha-field{display:flex;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--s1);gap:12px;min-height:38px}
+.ficha-field:last-child{border-bottom:none}
+.ficha-key{width:120px;font-size:11px;color:var(--dim);flex-shrink:0;padding-top:2px;line-height:1.4}
+.ficha-val{font-size:13px;color:#cbd5e1;font-weight:500;word-break:break-word;line-height:1.5;flex:1}
+.ficha-val.empty{color:var(--s3);font-style:italic;font-size:12px}
+
+/* Swipe hint */
+.swipe-hint{display:none;text-align:center;font-size:10px;color:var(--s3);padding:6px 0 0}
+@media(pointer:coarse){.swipe-hint{display:block}}
+
+/* Statusbar */
+#statusbar{display:flex;align-items:center;gap:12px;padding:0 14px;height:30px;background:#0a101e;border-top:1px solid var(--s1);font-size:11px;color:var(--s3);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
+.sv{color:var(--muted);font-weight:600}
+
+/* Responsive: en móvil pills más grandes */
+@media(max-width:480px){
+  .pill{padding:10px 16px;border-radius:24px}
+  .pill-main{font-size:14px}
+  #pills-grid{gap:8px}
+  .ficha-key{width:100px;font-size:12px}
+  .ficha-val{font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div class="logo">M</div>
+  <span class="app-title">Mirador <span>— planillas</span></span>
+  <button id="btn-pills-mode" onclick="togglePillsMode()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+    <span id="btn-pills-label">Pills</span>
+  </button>
+</div>
+
+<!-- SEARCHBAR -->
+<div id="searchbar">
+  <input type="text" id="search-input" placeholder="🔍  Buscar..." oninput="onSearch()" autocomplete="off"/>
+  <span id="search-count">15 reg.</span>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- VISTA TABLA -->
+  <div id="view-table" style="display:none">
+    <div style="overflow-x:auto;height:100%">
+      <table class="fake-table">
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Cargo</th><th>Área</th><th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VISTA PILLS -->
+  <div id="view-pills">
+    <div class="pills-toolbar">
+      <span class="pills-count" id="pills-count">15 registros</span>
+      <button class="config-btn" id="btn-config" onclick="toggleConfig()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L12 6M12 18L12 22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12L6 12M18 12L22 12M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93"/></svg>
+        Configurar
+      </button>
+    </div>
+
+    <div id="config-panel">
+      <div class="cfg-row">
+        <span class="cfg-label">Campo principal</span>
+        <select class="cfg-select" id="sel-main" onchange="renderPills()">
+          <option value="nombre">Nombre</option>
+          <option value="rut">RUT</option>
+          <option value="cargo">Cargo</option>
+          <option value="area">Área</option>
+        </select>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-label">Campo secundario</span>
+        <select class="cfg-select" id="sel-sec" onchange="renderPills()">
+          <option value="rut">RUT</option>
+          <option value="cargo">Cargo</option>
+          <option value="area">Área</option>
+          <option value="sucursal">Sucursal</option>
+        </select>
+      </div>
+      <div class="cfg-row">
+        <span class="cfg-label">Color por</span>
+        <select class="cfg-select" id="sel-color" onchange="renderPills()">
+          <option value="estado">Estado</option>
+          <option value="area">Área</option>
+          <option value="none">Sin color</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="pills-grid"></div>
+    <div class="swipe-hint">Desliza la ficha ← → para navegar entre registros</div>
+  </div>
+</div>
+
+<!-- FICHA BOTTOM SHEET -->
+<div id="ficha-overlay" onclick="overlayClick(event)">
+  <div id="ficha-panel">
+    <div class="ficha-handle-wrap" id="ficha-handle">
+      <div class="ficha-handle"></div>
+    </div>
+
+    <div class="ficha-header">
+      <div class="ficha-avatar" id="ficha-avatar"></div>
+      <div style="flex:1;min-width:0">
+        <div class="ficha-name" id="ficha-name"></div>
+        <div class="ficha-role" id="ficha-role"></div>
+      </div>
+      <button class="ficha-close" onclick="closeFicha()">×</button>
+    </div>
+
+    <div class="ficha-nav">
+      <button class="ficha-nav-btn" id="btn-prev" onclick="navigate(-1)">◀ Ant.</button>
+      <span class="ficha-counter" id="ficha-counter"></span>
+      <button class="ficha-nav-btn" id="btn-next" onclick="navigate(1)">Sig. ▶</button>
+    </div>
+
+    <div class="ficha-divider"></div>
+    <div class="ficha-body" id="ficha-body"></div>
+  </div>
+</div>
+
+<!-- STATUSBAR -->
+<div id="statusbar">
+  <span>Total: <span class="sv" id="st-total">0</span></span>
+  <span>Visibles: <span class="sv" id="st-vis">0</span></span>
+</div>
+
+<script>
+'use strict';
+
+const DATOS = [
+  {nombre:'Juan Pérez',     rut:'12.345.678-9', cargo:'Analista Senior',   area:'Finanzas',     sucursal:'Santiago Centro',ingreso:'12/03/2021',contrato:'Indefinido', email:'j.perez@emp.cl',   telefono:'+56 9 1234 5678',estado:'Activo',  supervisor:'María López',  turno:'Diurno',  sueldo:'$1.850.000'},
+  {nombre:'María López',    rut:'9.876.543-2',  cargo:'Gerente RRHH',      area:'RRHH',         sucursal:'Las Condes',     ingreso:'05/07/2018',contrato:'Indefinido', email:'m.lopez@emp.cl',   telefono:'+56 9 2345 6789',estado:'Activo',  supervisor:'CEO',          turno:'Diurno',  sueldo:'$4.200.000'},
+  {nombre:'Carlos Ruiz',    rut:'15.234.901-K', cargo:'Contador Senior',   area:'Contabilidad', sucursal:'Providencia',    ingreso:'20/11/2019',contrato:'Indefinido', email:'c.ruiz@emp.cl',    telefono:'+56 9 3456 7890',estado:'Licencia',supervisor:'Ana Torres',   turno:'Diurno',  sueldo:'$2.100.000'},
+  {nombre:'Ana Torres',     rut:'11.098.765-3', cargo:'Coordinadora Ops',  area:'Operaciones',  sucursal:'Maipú',          ingreso:'14/01/2022',contrato:'Plazo fijo', email:'a.torres@emp.cl',  telefono:'+56 9 4567 8901',estado:'Inactivo',supervisor:'Pedro Soto',   turno:'Mixto',   sueldo:'$1.650.000'},
+  {nombre:'Pedro Soto',     rut:'8.432.100-7',  cargo:'Jefe TI',           area:'TI',           sucursal:'Las Condes',     ingreso:'03/08/2017',contrato:'Indefinido', email:'p.soto@emp.cl',    telefono:'+56 9 5678 9012',estado:'Activo',  supervisor:'María López',  turno:'Diurno',  sueldo:'$3.500.000'},
+  {nombre:'Luis Díaz',      rut:'13.567.890-1', cargo:'Desarrollador',     area:'TI',           sucursal:'Las Condes',     ingreso:'22/04/2023',contrato:'Indefinido', email:'l.diaz@emp.cl',    telefono:'+56 9 6789 0123',estado:'Activo',  supervisor:'Pedro Soto',   turno:'Diurno',  sueldo:'$2.400.000'},
+  {nombre:'Rosa Muñoz',     rut:'17.890.234-5', cargo:'Asistente Contable',area:'Contabilidad', sucursal:'Providencia',    ingreso:'11/09/2020',contrato:'Indefinido', email:'r.munoz@emp.cl',   telefono:'+56 9 7890 1234',estado:'Licencia',supervisor:'Carlos Ruiz',  turno:'Diurno',  sueldo:'$1.300.000'},
+  {nombre:'Felipe Vega',    rut:'10.234.567-8', cargo:'Analista TI',       area:'TI',           sucursal:'Santiago Centro',ingreso:'07/02/2022',contrato:'Plazo fijo', email:'f.vega@emp.cl',    telefono:'+56 9 8901 2345',estado:'Activo',  supervisor:'Pedro Soto',   turno:'Diurno',  sueldo:'$1.950.000'},
+  {nombre:'Claudia Ríos',   rut:'14.678.901-2', cargo:'Ejecutiva Ventas',  area:'Ventas',       sucursal:'Ñuñoa',          ingreso:'30/06/2019',contrato:'Indefinido', email:'c.rios@emp.cl',    telefono:'+56 9 9012 3456',estado:'Inactivo',supervisor:'Sergio Mora',  turno:'Mixto',   sueldo:'$1.750.000'},
+  {nombre:'Sergio Mora',    rut:'6.789.012-4',  cargo:'Jefe Ventas',       area:'Ventas',       sucursal:'Ñuñoa',          ingreso:'15/03/2015',contrato:'Indefinido', email:'s.mora@emp.cl',    telefono:'+56 9 0123 4567',estado:'Activo',  supervisor:'María López',  turno:'Diurno',  sueldo:'$3.200.000'},
+  {nombre:'Valentina Cruz', rut:'19.012.345-6', cargo:'Diseñadora',        area:'Marketing',    sucursal:'Providencia',    ingreso:'08/01/2023',contrato:'Plazo fijo', email:'v.cruz@emp.cl',    telefono:'+56 9 1122 3344',estado:'Activo',  supervisor:'Sergio Mora',  turno:'Diurno',  sueldo:'$1.600.000'},
+  {nombre:'Andrés Fuentes', rut:'7.654.321-0',  cargo:'Operario Senior',   area:'Operaciones',  sucursal:'Maipú',          ingreso:'02/05/2016',contrato:'Indefinido', email:'a.fuentes@emp.cl', telefono:'+56 9 2233 4455',estado:'Activo',  supervisor:'Ana Torres',   turno:'Nocturno',sueldo:'$1.450.000'},
+  {nombre:'Paola Herrera',  rut:'16.543.210-9', cargo:'Analista Marketing',area:'Marketing',    sucursal:'Las Condes',     ingreso:'19/10/2021',contrato:'Indefinido', email:'p.herrera@emp.cl', telefono:'+56 9 3344 5566',estado:'Activo',  supervisor:'Sergio Mora',  turno:'Diurno',  sueldo:'$1.800.000'},
+  {nombre:'Ricardo Núñez',  rut:'12.111.222-3', cargo:'Soporte TI',        area:'TI',           sucursal:'Santiago Centro',ingreso:'25/07/2022',contrato:'Plazo fijo', email:'r.nunez@emp.cl',   telefono:'+56 9 4455 6677',estado:'Licencia',supervisor:'Pedro Soto',   turno:'Mixto',   sueldo:'$1.250.000'},
+  {nombre:'Daniela Pinto',  rut:'18.333.444-5', cargo:'Coordinadora Mktg', area:'Marketing',    sucursal:'Providencia',    ingreso:'14/04/2020',contrato:'Indefinido', email:'d.pinto@emp.cl',   telefono:'+56 9 5566 7788',estado:'Activo',  supervisor:'Sergio Mora',  turno:'Diurno',  sueldo:'$2.050.000'},
+];
+
+const CAMPOS = [
+  {sec:'Datos personales', fields:[
+    {k:'nombre',l:'Nombre'},{k:'rut',l:'RUT'},{k:'email',l:'Email'},{k:'telefono',l:'Teléfono'}
+  ]},
+  {sec:'Cargo y área', fields:[
+    {k:'cargo',l:'Cargo'},{k:'area',l:'Área'},{k:'sucursal',l:'Sucursal'},{k:'supervisor',l:'Supervisor'},{k:'turno',l:'Turno'}
+  ]},
+  {sec:'Contrato', fields:[
+    {k:'contrato',l:'Tipo contrato'},{k:'ingreso',l:'Fecha ingreso'},{k:'sueldo',l:'Sueldo'}
+  ]},
+  {sec:'Estado', fields:[
+    {k:'estado',l:'Estado actual'}
+  ]},
+];
+
+const AREA_CLR  = {Finanzas:'#1d4ed8',RRHH:'#7c3aed',Contabilidad:'#0f766e',Operaciones:'#b45309',TI:'#0e7490',Ventas:'#be185d',Marketing:'#65a30d'};
+const DOT_CLR   = {Activo:'#22c55e',Licencia:'#f59e0b',Inactivo:'#475569'};
+const ST_BG     = {Activo:'#166534',Licencia:'#78350f',Inactivo:'#1e293b'};
+const ST_TX     = {Activo:'#86efac',Licencia:'#fcd34d',Inactivo:'#94a3b8'};
+
+let pillsMode   = false;
+let configOpen  = false;
+let filtered    = [...DATOS];
+let fichaIdx    = 0;
+let fichaOpen   = false;
+
+const $  = id => document.getElementById(id);
+function initials(n){ return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function avatarColor(n){
+  const c=['#1d4ed8','#7c3aed','#0f766e','#b45309','#0e7490','#be185d','#65a30d','#c2410c'];
+  let h=0; for(let ch of n) h=(h*31+ch.charCodeAt(0))%c.length; return c[h];
+}
+
+// ── TOGGLE MODO PILLS ────────────────────────────────────────────────────────
+function togglePillsMode(){
+  pillsMode = !pillsMode;
+  const btn = $('btn-pills-mode');
+  btn.classList.toggle('on', pillsMode);
+  $('btn-pills-label').textContent = pillsMode ? 'Pills ON' : 'Pills';
+  $('view-pills').style.display  = pillsMode ? 'block' : 'none';
+  $('view-table').style.display  = pillsMode ? 'none'  : 'block';
+  if(pillsMode) renderPills(); else renderTable();
+  // Cerrar ficha si estaba abierta
+  if(!pillsMode && fichaOpen) closeFicha();
+}
+
+// ── BÚSQUEDA ─────────────────────────────────────────────────────────────────
+function onSearch(){
+  const q = $('search-input').value.toLowerCase().trim();
+  filtered = q ? DATOS.filter(r=>Object.values(r).some(v=>v.toLowerCase().includes(q))) : [...DATOS];
+  $('search-count').textContent = filtered.length+' reg.';
+  $('st-vis').textContent = filtered.length;
+  if(pillsMode) renderPills(); else renderTable();
+}
+
+// ── CONFIG PANEL ─────────────────────────────────────────────────────────────
+function toggleConfig(){
+  configOpen = !configOpen;
+  $('config-panel').style.display = configOpen ? 'flex' : 'none';
+  $('btn-config').classList.toggle('on', configOpen);
+}
+
+// ── RENDER PILLS ─────────────────────────────────────────────────────────────
+function renderPills(){
+  const mk = $('sel-main').value;
+  const sk = $('sel-sec').value;
+  const cb = $('sel-color').value;
+  $('pills-count').textContent = filtered.length+' registros';
+  $('pills-grid').innerHTML = filtered.map((r,i)=>{
+    const dot = cb==='estado' ? DOT_CLR[r.estado]||'#475569'
+               : cb==='area'  ? AREA_CLR[r.area]||'#3b82f6'
+               : null;
+    const dotHtml = dot ? `<span class="pill-dot" style="background:${dot}"></span>` : '';
+    return `<div class="pill" onclick="openFicha(${i})">${dotHtml}<span class="pill-main">${r[mk]||'—'}</span><span class="pill-sec">${r[sk]||'—'}</span></div>`;
+  }).join('');
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────────────────────
+function renderTable(){
+  $('table-body').innerHTML = filtered.map((r,i)=>`
+    <tr onclick="openFicha(${i})" style="cursor:pointer">
+      <td><strong>${r.nombre}</strong></td>
+      <td style="color:#94a3b8">${r.cargo}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:7px;height:7px;border-radius:50%;background:${AREA_CLR[r.area]||'#475569'};display:inline-block"></span>${r.area}</span></td>
+      <td><span class="s-pill" style="background:${ST_BG[r.estado]};color:${ST_TX[r.estado]}">${r.estado}</span></td>
+    </tr>`).join('');
+}
+
+// ── FICHA ─────────────────────────────────────────────────────────────────────
+function openFicha(i){
+  fichaIdx = i; fichaOpen = true;
+  renderFicha();
+  $('ficha-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderFicha(){
+  const r = filtered[fichaIdx]; if(!r) return;
+  const col = avatarColor(r.nombre);
+  $('ficha-avatar').textContent = initials(r.nombre);
+  $('ficha-avatar').style.background = `linear-gradient(135deg,${col},${col}99)`;
+  $('ficha-name').textContent = r.nombre;
+  $('ficha-role').innerHTML = `${r.cargo} · <span style="color:${AREA_CLR[r.area]||'#64748b'}">${r.area}</span>`;
+  $('ficha-counter').textContent = `${fichaIdx+1} / ${filtered.length}`;
+  $('btn-prev').disabled = fichaIdx===0;
+  $('btn-next').disabled = fichaIdx===filtered.length-1;
+
+  $('ficha-body').innerHTML = CAMPOS.map(sec=>`
+    <div class="ficha-section">${sec.sec}</div>
+    ${sec.fields.map(f=>{
+      const v = r[f.k]||'';
+      if(f.k==='estado'){
+        return `<div class="ficha-field"><span class="ficha-key">${f.l}</span>
+          <span class="ficha-val"><span style="display:inline-flex;padding:3px 10px;border-radius:20px;background:${ST_BG[v]};color:${ST_TX[v]};font-size:11px;font-weight:600">${v||'—'}</span></span></div>`;
+      }
+      return `<div class="ficha-field"><span class="ficha-key">${f.l}</span>
+        <span class="ficha-val${!v?' empty':''}">${v||'Sin información'}</span></div>`;
+    }).join('')}`).join('');
+  $('ficha-body').scrollTop = 0;
+}
+
+function navigate(dir){
+  const n = fichaIdx+dir;
+  if(n<0||n>=filtered.length) return;
+  fichaIdx = n; renderFicha();
+}
+
+function closeFicha(){
+  fichaOpen = false;
+  $('ficha-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function overlayClick(e){ if(e.target===$('ficha-overlay')) closeFicha(); }
+
+// ── SWIPE GESTURES (mobile) ───────────────────────────────────────────────────
+let touchStartX=0, touchStartY=0;
+$('ficha-panel').addEventListener('touchstart',e=>{
+  touchStartX = e.touches[0].clientX;
+  touchStartY = e.touches[0].clientY;
+},{passive:true});
+$('ficha-panel').addEventListener('touchend',e=>{
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  const dy = e.changedTouches[0].clientY - touchStartY;
+  if(Math.abs(dy)>Math.abs(dx) && dy>60) { closeFicha(); return; } // swipe down → cerrar
+  if(Math.abs(dx)>50 && Math.abs(dy)<60){
+    if(dx<0) navigate(1);  // swipe left → siguiente
+    else     navigate(-1); // swipe right → anterior
+  }
+},{passive:true});
+
+// ── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(!fichaOpen) return;
+  if(e.key==='Escape') closeFicha();
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') navigate(1);
+  if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   navigate(-1);
+});
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+$('st-total').textContent = DATOS.length;
+$('st-vis').textContent   = DATOS.length;
+$('search-count').textContent = DATOS.length+' reg.';
+// Arrancar en modo pills para el demo
+togglePillsMode();
+renderTable();
+</script>
+</body>
+</html>

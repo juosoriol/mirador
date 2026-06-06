@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mirador · Diseños de Chips</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f1117;color:#e2e8f0;padding:20px;min-height:100vh}
+h1{font-size:13px;color:#475569;letter-spacing:.1em;text-transform:uppercase;margin-bottom:24px}
+.section{margin-bottom:40px}
+.section-title{font-size:12px;color:#64748b;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1e293b;display:flex;align-items:center;gap:8px}
+.section-title span{background:#1e2a3a;border-radius:4px;padding:1px 8px;font-size:11px;color:#475569}
+.search{display:flex;gap:8px;margin-bottom:14px;background:#141824;border:1px solid #1e2937;border-radius:10px;padding:10px 14px;align-items:center}
+.search input{flex:1;background:none;border:none;outline:none;color:#e2e8f0;font-size:14px}
+.search input::placeholder{color:#334155}
+.note{font-size:11px;color:#374151;background:#111827;border-radius:6px;padding:4px 10px;display:inline-block;margin-top:8px}
+
+/* ─── A: Solo nombre grande, sin ID ─── */
+.ca-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.ca{background:#141824;border:1px solid #1e2937;border-radius:999px;padding:8px 16px;cursor:pointer;transition:all .12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+.ca:hover{border-color:#6366f1;background:#1e1b4b22}
+.ca-name{font-size:13px;font-weight:600;color:#f1f5f9}
+.ca-id{font-size:10px;color:#475569;font-family:monospace;margin-top:1px}
+
+/* ─── B: Chip con borde de color izquierdo ─── */
+.cb-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.cb{background:#141824;border:1px solid #1e2937;border-left:3px solid var(--c,#475569);border-radius:8px;padding:7px 14px;cursor:pointer;transition:all .12s;max-width:220px}
+.cb:hover{background:#1a2333}
+.cb-name{font-size:13px;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cb-id{font-size:10px;color:#475569;font-family:monospace;margin-top:2px}
+
+/* ─── C: Chip fondo de color suave ─── */
+.cc-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.cc{border-radius:8px;padding:8px 14px;cursor:pointer;transition:all .12s;max-width:240px;border:1px solid transparent}
+.cc:hover{filter:brightness(1.2)}
+.cc-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-id{font-size:10px;font-family:monospace;margin-top:2px;opacity:.7}
+
+/* ─── D: Badge horizontal con avatar mini + color ─── */
+.cd-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.cd{background:#141824;border:1px solid #1e2937;border-radius:999px;padding:5px 12px 5px 5px;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:8px;max-width:260px}
+.cd:hover{border-color:#6366f1}
+.cd-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff;flex-shrink:0}
+.cd-body{min-width:0}
+.cd-name{font-size:13px;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.cd-id{font-size:10px;color:#475569;font-family:monospace}
+
+/* ─── E: Tag con badge de estado a la derecha ─── */
+.ce-wrap{display:flex;flex-wrap:wrap;gap:6px}
+.ce{background:#141824;border:1px solid #1e2937;border-radius:8px;padding:7px 10px;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:8px;max-width:280px}
+.ce:hover{border-color:#6366f1;background:#1a1a3a}
+.ce-name{font-size:13px;font-weight:600;color:#f1f5f9;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ce-badge{font-size:10px;border-radius:4px;padding:2px 7px;flex-shrink:0;white-space:nowrap}
+
+/* ─── F: Solo nombre, ancho completo, color de fondo ─── */
+.cf-wrap{display:flex;flex-direction:column;gap:4px;max-width:420px}
+.cf{border-radius:8px;padding:9px 14px;cursor:pointer;transition:all .1s;display:flex;align-items:center;gap:10px;border:1px solid transparent}
+.cf:hover{filter:brightness(1.15)}
+.cf-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cf-name{font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cf-id{font-size:11px;font-family:monospace;opacity:.7;flex-shrink:0}
+
+/* ─── G: Cuadrícula 2 col, sin ID visible ─── */
+.cg-wrap{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:500px}
+.cg{background:#141824;border:1px solid #1e2937;border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .12s}
+.cg:hover{border-color:#6366f1;background:#1a1a3a}
+.cg-name{font-size:13px;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cg-meta{font-size:10px;color:#475569;margin-top:3px;font-family:monospace}
+
+/* colores */
+.col-green{--c:#22c55e;color:#22c55e}
+.col-amber{--c:#f59e0b;color:#f59e0b}
+.col-red{--c:#ef4444;color:#ef4444}
+.col-blue{--c:#3b82f6;color:#3b82f6}
+.col-purple{--c:#a855f7;color:#a855f7}
+.col-teal{--c:#14b8a6;color:#14b8a6}
+</style>
+</head>
+<body>
+<h1>Mirador · Diseños de Chips</h1>
+
+<!-- ═══ A: Pill redondo, nombre solo ═══ -->
+<div class="section">
+  <div class="section-title">A · Pill redondeado <span>nombre + cédula abajo</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="ca-wrap">
+    <div class="ca"><div class="ca-name">Sandra Ponce Zapata</div><div class="ca-id">51915846</div></div>
+    <div class="ca"><div class="ca-name">William Erazo Rodríguez</div><div class="ca-id">12915841</div></div>
+    <div class="ca"><div class="ca-name">José Félix Bonells Rovira</div><div class="ca-id">19256240</div></div>
+    <div class="ca"><div class="ca-name">Olga Lucía Niño Hernández</div><div class="ca-id">39749503</div></div>
+    <div class="ca"><div class="ca-name">Carolina del Pilar Hernández Velandia</div><div class="ca-id">53081487</div></div>
+    <div class="ca"><div class="ca-name">Gloria Esperanza Giraldo López</div><div class="ca-id">65726132</div></div>
+    <div class="ca"><div class="ca-name">Alejandro Alfaro Murillo</div><div class="ca-id">80756272</div></div>
+    <div class="ca"><div class="ca-name">José Manuel Sánchez Tamayo</div><div class="ca-id">1010172202</div></div>
+  </div>
+  <div class="note">Nombre completo visible · Cédula debajo en gris · Click → ficha</div>
+</div>
+
+<!-- ═══ B: Borde de color izquierdo ═══ -->
+<div class="section">
+  <div class="section-title">B · Borde color izquierdo <span>categoría por color</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="cb-wrap">
+    <div class="cb" style="--c:#22c55e"><div class="cb-name">Sandra Ponce Zapata</div><div class="cb-id">51915846 · Almacenista</div></div>
+    <div class="cb" style="--c:#f59e0b"><div class="cb-name">William Erazo Rodríguez</div><div class="cb-id">12915841 · Asesor</div></div>
+    <div class="cb" style="--c:#f59e0b"><div class="cb-name">José Félix Bonells Rovira</div><div class="cb-id">19256240 · Asesor</div></div>
+    <div class="cb" style="--c:#f59e0b"><div class="cb-name">Olga Lucía Niño Hernández</div><div class="cb-id">39749503 · Asesor</div></div>
+    <div class="cb" style="--c:#3b82f6"><div class="cb-name">Carolina del Pilar Hernández V.</div><div class="cb-id">53081487 · Coordinadora</div></div>
+    <div class="cb" style="--c:#f59e0b"><div class="cb-name">Gloria Esperanza Giraldo López</div><div class="cb-id">65726132 · Asesor</div></div>
+    <div class="cb" style="--c:#a855f7"><div class="cb-name">Alejandro Alfaro Murillo</div><div class="cb-id">80756272 · Supervisor</div></div>
+    <div class="cb" style="--c:#f59e0b"><div class="cb-name">José Manuel Sánchez Tamayo</div><div class="cb-id">1010172202 · Asesor</div></div>
+  </div>
+  <div class="note">Borde izquierdo indica categoría · Cargo en subtexto gris</div>
+</div>
+
+<!-- ═══ C: Fondo de color suave ═══ -->
+<div class="section">
+  <div class="section-title">C · Fondo coloreado <span>color por categoría</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="cc-wrap">
+    <div class="cc" style="background:#14532d22;border-color:#22c55e44"><div class="cc-name" style="color:#4ade80">Sandra Ponce Zapata</div><div class="cc-id" style="color:#4ade80">51915846</div></div>
+    <div class="cc" style="background:#45130322;border-color:#f59e0b44"><div class="cc-name" style="color:#fbbf24">William Erazo Rodríguez</div><div class="cc-id" style="color:#fbbf24">12915841</div></div>
+    <div class="cc" style="background:#45130322;border-color:#f59e0b44"><div class="cc-name" style="color:#fbbf24">José Félix Bonells Rovira</div><div class="cc-id" style="color:#fbbf24">19256240</div></div>
+    <div class="cc" style="background:#45130322;border-color:#f59e0b44"><div class="cc-name" style="color:#fbbf24">Olga Lucía Niño Hernández</div><div class="cc-id" style="color:#fbbf24">39749503</div></div>
+    <div class="cc" style="background:#1e3a5f22;border-color:#3b82f644"><div class="cc-name" style="color:#60a5fa">Carolina del Pilar Hernández</div><div class="cc-id" style="color:#60a5fa">53081487</div></div>
+    <div class="cc" style="background:#45130322;border-color:#f59e0b44"><div class="cc-name" style="color:#fbbf24">Gloria Esperanza Giraldo L.</div><div class="cc-id" style="color:#fbbf24">65726132</div></div>
+    <div class="cc" style="background:#2e106522;border-color:#a855f744"><div class="cc-name" style="color:#c084fc">Alejandro Alfaro Murillo</div><div class="cc-id" style="color:#c084fc">80756272</div></div>
+    <div class="cc" style="background:#45130322;border-color:#f59e0b44"><div class="cc-name" style="color:#fbbf24">José Manuel Sánchez Tamayo</div><div class="cc-id" style="color:#fbbf24">1010172202</div></div>
+  </div>
+  <div class="note">Fondo y texto del color de la categoría · Muy visual · Alta densidad</div>
+</div>
+
+<!-- ═══ D: Avatar mini + nombre ═══ -->
+<div class="section">
+  <div class="section-title">D · Avatar mini circular <span>iniciales + color</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="cd-wrap">
+    <div class="cd"><div class="cd-av" style="background:#14532d">SP</div><div class="cd-body"><div class="cd-name">Sandra Ponce Zapata</div><div class="cd-id">51915846</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#7c3aed">WE</div><div class="cd-body"><div class="cd-name">William Erazo Rodríguez</div><div class="cd-id">12915841</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#0e7490">JB</div><div class="cd-body"><div class="cd-name">José Félix Bonells</div><div class="cd-id">19256240</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#b45309">ON</div><div class="cd-body"><div class="cd-name">Olga Lucía Niño H.</div><div class="cd-id">39749503</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#be123c">CH</div><div class="cd-body"><div class="cd-name">Carolina del Pilar H.</div><div class="cd-id">53081487</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#6d28d9">GG</div><div class="cd-body"><div class="cd-name">Gloria Esperanza Giraldo</div><div class="cd-id">65726132</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#059669">AA</div><div class="cd-body"><div class="cd-name">Alejandro Alfaro Murillo</div><div class="cd-id">80756272</div></div></div>
+    <div class="cd"><div class="cd-av" style="background:#2563eb">JS</div><div class="cd-body"><div class="cd-name">José Manuel Sánchez T.</div><div class="cd-id">1010172202</div></div></div>
+  </div>
+  <div class="note">Avatar determinista por nombre · Compacto · Doble info visible</div>
+</div>
+
+<!-- ═══ E: Badge de estado a la derecha ═══ -->
+<div class="section">
+  <div class="section-title">E · Tag de estado/cargo <span>badge derecha</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="ce-wrap">
+    <div class="ce"><div class="ce-name">Sandra Ponce Zapata <span style="font-size:10px;color:#475569;font-family:monospace">51915846</span></div><div class="ce-badge" style="background:#14532d33;color:#4ade80;border:1px solid #22c55e44">Almacenista</div></div>
+    <div class="ce"><div class="ce-name">William Erazo Rodríguez <span style="font-size:10px;color:#475569;font-family:monospace">12915841</span></div><div class="ce-badge" style="background:#45130333;color:#fbbf24;border:1px solid #f59e0b44">Asesor</div></div>
+    <div class="ce"><div class="ce-name">José Félix Bonells Rovira <span style="font-size:10px;color:#475569;font-family:monospace">19256240</span></div><div class="ce-badge" style="background:#45130333;color:#fbbf24;border:1px solid #f59e0b44">Asesor</div></div>
+    <div class="ce"><div class="ce-name">Olga Lucía Niño Hernández <span style="font-size:10px;color:#475569;font-family:monospace">39749503</span></div><div class="ce-badge" style="background:#45130333;color:#fbbf24;border:1px solid #f59e0b44">Asesor</div></div>
+    <div class="ce"><div class="ce-name">Carolina del Pilar Hernández <span style="font-size:10px;color:#475569;font-family:monospace">53081487</span></div><div class="ce-badge" style="background:#1e3a5f33;color:#60a5fa;border:1px solid #3b82f644">Coordinadora</div></div>
+    <div class="ce"><div class="ce-name">Gloria Esperanza Giraldo L. <span style="font-size:10px;color:#475569;font-family:monospace">65726132</span></div><div class="ce-badge" style="background:#45130333;color:#fbbf24;border:1px solid #f59e0b44">Asesor</div></div>
+  </div>
+  <div class="note">Nombre + cédula en línea · Badge de cargo a la derecha</div>
+</div>
+
+<!-- ═══ F: Full width coloreado ═══ -->
+<div class="section">
+  <div class="section-title">F · Fila ancho completo <span>máxima legibilidad</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="cf-wrap">
+    <div class="cf" style="background:#14532d18;border-color:#22c55e33"><div class="cf-dot" style="background:#22c55e"></div><div class="cf-name" style="color:#4ade80">Sandra Ponce Zapata</div><div class="cf-id" style="color:#4ade80">51915846</div></div>
+    <div class="cf" style="background:#45130318;border-color:#f59e0b33"><div class="cf-dot" style="background:#f59e0b"></div><div class="cf-name" style="color:#fbbf24">William Erazo Rodríguez</div><div class="cf-id" style="color:#fbbf24">12915841</div></div>
+    <div class="cf" style="background:#45130318;border-color:#f59e0b33"><div class="cf-dot" style="background:#f59e0b"></div><div class="cf-name" style="color:#fbbf24">José Félix Bonells Rovira</div><div class="cf-id" style="color:#fbbf24">19256240</div></div>
+    <div class="cf" style="background:#45130318;border-color:#f59e0b33"><div class="cf-dot" style="background:#f59e0b"></div><div class="cf-name" style="color:#fbbf24">Olga Lucía Niño Hernández</div><div class="cf-id" style="color:#fbbf24">39749503</div></div>
+    <div class="cf" style="background:#1e3a5f18;border-color:#3b82f633"><div class="cf-dot" style="background:#3b82f6"></div><div class="cf-name" style="color:#60a5fa">Carolina del Pilar Hernández Velandia</div><div class="cf-id" style="color:#60a5fa">53081487</div></div>
+    <div class="cf" style="background:#45130318;border-color:#f59e0b33"><div class="cf-dot" style="background:#f59e0b"></div><div class="cf-name" style="color:#fbbf24">Gloria Esperanza Giraldo López</div><div class="cf-id" style="color:#fbbf24">65726132</div></div>
+    <div class="cf" style="background:#2e106518;border-color:#a855f733"><div class="cf-dot" style="background:#a855f7"></div><div class="cf-name" style="color:#c084fc">Alejandro Alfaro Murillo</div><div class="cf-id" style="color:#c084fc">80756272</div></div>
+    <div class="cf" style="background:#45130318;border-color:#f59e0b33"><div class="cf-dot" style="background:#f59e0b"></div><div class="cf-name" style="color:#fbbf24">José Manuel Sánchez Tamayo</div><div class="cf-id" style="color:#fbbf24">1010172202</div></div>
+  </div>
+  <div class="note">Nombre completo · Cédula alineada derecha · Color categoría fondo + texto</div>
+</div>
+
+<!-- ═══ G: Grid 2 columnas ═══ -->
+<div class="section">
+  <div class="section-title">G · Grid 2 columnas <span>sin ID, solo nombre</span></div>
+  <div class="search"><span style="color:#334155">🔍</span><input placeholder="Buscar…"/></div>
+  <div class="cg-wrap">
+    <div class="cg"><div class="cg-name">Sandra Ponce Zapata</div><div class="cg-meta" style="color:#22c55e">Almacenista · 51915846</div></div>
+    <div class="cg"><div class="cg-name">William Erazo Rodríguez</div><div class="cg-meta" style="color:#f59e0b">Asesor · 12915841</div></div>
+    <div class="cg"><div class="cg-name">José Félix Bonells Rovira</div><div class="cg-meta" style="color:#f59e0b">Asesor · 19256240</div></div>
+    <div class="cg"><div class="cg-name">Olga Lucía Niño Hernández</div><div class="cg-meta" style="color:#f59e0b">Asesor · 39749503</div></div>
+    <div class="cg"><div class="cg-name">Carolina del Pilar Hernández</div><div class="cg-meta" style="color:#3b82f6">Coord. · 53081487</div></div>
+    <div class="cg"><div class="cg-name">Gloria Esperanza Giraldo</div><div class="cg-meta" style="color:#f59e0b">Asesor · 65726132</div></div>
+    <div class="cg"><div class="cg-name">Alejandro Alfaro Murillo</div><div class="cg-meta" style="color:#a855f7">Supervisor · 80756272</div></div>
+    <div class="cg"><div class="cg-name">José Manuel Sánchez Tamayo</div><div class="cg-meta" style="color:#f59e0b">Asesor · 1010172202</div></div>
+  </div>
+  <div class="note">2 columnas · Nombre grande · Cargo + cédula en colorcito abajo</div>
+</div>
+
+<div style="height:40px"></div>
+<div style="text-align:center;font-size:11px;color:#374151;padding-bottom:20px">Dime cuál te gusta (A–G) y lo implementamos</div>
+</body>
+</html>

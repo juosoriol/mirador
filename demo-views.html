@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mirador — Modos de Vista</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#e2e8f0;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;padding:24px;display:flex;flex-direction:column;gap:32px}
+h1{font-size:15px;font-weight:600;color:#60a5fa;letter-spacing:.04em;text-transform:uppercase}
+.section{display:flex;flex-direction:column;gap:10px}
+.label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#475569;display:flex;align-items:center;gap:8px}
+.label span{background:#1e293b;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:10px;color:#94a3b8}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.badge.active{background:#166534;color:#86efac}
+.badge.inactive{background:#1e293b;color:#64748b}
+.badge.warn{background:#78350f;color:#fcd34d}
+
+/* ── OPCIÓN A: CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:border-color .15s,transform .12s}
+.card:hover{border-color:#3b82f6;transform:translateY(-2px)}
+.card-top{display:flex;align-items:center;justify-content:space-between}
+.card-avatar{width:32px;height:32px;border-radius:8px;background:#1d4ed8;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#bfdbfe;flex-shrink:0}
+.card-title{font-size:13px;font-weight:600;color:#e2e8f0}
+.card-sub{font-size:11px;color:#94a3b8}
+.card-fields{display:flex;flex-direction:column;gap:4px;border-top:1px solid #1e293b;padding-top:8px}
+.card-field{display:flex;justify-content:space-between;font-size:11px}
+.card-field-key{color:#64748b}
+.card-field-val{color:#cbd5e1;font-weight:500}
+
+/* ── OPCIÓN B: PILLS ── */
+.pills-wrap{display:flex;flex-wrap:wrap;gap:7px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:#1e293b;border:1px solid #334155;border-radius:20px;padding:5px 12px;cursor:pointer;transition:all .12s}
+.pill:hover{background:#1d4ed822;border-color:#3b82f6;color:#93c5fd}
+.pill-dot{width:7px;height:7px;border-radius:50%;background:#3b82f6;flex-shrink:0}
+.pill-dot.green{background:#22c55e}
+.pill-dot.amber{background:#f59e0b}
+.pill-dot.red{background:#f87171}
+.pill-name{font-size:12px;font-weight:500}
+.pill-code{font-size:10px;color:#64748b}
+
+/* ── OPCIÓN C: FICHA ── */
+.ficha-wrap{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden;max-width:480px}
+.ficha-nav{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0f172a;border-bottom:1px solid #334155}
+.ficha-nav-btn{background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;transition:all .12s}
+.ficha-nav-btn:hover{border-color:#3b82f6;color:#60a5fa}
+.ficha-counter{font-size:11px;color:#64748b}
+.ficha-header{padding:16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155}
+.ficha-avatar{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#1d4ed8,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;flex-shrink:0}
+.ficha-name{font-size:15px;font-weight:700;color:#e2e8f0}
+.ficha-role{font-size:11px;color:#94a3b8;margin-top:2px}
+.ficha-body{padding:12px 16px;display:flex;flex-direction:column;gap:0}
+.ficha-row{display:flex;align-items:center;padding:7px 0;border-bottom:1px solid #1e293b}
+.ficha-row:last-child{border-bottom:none}
+.ficha-key{width:110px;font-size:11px;color:#64748b;flex-shrink:0}
+.ficha-val{font-size:12px;color:#cbd5e1;font-weight:500}
+
+/* ── OPCIÓN D: LISTA COMPACTA ── */
+.list-wrap{display:flex;flex-direction:column;gap:2px}
+.list-item{display:flex;align-items:center;gap:0;background:#1e293b;border-radius:7px;padding:8px 12px;cursor:pointer;transition:background .1s;border:1px solid transparent}
+.list-item:hover{background:#243450;border-color:#334155}
+.list-col-main{flex:2;font-size:12px;font-weight:600;color:#e2e8f0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-col-sec{flex:1;font-size:11px;color:#94a3b8;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.list-col-tag{flex:0 0 auto;margin-left:8px}
+.list-arrow{color:#334155;font-size:14px;margin-left:8px;flex-shrink:0}
+.list-item:hover .list-arrow{color:#3b82f6}
+
+/* Search bar demo */
+.search-demo{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.search-demo input{flex:1;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:7px 12px;color:#e2e8f0;font-size:12px;outline:none;font-family:inherit}
+.search-demo input:focus{border-color:#3b82f6}
+.search-demo input::placeholder{color:#475569}
+</style>
+</head>
+<body>
+
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+  <div style="width:28px;height:28px;background:#3b82f6;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff">M</div>
+  <span style="font-size:16px;font-weight:700;color:#e2e8f0">Mirador <span style="color:#3b82f6">—</span> Modos de Vista</span>
+</div>
+<div style="font-size:11px;color:#64748b;margin-bottom:8px">Demo de alternativas a la tabla para búsqueda rápida</div>
+
+<!-- DATOS DE EJEMPLO (barra de búsqueda compartida) -->
+<div class="search-demo">
+  <input type="text" placeholder="🔍  Buscar persona, RUT, área..." />
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:6px 12px;font-size:11px;color:#64748b;white-space:nowrap">48 registros</div>
+</div>
+
+<!-- OPCIÓN A: CARDS -->
+<div class="section">
+  <div class="label">A — Tarjetas (Cards) <span>Recomendado para pocos campos clave</span></div>
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="card-avatar">JP</div>
+          <div>
+            <div class="card-title">Juan Pérez</div>
+            <div class="card-sub">12.345.678-9</div>
+          </div>
+        </div>
+        <span class="badge active">Activo</span>
+      </div>
+      <div class="card-fields">
+        <div class="card-field"><span class="card-field-key">Cargo</span><span class="card-field-val">Analista</span></div>
+        <div class="card-field"><span class="card-field-key">Área</span><span class="card-field-val">Finanzas</span></div>
+        <div class="card-field"><span class="card-field-key">Ingreso</span><span class="card-field-val">12/03/2021</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="card-avatar" style="background:#7c3aed">ML</div>
+          <div>
+            <div class="card-title">María López</div>
+            <div class="card-sub">9.876.543-2</div>
+          </div>
+        </div>
+        <span class="badge active">Activo</span>
+      </div>
+      <div class="card-fields">
+        <div class="card-field"><span class="card-field-key">Cargo</span><span class="card-field-val">Gerente</span></div>
+        <div class="card-field"><span class="card-field-key">Área</span><span class="card-field-val">RRHH</span></div>
+        <div class="card-field"><span class="card-field-key">Ingreso</span><span class="card-field-val">05/07/2018</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="card-avatar" style="background:#0f766e">CR</div>
+          <div>
+            <div class="card-title">Carlos Ruiz</div>
+            <div class="card-sub">15.234.901-K</div>
+          </div>
+        </div>
+        <span class="badge warn">Licencia</span>
+      </div>
+      <div class="card-fields">
+        <div class="card-field"><span class="card-field-key">Cargo</span><span class="card-field-val">Contador</span></div>
+        <div class="card-field"><span class="card-field-key">Área</span><span class="card-field-val">Contabilidad</span></div>
+        <div class="card-field"><span class="card-field-key">Ingreso</span><span class="card-field-val">20/11/2019</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-top">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="card-avatar" style="background:#b45309">AT</div>
+          <div>
+            <div class="card-title">Ana Torres</div>
+            <div class="card-sub">11.098.765-3</div>
+          </div>
+        </div>
+        <span class="badge inactive">Inactivo</span>
+      </div>
+      <div class="card-fields">
+        <div class="card-field"><span class="card-field-key">Cargo</span><span class="card-field-val">Coordinadora</span></div>
+        <div class="card-field"><span class="card-field-key">Área</span><span class="card-field-val">Operaciones</span></div>
+        <div class="card-field"><span class="card-field-key">Ingreso</span><span class="card-field-val">14/01/2022</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OPCIÓN B: PILLS -->
+<div class="section">
+  <div class="label">B — Pills / Chips <span>Ideal para listas grandes, búsqueda rápida</span></div>
+  <div class="pills-wrap">
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">Juan Pérez</span><span class="pill-code">12.345.678-9</span></div>
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">María López</span><span class="pill-code">9.876.543-2</span></div>
+    <div class="pill"><span class="pill-dot amber"></span><span class="pill-name">Carlos Ruiz</span><span class="pill-code">15.234.901-K</span></div>
+    <div class="pill"><span class="pill-dot red"></span><span class="pill-name">Ana Torres</span><span class="pill-code">11.098.765-3</span></div>
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">Pedro Soto</span><span class="pill-code">8.432.100-7</span></div>
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">Luis Díaz</span><span class="pill-code">13.567.890-1</span></div>
+    <div class="pill"><span class="pill-dot amber"></span><span class="pill-name">Rosa Muñoz</span><span class="pill-code">17.890.234-5</span></div>
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">Felipe Vega</span><span class="pill-code">10.234.567-8</span></div>
+    <div class="pill"><span class="pill-dot red"></span><span class="pill-name">Claudia Ríos</span><span class="pill-code">14.678.901-2</span></div>
+    <div class="pill"><span class="pill-dot green"></span><span class="pill-name">Sergio Mora</span><span class="pill-code">6.789.012-4</span></div>
+  </div>
+</div>
+
+<!-- OPCIÓN C: FICHA -->
+<div class="section">
+  <div class="label">C — Ficha / Vista ID <span>Un registro a la vez, navegación con flechas</span></div>
+  <div class="ficha-wrap">
+    <div class="ficha-nav">
+      <button class="ficha-nav-btn">◀ Anterior</button>
+      <span class="ficha-counter">Registro 3 de 48</span>
+      <button class="ficha-nav-btn">Siguiente ▶</button>
+    </div>
+    <div class="ficha-header">
+      <div class="ficha-avatar">CR</div>
+      <div>
+        <div class="ficha-name">Carlos Ruiz</div>
+        <div class="ficha-role">Contador · Contabilidad</div>
+      </div>
+      <span class="badge warn" style="margin-left:auto">Licencia</span>
+    </div>
+    <div class="ficha-body">
+      <div class="ficha-row"><span class="ficha-key">RUT</span><span class="ficha-val">15.234.901-K</span></div>
+      <div class="ficha-row"><span class="ficha-key">Cargo</span><span class="ficha-val">Contador Senior</span></div>
+      <div class="ficha-row"><span class="ficha-key">Área</span><span class="ficha-val">Contabilidad</span></div>
+      <div class="ficha-row"><span class="ficha-key">Sucursal</span><span class="ficha-val">Santiago Centro</span></div>
+      <div class="ficha-row"><span class="ficha-key">Fecha ingreso</span><span class="ficha-val">20/11/2019</span></div>
+      <div class="ficha-row"><span class="ficha-key">Contrato</span><span class="ficha-val">Indefinido</span></div>
+      <div class="ficha-row"><span class="ficha-key">Email</span><span class="ficha-val">c.ruiz@empresa.cl</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- OPCIÓN D: LISTA COMPACTA -->
+<div class="section">
+  <div class="label">D — Lista compacta <span>Híbrido tabla/card, columnas configurables</span></div>
+  <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;color:#475569;padding:0 12px">
+    <span style="flex:2">NOMBRE</span>
+    <span style="flex:1">CARGO</span>
+    <span style="flex:1">ÁREA</span>
+    <span style="width:64px;text-align:center">ESTADO</span>
+  </div>
+  <div class="list-wrap">
+    <div class="list-item">
+      <span class="list-col-main">Juan Pérez</span>
+      <span class="list-col-sec">Analista</span>
+      <span class="list-col-sec">Finanzas</span>
+      <span class="list-col-tag"><span class="badge active">Activo</span></span>
+      <span class="list-arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span class="list-col-main">María López</span>
+      <span class="list-col-sec">Gerente</span>
+      <span class="list-col-sec">RRHH</span>
+      <span class="list-col-tag"><span class="badge active">Activo</span></span>
+      <span class="list-arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span class="list-col-main">Carlos Ruiz</span>
+      <span class="list-col-sec">Contador</span>
+      <span class="list-col-sec">Contabilidad</span>
+      <span class="list-col-tag"><span class="badge warn">Licencia</span></span>
+      <span class="list-arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span class="list-col-main">Ana Torres</span>
+      <span class="list-col-sec">Coordinadora</span>
+      <span class="list-col-sec">Operaciones</span>
+      <span class="list-col-tag"><span class="badge inactive">Inactivo</span></span>
+      <span class="list-arrow">›</span>
+    </div>
+    <div class="list-item">
+      <span class="list-col-main">Pedro Soto</span>
+      <span class="list-col-sec">Jefe de Área</span>
+      <span class="list-col-sec">TI</span>
+      <span class="list-col-tag"><span class="badge active">Activo</span></span>
+      <span class="list-arrow">›</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -12,8 +12,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html{transition:background .25s,color .25s}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{transition:background .25s,color .25s;touch-action:manipulation}
+body{touch-action:pan-x pan-y}
 /* ── SISTEMA DE TEMAS ── */
 :root,html[data-theme="dark"]{
   --bg:#0f172a;--s1:#1e293b;--s2:#334155;--s3:#475569;
@@ -126,12 +127,12 @@ html[data-theme="dashboard-purple"]{
   --row-border:#1c1640;
   --font:'Segoe UI',system-ui,sans-serif;--r:6px;
 }
-body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
 #topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0}
 .logo{width:26px;height:26px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
 .app-title{font-size:14px;font-weight:600;white-space:nowrap;color:var(--topbar-text,var(--text))}.app-title span{color:var(--acc-text)}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;font-size:12px;font-family:var(--font);transition:background .12s,border-color .12s;white-space:nowrap;flex-shrink:0}
-.btn:hover{background:var(--s2);border-color:var(--border2)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;font-size:12px;font-family:var(--font);transition:background .12s,border-color .12s;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
+.btn:hover,.btn:active{background:var(--s2);border-color:var(--border2)}
 .btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}.btn.primary:hover{background:#2563eb}
 .btn.success{background:#15803d;border-color:#16a34a;color:#fff}.btn.success:hover{background:#16a34a}
 .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}.btn.warn-btn:hover{background:#b45309}
@@ -859,12 +860,16 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .scard-val{font-size:16px}
   .scard-label{font-size:10px}
   /* Tabla: scroll horizontal + táctil suave */
-  #vt-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
-  .vt-table{font-size:11px}
-  .vt-cell{padding:6px 8px;white-space:nowrap}
+  #vt-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overflow:auto!important}
+  .vt-table{font-size:11px;touch-action:pan-x pan-y}
+  .vt-cell{padding:6px 8px;white-space:nowrap;user-select:text;-webkit-user-select:text}
   /* Asegurar área de contenido scrollable */
   #data-area{overflow:hidden;touch-action:pan-x pan-y}
   #table-wrap{overflow:hidden}
+  /* Mejorar táctil en toda la interfaz móvil */
+  button,a,.tab,.chip,.mpill,.doc-item,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* Permitir selección en inputs y texto */
+  input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}

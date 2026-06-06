@@ -333,7 +333,10 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 #cdp-opts-wrap::-webkit-scrollbar-thumb{border-width:1px}
 .modal-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
-.modal-box{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:96vw}
+.modal-box{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:96vw;position:relative}
+.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;z-index:10;line-height:1;padding:0;font-weight:400}
+.modal-close:hover{background:rgba(255,255,255,0.15)}
+.modal-close:active{background:rgba(255,255,255,0.2)}
 /* ── DETAIL OVERLAY (centrado) ── */
 #detail-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;padding:20px}
 #detail-overlay.open{display:flex}
@@ -1521,22 +1524,23 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 <div class="modal-overlay" id="cond-overlay" onclick="closeCondModal(event)">
   <div class="modal-box" id="cond-modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeCondModal()">×</button>
     <h3>⬛ Coloreado condicional</h3>
     <div id="cond-rules-list"></div>
     <button class="btn" onclick="addCondRule()" style="width:100%;justify-content:center;margin-top:6px">+ Agregar regla</button>
-    <div class="cm-actions"><button class="btn" onclick="closeCondModal()">Cancelar</button><button class="btn primary" onclick="applyCondRules()">Aplicar</button></div>
+    <div class="cm-actions"><button class="btn primary" onclick="applyCondRules()">Aplicar</button></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="fav-overlay" onclick="closeFavModal(event)">
   <div class="modal-box" id="fav-modal" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeFavModal()">×</button>
     <h3>📌 Mis vistas guardadas</h3>
     <div id="fav-save-row">
       <input type="text" id="fav-name-input" placeholder="Nombre de la vista..." maxlength="60" onkeydown="if(event.key==='Enter')saveFavorite()"/>
       <button class="btn primary" onclick="saveFavorite()">💾 Guardar vista</button>
     </div>
     <div id="fav-list"></div>
-    <button class="btn" onclick="closeFavModal()" style="align-self:flex-end">Cerrar</button>
   </div>
 </div>
 <div id="col-menu">
@@ -1564,20 +1568,18 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 </div>
 <div class="modal-overlay" id="theme-overlay" onclick="closeThemeModal(event)">
   <div class="modal-box" id="theme-modal" onclick="event.stopPropagation()" style="width:480px">
+    <button class="modal-close" onclick="closeThemeModal()">×</button>
     <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;color:var(--text)">🎨 Seleccionar tema</h3>
     <div id="theme-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:14px">
-      <button class="btn" onclick="closeThemeModal()">Cerrar</button>
-    </div>
   </div>
 </div>
 <div class="modal-overlay" id="datecol-overlay" onclick="closeDateColPanel(event)">
   <div class="modal-box" onclick="event.stopPropagation()" style="width:380px">
+    <button class="modal-close" onclick="closeDateColPanel()">×</button>
     <h3 style="font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)">📅 Columnas de fecha</h3>
     <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Marca las columnas que contienen fechas. Se mostrarán en formato DD/MM/AAAA y podrás filtrarlas por rango.</p>
     <div id="datecol-list" style="display:flex;flex-direction:column;gap:5px;max-height:320px;overflow-y:auto;margin-bottom:14px"></div>
-    <div style="display:flex;justify-content:space-between;gap:8px">
-      <button class="btn" onclick="closeDateColPanel()">Cancelar</button>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
       <button class="btn primary" onclick="applyDateColSelection()">Aplicar</button>
     </div>
   </div>

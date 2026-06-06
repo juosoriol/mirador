@@ -860,10 +860,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .scard-val{font-size:16px}
   .scard-label{font-size:10px}
   /* Tabla: scroll horizontal + táctil suave */
-  #vt-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overflow:auto!important}
-  #vt-scroll::-webkit-scrollbar{height:8px;width:8px}
-  #vt-scroll::-webkit-scrollbar-track{background:var(--s2);border-radius:4px}
-  #vt-scroll::-webkit-scrollbar-thumb{background:var(--acc);border-radius:4px;border:2px solid var(--s2)}
+  #vt-scroll{-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;overflow:auto!important;position:relative}
+  #vt-scroll::-webkit-scrollbar{height:10px;width:10px}
+  #vt-scroll::-webkit-scrollbar-track{background:var(--s2);border-radius:5px}
+  #vt-scroll::-webkit-scrollbar-thumb{background:var(--acc);border-radius:5px;min-width:40px}
   .vt-table{font-size:11px;touch-action:pan-x pan-y}
   .vt-cell{padding:6px 8px;white-space:nowrap;user-select:text;-webkit-user-select:text}
   /* Asegurar área de contenido scrollable */
@@ -873,14 +873,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   button,a,.tab,.chip,.mpill,.doc-item,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   /* Permitir selección en inputs y texto */
   input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
-  /* Indicador visual scroll horizontal */
-  #vt-scroll::after{content:'← Desliza →';position:sticky;left:50%;transform:translateX(-50%);display:block;text-align:center;padding:8px;font-size:10px;color:var(--muted);opacity:.6;pointer-events:none}
   /* Botón escape móvil para cerrar overlays */
-  #mobile-escape-btn{display:none!important}
-  @media(max-width:500px){
-    #mobile-escape-btn{display:flex!important;position:fixed;bottom:20px;right:20px;z-index:99999;width:56px;height:56px;border-radius:50%;background:var(--danger);color:#fff;border:none;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 16px rgba(248,113,113,.5);cursor:pointer;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s}
-    #mobile-escape-btn.visible{opacity:1;pointer-events:auto}
-  }
+  #mobile-escape-btn{display:flex!important;position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));right:20px;z-index:99999;width:56px;height:56px;border-radius:50%;background:var(--danger);color:#fff;border:none;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 16px rgba(248,113,113,.5);cursor:pointer;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;touch-action:manipulation}
+  #mobile-escape-btn.visible{opacity:1;pointer-events:auto}
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}

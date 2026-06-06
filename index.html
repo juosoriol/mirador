@@ -6859,8 +6859,16 @@ async function deleteCloudDoc(docId, storagePath){
   if(!confirm('¿Eliminar este documento de la nube?')) return;
 
   try {
-    // Eliminar de Storage
-    await _fbStorage.ref(storagePath).delete();
+    // Eliminar de Storage (puede que no exista)
+    try {
+      await _fbStorage.ref(storagePath).delete();
+    } catch(e){
+      // Si el archivo no existe en Storage, continuar de todos modos
+      if(e.code !== 'storage/object-not-found'){
+        throw e; // Re-lanzar si es otro error
+      }
+      console.warn('Archivo no encontrado en Storage, eliminando solo metadata');
+    }
 
     // Eliminar metadata de Firestore
     await _fbDb.collection('documents').doc(docId).delete();

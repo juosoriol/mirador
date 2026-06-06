@@ -128,7 +128,8 @@ html[data-theme="dashboard-purple"]{
   --font:'Segoe UI',system-ui,sans-serif;--r:6px;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
-#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0}
+#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden}
+#topbar::-webkit-scrollbar{height:0}
 .logo{width:26px;height:26px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
 .app-title{font-size:14px;font-weight:600;white-space:nowrap;color:var(--topbar-text,var(--text))}.app-title span{color:var(--acc-text)}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;font-size:12px;font-family:var(--font);transition:background .12s,border-color .12s;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
@@ -1113,7 +1114,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     Guardar
   </button>
   <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos" style="padding:5px 11px">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     Documentos
   </button>
   <!-- Botón Exportar — acción primaria, siempre visible cuando hay datos -->
@@ -6642,7 +6643,7 @@ function _fbUpdateUserUI(user){
       adminBtn.id = 'fb-admin-btn';
       adminBtn.innerHTML = '👥 Admin';
       adminBtn.onclick = fbOpenAdminPanel;
-      adminBtn.style.cssText = 'padding:5px 11px;border-radius:8px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0';
+      adminBtn.style.cssText = 'padding:5px 11px;border-radius:8px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto';
       topbar?.insertBefore(adminBtn, badge);
     }
   }

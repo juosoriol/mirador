@@ -778,12 +778,17 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar{padding:0 10px;gap:6px;height:calc(50px + env(safe-area-inset-top,0px));padding-top:calc(8px + env(safe-area-inset-top,0px));align-items:center}
   .app-title span{display:none} /* ocultar subtítulo "— análisis de planillas" */
   #topbar-breadcrumb{display:none!important}
-  /* Ocultar en móvil: sesión, enfoque, tema, exportar, acciones (van en ⋯ o Acciones panel) */
+  /* Ocultar en móvil: sesión, enfoque, tema, exportar (van en ⋯) */
   #btn-session,#btn-focus,#btn-theme,#focus-exit,
-  #btn-export,#btn-actions{display:none!important}
+  #btn-export{display:none!important}
   /* Mostrar botón menú ⋯ en móvil */
   #btn-mobile-menu{display:inline-flex!important}
   #btn-pills-mode{margin-left:0!important}
+  /* Botón Acciones compacto en móvil */
+  #btn-actions{padding:5px 9px!important;font-size:12px}
+  #btn-actions svg{width:12px;height:12px}
+  /* Panel acciones en móvil: bottom sheet */
+  #actions-panel{position:fixed;bottom:0;left:0;right:0;top:auto;border-radius:16px 16px 0 0;max-height:60vh;min-width:0;width:100%;border-bottom:none}
   /* Tabs: más compactas */
   #tabs-bar{min-height:38px;padding:4px 8px 0}
   .tab{padding:5px 10px 4px;max-width:160px}

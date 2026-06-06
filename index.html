@@ -775,43 +775,31 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .mpill-d5 .pt-name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d5 .pt-meta{font-size:12px}
   .mpill-d5 .pt-tag{font-size:11px}
-  /* Topbar móvil: 2 filas - fila 1: logo+nombre, fila 2: hamburguesa izq + hojas/docs derecha */
+  /* Topbar móvil: 2 filas - fila 1: logo+nombre horizontal, fila 2: botones */
   #topbar{
     flex-wrap:wrap!important;
-    padding:0 10px!important;
+    padding:10px 12px 8px!important;
     gap:0!important;
     height:auto!important;
-    padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
-    padding-bottom:8px!important;
+    padding-top:calc(12px + env(safe-area-inset-top,0px))!important;
+    align-items:center!important;
   }
 
-  /* Fila 1: Logo + Nombre - ocupan 100% width, centrados */
+  /* Fila 1: Logo + Nombre en línea horizontal */
   #topbar .logo{
     order:1;
-    width:28px!important;
-    height:28px!important;
-    margin:0 auto 8px!important;
-    flex-basis:100%;
-    position:relative;
+    width:32px!important;
+    height:32px!important;
+    margin:0 8px 10px 0!important;
+    flex-shrink:0;
   }
-  /* Logo móvil: ocultar SVG desktop y mostrar emoji */
-  #topbar .logo svg{display:none!important}
-  #topbar .logo::before{
-    content:'📱';
-    font-size:18px;
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-  }
+  #topbar .logo svg{display:block!important}
   #topbar .app-title{
     order:2;
-    flex-basis:100%;
-    text-align:center!important;
-    margin:0 0 12px 0!important;
-    font-size:14px!important;
+    margin:0 auto 10px 0!important;
+    font-size:15px!important;
     font-weight:600!important;
+    align-self:center;
   }
   .app-title span{display:none!important}
   #topbar-breadcrumb{display:none!important}
@@ -820,14 +808,21 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #btn-session,#btn-focus,#btn-theme,#focus-exit,#btn-export,
   #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,#btn-pills-mode{display:none!important}
 
+  /* Line break después del título para forzar segunda fila */
+  #topbar .app-title::after{
+    content:'';
+    width:100%;
+    order:5;
+  }
+
   /* Fila 2: Hamburguesa izquierda */
   #btn-actions{
     order:10;
-    padding:8px 12px!important;
+    padding:7px 11px!important;
     display:inline-flex!important;
-    margin-right:4px!important;
+    margin-right:6px!important;
   }
-  #btn-actions svg{width:20px!important;height:20px!important}
+  #btn-actions svg{width:18px!important;height:18px!important}
 
   /* Botón Abrir archivo (solo móvil) */
   #btn-open-file{

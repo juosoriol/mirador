@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260606-topbar-fix', k='mirador_build_v';
+  var BUILD='20260606-hdr-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1120,7 +1120,7 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);touch-action:manipulation
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
-#hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
+#hdr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
 #hdr-modal{background:var(--s1);border:1px solid var(--border);border-radius:12px;width:860px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 #hdr-modal-head{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px;flex-shrink:0}
@@ -1663,8 +1663,8 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   </div>
 </div>
 <!-- ── MODAL SELECTOR DE ENCABEZADOS ── -->
-<div id="hdr-overlay">
-  <div id="hdr-modal">
+<div id="hdr-overlay" onclick="if(event.target===this)cancelHdrPicker()">
+  <div id="hdr-modal" onclick="event.stopPropagation()">
     <div id="hdr-modal-head">
       <div id="hdr-modal-icon">🔍</div>
       <div id="hdr-modal-info">
@@ -5043,8 +5043,8 @@ function applyDateColSelection(){
 let _hdrPicker = null;
 // {tabId, sheetName, ws, range, detectedRow, selectedRow, preserveFilters, maxPreviewRows}
 
-const HDR_PREVIEW_ROWS = 60; // filas a mostrar en la vista previa
-const HDR_SCAN_ROWS    = 30; // filas a escanear para autodetección
+const HDR_PREVIEW_ROWS = 80; // filas a mostrar en la vista previa
+const HDR_SCAN_ROWS    = 50; // filas a escanear para autodetección
 
 /**
  * Autodetecta la fila de encabezado de mejor calidad en las primeras HDR_SCAN_ROWS filas.
@@ -5083,29 +5083,30 @@ function detectBestHeaderRow(ws, range){
  * Abre el modal picker. Escanea el workbook y muestra preview interactiva.
  * Si la autodetección es obvia (score alto), confirma directamente.
  */
-function openHdrPicker(tabId, sheetName, ws, range, preserveFilters){
+function openHdrPicker(tabId, sheetName, ws, range, preserveFilters, initialRow){
   const detectedRow = detectBestHeaderRow(ws, range);
+  const selectedRow = (initialRow != null && initialRow >= range.s.r && initialRow <= range.e.r)
+    ? initialRow : detectedRow;
 
   _hdrPicker = {
     tabId, sheetName, ws, range,
     detectedRow,
-    selectedRow: detectedRow,
+    selectedRow,
     preserveFilters,
     colCount: range.e.c - range.s.c + 1
   };
 
-  // Mostrar banner de autodetección
   const banner = $('hdr-auto-banner');
   banner.classList.add('show');
   $('hdr-auto-rownum').textContent = detectedRow - range.s.r + 1;
+  const manualInp = $('hdr-manual-input');
+  if(manualInp) manualInp.value = '';
 
-  // Construir vista previa
   renderHdrPreview();
-
-  // Abrir modal
+  window._lockModalViewport?.();
   $('hdr-overlay').classList.add('open');
-  // Scroll hasta la fila detectada
-  setTimeout(()=>scrollToHdrRow(detectedRow), 80);
+  window.scheduleOverlayCheck?.();
+  setTimeout(()=>scrollToHdrRow(selectedRow), 80);
 }
 
 /**
@@ -5216,11 +5217,8 @@ function jumpToHdrRow(val){
 
 function autoDetectHeaderAndApply(){
   if(!_hdrPicker) return;
-  const row = detectBestHeaderRow(_hdrPicker.ws, _hdrPicker.range);
-  _hdrPicker.selectedRow = row;
-  renderHdrPreview();
-  scrollToHdrRow(row);
-  toast(`Autodetección: fila ${row - _hdrPicker.range.s.r + 1}`);
+  _hdrPicker.selectedRow = detectBestHeaderRow(_hdrPicker.ws, _hdrPicker.range);
+  confirmHdrPicker();
 }
 
 function confirmHdrPicker(){
@@ -5228,8 +5226,9 @@ function confirmHdrPicker(){
   const {tabId, sheetName, ws, range, selectedRow, preserveFilters} = _hdrPicker;
   $('hdr-overlay').classList.remove('open');
   _hdrPicker = null;
-  // Llamar a processSheetWithRow con la fila elegida
+  window.scheduleOverlayCheck?.();
   _processSheetData(tabId, sheetName, ws, range, selectedRow, preserveFilters);
+  toast(`Encabezado aplicado: fila ${selectedRow - range.s.r + 1}`);
 }
 
 function cancelHdrPicker(){
@@ -5238,10 +5237,14 @@ function cancelHdrPicker(){
   const fallback = _hdrPicker._cancelFallback ?? null;
   $('hdr-overlay').classList.remove('open');
   _hdrPicker = null;
+  window.scheduleOverlayCheck?.();
   const tab = tabs.get(tabId);
-  if(fallback !== null && tab){
-    // Restaurar la fila anterior si se canceló desde reopenHdrPicker
+  if(fallback !== null && fallback !== undefined && tab){
     tab._manualHdrRow = fallback;
+    renderSheetsSidebar();
+    return;
+  }
+  if(tab && tab.rawData.length){
     renderSheetsSidebar();
     return;
   }
@@ -5252,15 +5255,19 @@ function cancelHdrPicker(){
 }
 
 function reopenHdrPicker(){
-  const tab = T(); if(!tab||!tab.workbook||!tab.activeSheet) return;
+  const tab = T();
+  if(!tab || !tab.activeSheet) return;
+  if(!tab.workbook){
+    toast('No se puede ajustar el encabezado sin el archivo original. Vuelve a abrir el .xlsx.', true);
+    return;
+  }
   const ws = tab.workbook.Sheets[tab.activeSheet]; if(!ws) return;
   const range = XLSX.utils.decode_range(ws['!ref']||'A1');
   const prevRow = tab._manualHdrRow;
   tab._manualHdrRow = null;
   _hdrPicker = null;
-  // Abrir picker; si el usuario cancela, restaurar la fila anterior
-  openHdrPicker(tab.id, tab.activeSheet, ws, range, true);
-  _hdrPicker._cancelFallback = prevRow;
+  openHdrPicker(tab.id, tab.activeSheet, ws, range, true, prevRow);
+  if(_hdrPicker) _hdrPicker._cancelFallback = prevRow;
 }
 
 // ── RECARGA / AUTO-REFRESH ──────────────────────────────────────────────────
@@ -6631,11 +6638,11 @@ function openMobileSheets(){
     const hdrInfo = hdrRow != null
       ? `<div class="ms-hdr-banner manual">
            <span class="ms-hdr-banner-label">${_excelSheetIcon(14)} Encabezado en fila <strong>${hdrRow}</strong></span>
-           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();reopenHdrPicker()">Cambiar</button>
+           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();setTimeout(reopenHdrPicker,0)">Cambiar</button>
          </div>`
       : `<div class="ms-hdr-banner">
            <span class="ms-hdr-banner-label">Encabezado auto-detectado</span>
-           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();reopenHdrPicker()">Ajustar</button>
+           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();setTimeout(reopenHdrPicker,0)">Ajustar</button>
          </div>`;
 
     const items = tab.sheets.map((n,i)=>{
@@ -7356,7 +7363,7 @@ function closeAllOverlays(){
   const overlays = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
     'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu'
+    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay'
   ];
   overlays.forEach(id => document.getElementById(id)?.classList.remove('open'));
   ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
@@ -7372,7 +7379,7 @@ let _overlayCheckRaf = null;
 const _OVERLAY_IDS = [
   'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
   'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-  'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu',
+  'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay',
   'fb-admin-overlay', 'fb-user-menu'
 ];
 function _anyOverlayOpen(){

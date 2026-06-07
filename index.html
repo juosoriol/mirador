@@ -1124,16 +1124,23 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--s1)
 }
 .mbnav-badge.on{display:flex}
-.mbnav-view-wrap{flex:1.3;gap:3px!important}
-#btn-pills-mode-bnav{
-  display:inline-flex;align-items:center;background:var(--s2);border:1px solid var(--border2);
-  border-radius:18px;padding:2px;gap:1px;cursor:pointer;min-height:30px;height:30px;box-sizing:border-box
+.mbnav-view-wrap{
+  flex:1.35;display:flex!important;align-items:center;justify-content:center;
+  flex-direction:row!important;padding:2px 4px!important;gap:0!important
 }
-#btn-pills-mode-bnav .pills-toggle-seg{padding:4px 8px;border-radius:14px;font-size:9px;gap:3px}
-#btn-pills-mode-bnav .pills-toggle-seg svg{width:11px;height:11px}
+#btn-pills-mode-bnav{
+  display:inline-flex;align-items:center;justify-content:center;width:100%;max-width:172px;
+  background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:3px;gap:2px;
+  cursor:pointer;min-height:34px;height:34px;box-sizing:border-box;
+  box-shadow:0 2px 8px rgba(0,0,0,.18)
+}
+#btn-pills-mode-bnav .pills-toggle-seg{
+  flex:1;justify-content:center;padding:5px 8px;border-radius:16px;font-size:10px;font-weight:600;gap:4px
+}
+#btn-pills-mode-bnav .pills-toggle-seg svg{width:12px;height:12px;flex-shrink:0}
 #btn-pills-mode-bnav.pills-on .pills-toggle-seg.seg-table{color:var(--muted);background:transparent}
-#btn-pills-mode-bnav:not(.pills-on) .pills-toggle-seg.seg-table{color:var(--text);background:var(--acc-dim)}
-#btn-pills-mode-bnav.pills-on .pills-toggle-seg.seg-pills{color:#fff;background:var(--acc)}
+#btn-pills-mode-bnav:not(.pills-on) .pills-toggle-seg.seg-table{color:var(--text);background:var(--acc);color:#fff;box-shadow:0 1px 4px rgba(59,130,246,.35)}
+#btn-pills-mode-bnav.pills-on .pills-toggle-seg.seg-pills{color:#fff;background:var(--acc);box-shadow:0 1px 4px rgba(59,130,246,.35)}
 #btn-pills-mode-bnav:not(.pills-on) .pills-toggle-seg.seg-pills{color:var(--muted);background:transparent}
 /* Panel filtros móvil */
 #mobile-filter-overlay{
@@ -1153,17 +1160,26 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mf-sheet-ftr{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
 .mf-sec{margin-bottom:16px}
 .mf-sec-t{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600}
-.mf-field{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--s2);color:var(--text);font-size:13px;font-family:var(--font)}
+.mf-field{width:100%;padding:10px 12px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--s2);color:var(--text);font-size:13px;font-family:var(--font);transition:border-color .15s,background .15s,box-shadow .15s}
+.mf-field.on{border-color:var(--acc);background:rgba(59,130,246,.14);color:#fff;box-shadow:0 0 0 2px rgba(59,130,246,.2)}
 .mf-tog{display:flex;gap:8px;flex-wrap:wrap}
-.mf-tog label{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--s2);font-size:13px;color:var(--text);cursor:pointer}
-.mf-tog label.on{border-color:var(--acc);background:rgba(59,130,246,.22);color:#fff}
+.mf-tog label{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--s2);font-size:13px;color:var(--text);cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+.mf-tog label.on{border-color:var(--acc);background:rgba(59,130,246,.3);color:#fff;box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+.mf-tog label.on input{accent-color:#fff}
 .mf-chips-host{display:flex;flex-wrap:wrap;gap:8px}
 .mf-chips-host .chip{
   padding:9px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--s2);
-  font-size:13px;font-weight:500;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2)
+  font-size:13px;font-weight:500;color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.15);transition:all .15s
 }
-.mf-chips-host .chip.active{background:rgba(59,130,246,.28);border-color:var(--acc);color:#fff}
+.mf-chips-host .chip.active{
+  background:linear-gradient(135deg,rgba(59,130,246,.45),rgba(37,99,235,.35));
+  border-color:#60a5fa;color:#fff;font-weight:600;
+  box-shadow:0 0 0 2px rgba(59,130,246,.35),0 2px 8px rgba(59,130,246,.25)
+}
+.mf-chips-host .chip.active::before{content:'✓ ';font-size:11px;font-weight:700;color:#93c5fd}
+.mf-chips-host .chip.active .chip-count{background:rgba(255,255,255,.22);color:#fff}
 .mf-chips-host .chip-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.2);margin-left:4px}
+.mf-sec-hint{font-size:10px;color:var(--acc-text);margin:-4px 0 8px;font-weight:500}
 .mf-btn{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .mf-btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
 
@@ -2471,6 +2487,7 @@ function loadSheet(name, tabId, preserveFilters){
 
   // Sin workbook → datos ya en memoria (sesión/favorito)
   if(!tab.workbook){
+    _syncSearchInputFromTab(tab);
     buildChips(); buildSearchCombo(); buildDateColCombo(); applyFilters();
     enableControls(true);
     $('loading').style.display='none'; $('dropzone').style.display='none'; $('table-wrap').style.display='flex';
@@ -2589,6 +2606,7 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   }
   tab.searchIndex=null; // siempre invalidar al recargar columnas
   tab.colUniques=null; tab.colNulls=null;
+  if(preserveFilters) _syncSearchInputFromTab(tab);
   buildChips(); buildSearchCombo(); buildDateColCombo(); applyFilters();
   enableControls(true);
   $('loading').style.display='none'; $('dropzone').style.display='none'; $('table-wrap').style.display='flex';
@@ -2747,6 +2765,7 @@ function updateChipStates(){
   setTimeout(_updateChipsBadge, 50);
   _updateClearChipBtn();
   _mobileUiRefresh();
+  if($('mobile-filter-overlay')?.classList.contains('open')) _mfSyncOptionsUI();
 }
 
 function toggleChipsBar(){
@@ -3356,7 +3375,18 @@ function buildDateColCombo(){
 }
 
 // Búsqueda con debounce para no filtrar en cada tecla
-function onSearch(){ clearTimeout(searchTimer); searchTimer=setTimeout(applyFilters, SEARCH_DELAY); }
+function _syncSearchInputFromTab(tab){
+  if(!tab) return;
+  const si=$('search-input'); if(!si) return;
+  if(tab.searchText!=null && tab.searchText!=='') si.value=tab.searchText;
+  if(tab.searchCol) setSelectValue('search-col', tab.searchCol);
+}
+function onSearch(){
+  const tab=T();
+  if(tab) tab.searchText=$('search-input')?.value??'';
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(applyFilters, SEARCH_DELAY);
+}
 
 // ── FILTROS ───────────────────────────────────────────────────────────────────
 function onRegexChange(){
@@ -3385,7 +3415,10 @@ function getRegexFlags(){
 }
 function applyFilters(){
   const tab=T(); if(!tab||!tab.rawData.length) return;
-  const _rawTxt= ($('search-input').value||'').trim();
+  const si=$('search-input');
+  let _rawTxt=(si?.value||'').trim();
+  if(!_rawTxt && tab.searchText) _rawTxt=String(tab.searchText).trim();
+  if(si && _rawTxt && si.value!==_rawTxt) si.value=_rawTxt;
   const useRegex=$('chk-regex')?.checked;
   const useExcl =$('chk-excl')?.checked;
   const txt     = useRegex?_rawTxt:_rawTxt.toLowerCase();
@@ -3393,7 +3426,7 @@ function applyFilters(){
   const dfrom   = $('date-from').value;
   const dto     = $('date-to').value;
   const dcol    = $('date-col').value;
-  tab.searchText=txt;
+  tab.searchText=_rawTxt;
 
   const hasColFilters = Object.keys(tab.colFilters).length>0;
   const effectiveDcol = dcol || (tab.dateColsDetected?.length===1 ? tab.dateColsDetected[0] : '');
@@ -6435,8 +6468,10 @@ function clearChipFiltersOnly(){
   updateChipStates(); applyFilters();
 }
 function _clearLiveSearch(){
+  const tab=T();
+  if(tab){ tab.searchText=''; tab.searchIndex=null; }
   $('search-input').value='';
-  onSearch();
+  applyFilters();
   _updateSearchClearBtn();
   _updateMobileActiveBar();
 }
@@ -6507,14 +6542,23 @@ function _mobileUiRefresh(){
 }
 function _mfSyncOptionsUI(){
   const sc=$('search-col'), mf=$('mf-search-col');
-  if(sc&&mf){ mf.innerHTML=sc.innerHTML; mf.value=sc.value; }
+  if(sc&&mf){
+    mf.innerHTML=sc.innerHTML; mf.value=sc.value;
+    const colOn=!!mf.value && mf.value!=='(Todas las columnas)';
+    mf.classList.toggle('on',colOn);
+  }
   const rx=$('chk-regex'), mrx=$('mf-chk-regex');
   if(rx&&mrx){ mrx.checked=rx.checked; $('mf-l-regex')?.classList.toggle('on',rx.checked); }
   const ex=$('chk-excl'), mex=$('mf-chk-excl');
   if(ex&&mex){ mex.checked=ex.checked; $('mf-l-excl')?.classList.toggle('on',ex.checked); }
+  const tab=T();
+  const n=tab?Object.keys(tab.colFilters||{}).length:0;
+  const hint=$('mf-active-hint');
+  if(hint) hint.textContent=n>0?`${n} filtro${n>1?'s':''} de columna activo${n>1?'s':''}`:'Ningún filtro de columna activo';
 }
 function mobileFilterColChange(val){
   const sc=$('search-col'); if(sc){ sc.value=val; onSearchColChange(); }
+  $('mf-search-col')?.classList.toggle('on',!!val && val!=='(Todas las columnas)');
   _mfSyncOptionsUI();
 }
 function mobileFilterRegexToggle(on){
@@ -6544,6 +6588,7 @@ function _mfUnmountChips(){
 function openMobileFilterSheet(){
   if(!_isMobileUi()) return;
   const tab=T(); if(!tab?.rawData?.length){ toast('Carga datos primero'); return; }
+  tab.searchText=$('search-input')?.value??tab.searchText??'';
   buildChips();
   _mfMountChips();
   _mfSyncOptionsUI();
@@ -7119,7 +7164,8 @@ let _pillsSearchTimer = null;
 function pillsOnSearch(val){
   // Sincronizar con el search principal para que applyFilters lea el valor correcto
   const mainInput = $('search-input');
-  if(mainInput) { mainInput.value = val; }
+  if(mainInput) mainInput.value = val;
+  const tab=T(); if(tab) tab.searchText=val;
 
   // Mostrar/ocultar botón limpiar
   const clr = $('pills-search-clear');
@@ -7807,7 +7853,6 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
           Pills
         </span>
       </button>
-      <span style="font-size:10px">Vista</span>
     </div>
     <button type="button" class="mbnav-btn" id="mbnav-filters" onclick="openMobileFilterSheet()">
       <span class="mbnav-ico">⛃<span class="mbnav-badge" id="mbnav-filter-badge">0</span></span>Filtros
@@ -7840,6 +7885,7 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
       </div>
       <div class="mf-sec">
         <div class="mf-sec-t">Filtrar por columna</div>
+        <div class="mf-sec-hint" id="mf-active-hint">Ningún filtro de columna activo</div>
         <div class="mf-chips-host" id="mf-chips-host"></div>
       </div>
     </div>

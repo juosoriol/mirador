@@ -823,43 +823,44 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     order:5;
   }
 
-  /* Fila 2: Hamburguesa izquierda */
-  #btn-actions{
-    order:10;
-    padding:7px 11px!important;
+  /* Fila 2: botones móvil — estilo unificado */
+  #topbar #btn-actions,
+  #topbar #btn-open-file,
+  #topbar #btn-my-docs,
+  #topbar #btn-mobile-sheets{
     display:inline-flex!important;
-    margin-right:6px!important;
-  }
-  #btn-actions svg{width:18px!important;height:18px!important}
-
-  /* Botón Abrir archivo (solo móvil) */
-  #btn-open-file{
-    display:inline-flex!important;
-    order:11;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:4px!important;
     padding:6px 10px!important;
     font-size:11px!important;
-    gap:4px;
-    background:rgba(59,130,246,0.15)!important;
-    border-color:rgba(59,130,246,0.4)!important;
-    color:#60a5fa!important;
+    font-weight:500!important;
+    font-family:var(--font)!important;
+    border-radius:var(--r)!important;
+    border:1px solid rgba(255,255,255,.2)!important;
+    background:rgba(255,255,255,.1)!important;
+    color:var(--topbar-text,var(--text))!important;
+    cursor:pointer!important;
+    flex-shrink:0!important;
+    touch-action:manipulation!important;
+    -webkit-tap-highlight-color:transparent!important;
+    max-width:none!important;
+    overflow:visible!important;
   }
-  #btn-open-file svg{width:14px!important;height:14px!important}
-
-  /* Fila 2: Documentos y Hojas derecha */
-  #btn-my-docs{
-    order:20;
-    padding:6px 10px!important;
-    font-size:11px!important;
-    margin-left:auto!important;
+  #topbar #btn-actions svg,
+  #topbar #btn-open-file svg,
+  #topbar #btn-my-docs svg,
+  #topbar #btn-mobile-sheets svg{
+    width:14px!important;
+    height:14px!important;
+    flex-shrink:0!important;
+    stroke:currentColor!important;
+    fill:none!important;
   }
-  #btn-my-docs svg{width:16px!important;height:16px!important}
-
-  #btn-mobile-sheets{
-    display:inline-flex!important;
-    order:21;
-    padding:6px 10px!important;
-    font-size:11px!important;
-  }
+  #topbar #btn-actions{order:10;margin-right:6px!important}
+  #topbar #btn-open-file{order:11}
+  #topbar #btn-my-docs{order:20;margin-left:auto!important;margin-right:4px!important}
+  #topbar #btn-mobile-sheets{order:21}
   /* Panel acciones en móvil: sidebar retráctil izquierdo */
   #actions-panel{display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important}
   #actions-panel.open{left:0!important}
@@ -890,8 +891,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #focus-exit-search{font-size:10px;padding:3px 8px}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
-  /* Botón de hojas móvil */
-  #btn-mobile-sheets{display:inline-flex!important}
   /* Bottom sheet hojas */
   #mobile-sheets-overlay{position:fixed;inset:0;z-index:850;display:flex;align-items:flex-end;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
   #mobile-sheets-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55)}
@@ -1040,7 +1039,32 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     border-radius:16px 16px 0 0!important;
     padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;
   }
+
+  /* Botón escape: cerrar overlays en móvil */
+  #mobile-escape-btn.visible{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    position:fixed;
+    bottom:calc(12px + env(safe-area-inset-bottom,0px));
+    left:50%;
+    transform:translateX(-50%);
+    z-index:10000;
+    padding:10px 22px;
+    border-radius:24px;
+    border:1px solid var(--border2);
+    background:var(--s1);
+    color:var(--text);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    box-shadow:0 4px 20px rgba(0,0,0,.45);
+    font-family:var(--font);
+    touch-action:manipulation;
+  }
 }
+#mobile-escape-btn{display:none}
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
@@ -1227,7 +1251,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </div>
 
     <div class="login-footer" style="margin-top:20px">
-      Los archivos Excel se procesan localmente<br>en tu dispositivo. Nunca se suben a servidores.
+      Los archivos se procesan en tu dispositivo.<br>La subida a la nube es opcional y solo si tú lo eliges.
     </div>
   </div>
 </div>
@@ -1258,7 +1282,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </span>
   </button>
   <!-- Botón abrir archivo desde dispositivo (móvil) -->
-  <button id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
+  <button class="btn" id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
@@ -1268,8 +1292,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     Abrir
   </button>
   <!-- Botón hojas (solo móvil ≤500px) -->
-  <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:5px 8px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--topbar-text,var(--text));cursor:pointer;font-size:11px;font-weight:500;flex-shrink:0;gap:4px;font-family:var(--font);max-width:100px;overflow:hidden">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <button class="btn" id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     <span id="btn-sheets-label" style="white-space:nowrap">Hojas</span>
   </button>
   <!-- Botones de documentos en la nube -->
@@ -1277,15 +1301,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     Guardar
   </button>
-  <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos" style="padding:5px 11px">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+  <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     Documentos
   </button>
   <!-- Botón Exportar — acción primaria, siempre visible cuando hay datos -->
   <button class="btn success" id="btn-export" onclick="exportExcel()" disabled style="display:none">&#8595; Exportar</button>
   <!-- Botón Acciones — panel con todas las herramientas -->
-  <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Acciones" style="padding:6px 10px">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+  <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Acciones">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="3" y1="6" x2="21" y2="6"/>
       <line x1="3" y1="12" x2="21" y2="12"/>
       <line x1="3" y1="18" x2="21" y2="18"/>
@@ -6698,30 +6722,21 @@ _fbAuth.onAuthStateChanged(async user => {
   if(user){
     // Leer rol desde Firestore
     try {
-      console.log('[Auth] Usuario autenticado:', user.email, 'UID:', user.uid);
-      console.log('[Firestore] Intentando leer documento en ruta: users/' + user.uid);
       const docRef = _fbDb.collection('users').doc(user.uid);
-      console.log('[Firestore] Referencia del documento:', docRef.path);
       const doc = await docRef.get();
-      console.log('[Firestore] Documento obtenido. Existe:', doc.exists);
-      console.log('[Firestore] Metadata del documento:', doc.metadata);
       let data;
       if(!doc.exists){
-        // Usuario no registrado → crear documento automáticamente
-        console.warn('[Auth] Usuario sin documento, creando...');
-        const isFirstUser = (await _fbDb.collection('users').get()).empty;
+        // Usuario sin documento → crear con rol user (admin se asigna desde consola o panel admin)
         data = {
           email: user.email,
-          role: isFirstUser ? 'admin' : 'user', // Primer usuario = admin
+          role: 'user',
           active: true,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           name: user.displayName || user.email.split('@')[0]
         };
         await docRef.set(data);
-        console.log('[Auth] Documento creado:', data);
       } else {
         data = doc.data();
-        console.log('[Firestore] Datos del usuario:', data);
       }
 
       if(data.active === false){
@@ -6730,7 +6745,6 @@ _fbAuth.onAuthStateChanged(async user => {
         return;
       }
       _fbUserRole = data.role || 'user';
-      console.log('[Auth] Rol asignado:', _fbUserRole);
       // Actualizar último acceso
       _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
     } catch(e){
@@ -6798,8 +6812,8 @@ function _fbUpdateUserUI(user){
     topbar?.appendChild(badge);
   }
   badge.innerHTML = `
-    <div title="${email}" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="fbShowUserMenu(this)">
-      <div style="width:30px;height:30px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);flex-shrink:0">${initials}</div>
+    <div title="${eh(email)}" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="fbShowUserMenu(this)">
+      <div style="width:30px;height:30px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);flex-shrink:0">${eh(initials)}</div>
     </div>`;
 
   // Botón Admin (solo si role === 'admin')
@@ -6841,7 +6855,7 @@ function fbShowUserMenu(el){
   menu.id = 'fb-user-menu';
   menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:${window.innerWidth-rect.right}px;z-index:9000;background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:6px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-family:var(--font)`;
   menu.innerHTML = `
-    <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">${_fbUser?.email}</div>
+    <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">${eh(_fbUser?.email||'')}</div>
     <button onclick="fbChangePassword()" style="width:100%;text-align:left;padding:7px 12px;border:none;background:none;color:var(--text);font-size:12px;cursor:pointer;border-radius:6px;font-family:var(--font)">🔑 Cambiar contraseña</button>
     <button onclick="_fbAuth.signOut();document.getElementById('fb-user-menu')?.remove()" style="width:100%;text-align:left;padding:7px 12px;border:none;background:none;color:#f87171;font-size:12px;cursor:pointer;border-radius:6px;font-family:var(--font)">↪ Cerrar sesión</button>`;
   document.body.appendChild(menu);
@@ -6872,12 +6886,12 @@ async function fbOpenAdminPanel(){
 
   const rows = users.map(u=>`
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:10px 12px;font-size:12px;color:var(--text)">${u.name||'—'}</td>
-      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.email}</td>
-      <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.role==='admin'?'#4f46e522':'#16532422'};color:${u.role==='admin'?'#a5b4fc':'#4ade80'}">${u.role||'user'}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text)">${eh(u.name||'—')}</td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${eh(u.email||'')}</td>
+      <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.role==='admin'?'#4f46e522':'#16532422'};color:${u.role==='admin'?'#a5b4fc':'#4ade80'}">${eh(u.role||'user')}</span></td>
       <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.active!==false?'#16532422':'#450a0a22'};color:${u.active!==false?'#4ade80':'#f87171'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
       <td style="padding:10px 12px">
-        ${u.id !== _fbUser.uid ? `<button onclick="fbToggleActive('${u.id}',${u.active!==false})" style="font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:var(--font)">${u.active!==false?'Desactivar':'Activar'}</button>` : '<span style="font-size:10px;color:var(--muted)">Tú</span>'}
+        ${u.id !== _fbUser.uid ? `<button data-fb-toggle="${eh(u.id)}" data-fb-active="${u.active!==false?'1':'0'}" style="font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:var(--font)">${u.active!==false?'Desactivar':'Activar'}</button>` : '<span style="font-size:10px;color:var(--muted)">Tú</span>'}
       </td>
     </tr>`).join('');
 
@@ -6915,6 +6929,12 @@ async function fbOpenAdminPanel(){
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  overlay.querySelector('#fb-users-list')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-fb-toggle]');
+    if(!btn) return;
+    fbToggleActive(btn.dataset.fbToggle, btn.dataset.fbActive === '1');
+  });
+  checkOverlaysOpen();
 }
 
 async function fbCreateUser(){
@@ -7020,6 +7040,7 @@ async function openDocsPanel(){
   if(!_fbUser){ alert('Debes iniciar sesión primero.'); return; }
 
   document.getElementById('docs-panel').classList.add('open');
+  checkOverlaysOpen();
   const body = document.getElementById('docs-body');
   body.innerHTML = '<div class="docs-uploading">Cargando documentos...</div>';
 
@@ -7052,7 +7073,7 @@ async function openDocsPanel(){
       const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
       const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
       const userName = _fbUserRole === 'admin' && doc.userId !== _fbUser.uid ?
-                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${users[doc.userId]?.email || 'Usuario'})</span>` : '';
+                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${eh(users[doc.userId]?.email || 'Usuario')})</span>` : '';
 
       return `
         <div class="doc-item">
@@ -7063,19 +7084,25 @@ async function openDocsPanel(){
             </svg>
           </div>
           <div class="doc-info">
-            <div class="doc-name">${doc.fileName || 'Sin nombre'}${userName}</div>
+            <div class="doc-name">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
             <div class="doc-meta">${dateStr} • ${doc.sheets?.length || 0} hoja(s)</div>
           </div>
           <div class="doc-size">${sizeStr}</div>
           <div class="doc-actions">
-            <button class="doc-btn primary" onclick="openCloudDoc('${doc.id}')">Abrir</button>
+            <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
             ${doc.userId === _fbUser.uid || _fbUserRole === 'admin' ?
-              `<button class="doc-btn danger" onclick="deleteCloudDoc('${doc.id}', '${doc.storagePath}')">Eliminar</button>` : ''}
+              `<button class="doc-btn danger" data-doc-delete="${eh(doc.id)}" data-doc-path="${eh(doc.storagePath||'')}">Eliminar</button>` : ''}
           </div>
         </div>`;
     }).join('');
 
     body.innerHTML = `<div class="docs-list">${html}</div>`;
+    body.querySelector('.docs-list')?.addEventListener('click', e => {
+      const openBtn = e.target.closest('[data-doc-open]');
+      const delBtn = e.target.closest('[data-doc-delete]');
+      if(openBtn) openCloudDoc(openBtn.dataset.docOpen);
+      if(delBtn) deleteCloudDoc(delBtn.dataset.docDelete, delBtn.dataset.docPath);
+    });
   } catch(e){
     console.error('Error cargando documentos:', e);
     body.innerHTML = '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' + e.message + '</div>';
@@ -7084,6 +7111,7 @@ async function openDocsPanel(){
 
 function closeDocsPanel(){
   document.getElementById('docs-panel').classList.remove('open');
+  checkOverlaysOpen();
 }
 
 async function openCloudDoc(docId){
@@ -7172,11 +7200,13 @@ function closeAllOverlays(){
   ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
     document.getElementById(id)?.remove();
   });
-  document.getElementById('mobile-escape-btn')?.classList.remove('visible');
+  checkOverlaysOpen();
 }
 
-// Mostrar botón escape cuando hay overlay abierto
+// Mostrar botón escape cuando hay overlay abierto (solo móvil)
 function checkOverlaysOpen(){
+  const btn = document.getElementById('mobile-escape-btn');
+  if(!btn || window.innerWidth > 500){ btn?.classList.remove('visible'); return; }
   const anyOpen = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
     'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
@@ -7186,12 +7216,18 @@ function checkOverlaysOpen(){
     const el = document.getElementById(id);
     return el && (el.classList.contains('open') || el.style.display === 'flex');
   });
-  const btn = document.getElementById('mobile-escape-btn');
-  if(btn) btn.classList.toggle('visible', anyOpen);
+  btn.classList.toggle('visible', anyOpen);
 }
-setInterval(checkOverlaysOpen, 300);
+
+new MutationObserver(() => checkOverlaysOpen()).observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class', 'style'],
+  childList: true
+});
+window.addEventListener('resize', checkOverlaysOpen);
 </script>
 
-<!-- Botón escape móvil (solo ≤500px) -->
+<button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 </body>
 </html>

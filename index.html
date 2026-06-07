@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260606-topbar3', k='mirador_build_v';
+  var BUILD='20260606-features1', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -154,23 +154,46 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #topbar .btn.success{background:#15803d;border-color:#16a34a;color:#fff}
 #topbar .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}
 #topbar .logo{background:var(--acc)}
-/* Escritorio: toggle Pills + hamburguesa en la barra; usuario dentro del menú */
+/* Escritorio: Pills + Hojas + hamburguesa; usuario dentro del menú */
 @media(min-width:501px){
   #topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
-  #topbar #btn-open-file,#topbar #btn-mobile-sheets,#topbar #btn-mobile-menu,
+  #topbar #btn-open-file,#topbar #btn-mobile-menu,
   #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit,
   #topbar .fb-user-badge{display:none!important}
   #topbar #btn-pills-mode{margin-left:auto!important}
+  #topbar #btn-mobile-sheets{display:inline-flex!important;margin-left:6px!important}
   #topbar #btn-actions{margin-left:6px!important}
-  #actions-panel.open{min-width:260px;max-width:min(320px,calc(100vw - 24px))}
+  #actions-panel.open{min-width:280px;max-width:min(320px,calc(100vw - 24px))}
+  #mobile-sheets-overlay{align-items:center!important;justify-content:center!important;padding:20px!important}
+  #mobile-sheets-overlay.open{background:rgba(0,0,0,.55)!important}
+  #mobile-sheets-panel{
+    width:min(440px,calc(100vw - 40px))!important;max-height:min(72dvh,calc(100vh - 48px))!important;
+    border-radius:14px!important;border:1px solid var(--border)!important;border-bottom:1px solid var(--border)!important;
+    transform:scale(.96)!important;opacity:0!important;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .22s!important
+  }
+  #mobile-sheets-overlay.open #mobile-sheets-panel{transform:scale(1)!important;opacity:1!important}
+  #mobile-sheets-panel .ms-handle-wrap{display:none!important}
 }
-#ap-user-header{position:relative;padding:14px 16px 12px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.ms-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ms-title{font-size:14px;font-weight:600;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-close{width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0}
+.ms-close:hover{background:rgba(255,255,255,.15)}
+.ms-list{flex:1;overflow-y:auto;padding:8px 12px 14px;-webkit-overflow-scrolling:touch}
+#btn-mobile-sheets{position:relative}
+.sheets-badge{
+  position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:10px;
+  background:#ff3b30;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;
+  border:2px solid var(--topbar-bg,#1e293b);line-height:1;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.35)
+}
+#ap-user-header{position:relative;padding:16px 16px 14px;border-bottom:1px solid var(--border);margin-bottom:4px}
 .ap-user-close{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1}
 .ap-user-close:hover{background:rgba(255,255,255,.15)}
-.ap-user-stack{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:2px}
+.ap-user-stack{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 28px 0;min-width:0}
 .ap-user-avatar-btn{cursor:pointer;border:none;background:none;padding:0;font-family:inherit}
-.ap-user-avatar-circle{width:40px;height:40px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2)}
-.ap-admin-btn{padding:4px 10px;border-radius:6px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
+.ap-user-avatar-circle{width:44px;height:44px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2)}
+.ap-user-name{font-size:13px;font-weight:600;color:var(--text);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.ap-user-role{font-size:11px;color:var(--muted);text-align:center;line-height:1.2}
+.ap-admin-btn{margin-top:2px;padding:5px 12px;border-radius:8px;border:1px solid rgba(99,102,241,.45);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
 .ap-admin-btn:hover{filter:brightness(1.08)}
 #file-input{display:none}
 #tabs-bar{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:42px}
@@ -278,7 +301,7 @@ input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--ac
 select{max-width:175px}
 input[type=date]{width:130px}
 #main{display:flex;flex:1;overflow:hidden;position:relative}
-#sidebar{width:10px;min-width:10px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:relative;transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;overflow:hidden;z-index:10;clip-path:inset(0)}
+#sidebar{display:none!important}
 #sidebar.hovered{width:175px;position:absolute;left:0;top:0;bottom:0;box-shadow:4px 0 16px rgba(0,0,0,.4)}
 #sidebar.pinned{width:175px;position:relative;box-shadow:none}
 #sidebar-hover-strip{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:pointer;z-index:5}
@@ -342,7 +365,7 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 @keyframes hl-fade{0%{background:#fbbf2466}100%{background:#fbbf2411}}
 #vt-info{flex-shrink:0;padding:3px 14px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);display:none;background:var(--s1)}
 #vt-info.visible{display:flex;align-items:center;gap:12px}
-#statusbar{display:flex;align-items:center;gap:14px;padding:4px 14px;background:var(--s1);border-top:1px solid var(--border);font-size:11px;color:var(--muted);flex-shrink:0}
+#statusbar{display:flex;align-items:center;gap:16px;padding:10px 16px;min-height:38px;background:var(--s1);border-top:1px solid var(--border);font-size:12px;color:var(--muted);flex-shrink:0}
 #statusbar .sv{color:var(--acc-text)}
 #status-msg{flex:1}
 #dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;color:var(--muted)}
@@ -1275,10 +1298,11 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
     </svg>
     Abrir
   </button>
-  <!-- Botón hojas (solo móvil ≤500px) -->
-  <button class="btn" id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none">
+  <!-- Botón hojas → modal con todas las pestañas del libro -->
+  <button class="btn" id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas del archivo" style="display:none">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
     <span id="btn-sheets-label" style="white-space:nowrap">Hojas</span>
+    <span id="btn-sheets-badge" class="sheets-badge"></span>
   </button>
   <!-- Botones de documentos en la nube -->
   <button class="btn" id="btn-save-cloud" onclick="saveToCloud()" title="Guardar en la nube" style="display:none;padding:5px 11px;background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#10b981">
@@ -1507,7 +1531,6 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   <span>Total: <span class="sv" id="st-total">0</span></span>
   <span>Visibles: <span class="sv" id="st-vis">0</span></span>
   <span>Sel: <span class="sv" id="st-sel">0</span></span>
-  <span style="margin-left:auto;font-size:10px;opacity:.45">g-click multi-sel · Doble-click ficha · Click derecho encabezado</span>
 </div>
 
 <div id="detail-overlay" onclick="closeDetail(event)">
@@ -1676,9 +1699,12 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
 
 <!-- ── BOTTOM SHEET HOJAS (móvil) ── -->
 <div id="mobile-sheets-overlay" onclick="if(event.target===this)closeMobileSheets()">
-  <div id="mobile-sheets-panel">
+  <div id="mobile-sheets-panel" onclick="event.stopPropagation()">
     <div class="ms-handle-wrap"><div class="ms-handle"></div></div>
-    <div class="ms-title" id="ms-title">Hojas del archivo</div>
+    <div class="ms-header">
+      <div class="ms-title" id="ms-title">Hojas del archivo</div>
+      <button type="button" class="ms-close" onclick="closeMobileSheets()" aria-label="Cerrar">×</button>
+    </div>
     <div class="ms-list" id="ms-list"></div>
   </div>
 </div>
@@ -1693,6 +1719,8 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
       <button type="button" class="ap-user-avatar-btn" id="ap-user-avatar-btn" onclick="fbShowUserMenu(this)">
         <div class="ap-user-avatar-circle" id="ap-user-avatar"></div>
       </button>
+      <div class="ap-user-name" id="ap-user-name"></div>
+      <div class="ap-user-role" id="ap-user-role"></div>
       <button type="button" class="ap-admin-btn" id="ap-admin-btn" style="display:none" onclick="fbOpenAdminPanel();closeActionsPanel()">👥 Admin</button>
     </div>
   </div>
@@ -2032,15 +2060,51 @@ function _tabFileIcon(ext,color){
   return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2.5" fill="${c}" opacity=".18"/><rect x="1" y="1" width="14" height="14" rx="2.5" stroke="${c}" stroke-width=".7"/><text x="8" y="11" text-anchor="middle" font-size="${info.size}" font-weight="500" font-family="system-ui,sans-serif" fill="${c}">${info.label}</text></svg>`;
 }
 
-// Star / favorite integration
+// Star → guardar/quitar vista inmediatamente
 function _tabIsFav(fileName){
-  const list=_fmLoad();
-  const f=list.find(x=>x.name===fileName);
-  return f?.fav||false;
+  return getFavs().some(f=>f.state?.fileName===fileName);
+}
+function _tabBuildViewState(tab){
+  return {
+    colFilters:JSON.parse(JSON.stringify(tab.colFilters||{})),
+    searchText:tab.searchText||$('search-input')?.value||'',
+    searchCol:tab.searchCol||$('search-col')?.value||'',
+    dateFrom:tab.dateFrom||$('date-from')?.value||'',
+    dateTo:tab.dateTo||$('date-to')?.value||'',
+    dateCol:tab.dateCol||$('date-col')?.value||'',
+    fileName:tab.fileName, activeSheet:tab.activeSheet, sheets:tab.sheets,
+    columns:tab.columns, rawData:tab.rawData, dateColsDetected:tab.dateColsDetected, color:tab.color
+  };
+}
+function _tabSaveView(tab){
+  const state=_tabBuildViewState(tab);
+  const name=(tab.fileName||'Vista').replace(/\.[^.]+$/,'');
+  const favs=getFavs();
+  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
+  const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
+  if(idx>=0) favs[idx]=fav; else favs.push(fav);
+  setFavs(favs);
+  const fmList=_fmLoad();
+  const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
+  if(fmIdx>=0 && !fmList[fmIdx].fav){ fmList[fmIdx].fav=true; _fmSave(fmList); }
+  toast(`⭐ Vista "${name}" guardada`);
+}
+function _tabRemoveView(tab){
+  const favs=getFavs();
+  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
+  if(idx<0) return;
+  const name=favs[idx].name;
+  favs.splice(idx,1);
+  setFavs(favs);
+  const fmList=_fmLoad();
+  const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
+  if(fmIdx>=0){ fmList[fmIdx].fav=false; _fmSave(fmList); }
+  toast(`"${name}" quitada de vistas`);
 }
 function _tabToggleFav(tab){
   if(!tab) return;
-  fmToggleFav(_fmLoad().findIndex(x=>x.name===tab.fileName));
+  if(_tabIsFav(tab.fileName)) _tabRemoveView(tab);
+  else _tabSaveView(tab);
   renderTabs();
 }
 
@@ -2168,18 +2232,7 @@ function processFile(file){
 
 // ── HOJAS ─────────────────────────────────────────────────────────────────────
 function renderSheetsSidebar(){
-  const tab=T(); if(!tab) return;
-  _updateMobileSheetsBtn();
-  const hdrInfo = tab._manualHdrRow !== undefined && tab._manualHdrRow !== null
-    ? `<div style="padding:4px 12px 6px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">
-         Encabezado: fila <strong style="color:var(--acc-text)">${tab._manualHdrRow - (tab._hdrRangeStart||0) + 1}</strong>
-         <span onclick="reopenHdrPicker()" style="margin-left:6px;color:var(--acc-text);cursor:pointer;text-decoration:underline;font-size:10px">cambiar</span>
-       </div>` : '';
-  $('sheet-list').innerHTML=hdrInfo+tab.sheets.map(n=>`
-    <div class="sheet-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false)">
-      <div class="s-icon"></div>
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${eh(n)}</span>
-    </div>`).join('');
+  _updateSheetsBtn();
 }
 
 function loadSheet(name, tabId, preserveFilters){
@@ -6500,9 +6553,9 @@ function openMobileSheets(){
     list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">Abre un archivo .xlsx primero</div>';
     title.textContent = 'Hojas del archivo';
   } else {
-    title.textContent = tab.fileName || 'Hojas del archivo';
+    const sheetCount = tab.sheets.length;
+    title.textContent = `${tab.fileName || 'Archivo'} · ${sheetCount} hoja${sheetCount===1?'':'s'}`;
 
-    // Info de encabezado actual
     const hdrInfo = (tab._manualHdrRow != null)
       ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:var(--acc-dim);border:1px solid var(--acc);border-radius:8px;font-size:12px">
            <span style="color:var(--acc-text)">📌 Encabezado: fila <strong>${tab._manualHdrRow - (tab._hdrRangeStart||0) + 1}</strong></span>
@@ -6514,21 +6567,34 @@ function openMobileSheets(){
          </div>`;
 
     list.innerHTML = hdrInfo + tab.sheets.map(n=>`
-      <div class="ms-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false);closeMobileSheets();_updateMobileSheetsBtn()">
+      <div class="ms-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false);closeMobileSheets();_updateSheetsBtn()">
         <span class="ms-dot"></span>
         <span style="flex:1">${eh(n)}</span>
         ${tab.activeSheet===n ? '<span style="font-size:16px">✓</span>' : ''}
       </div>`).join('');
   }
+  _lockModalViewport();
   overlay.classList.add('open');
+  scheduleOverlayCheck();
 }
 function closeMobileSheets(){
   $('mobile-sheets-overlay')?.classList.remove('open');
+  scheduleOverlayCheck();
 }
-function _updateMobileSheetsBtn(){
+function _updateSheetsBtn(){
   const tab = T();
   const lbl = $('btn-sheets-label');
+  const badge = $('btn-sheets-badge');
+  const count = tab?.sheets?.length || 0;
   if(lbl) lbl.textContent = 'Hojas';
+  if(badge){
+    if(count > 1){
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 }
 
 // ── PANEL DE ACCIONES ────────────────────────────────────────────────────────
@@ -6824,6 +6890,8 @@ function _updateActionsPanelUserHeader(){
   const header = document.getElementById('ap-user-header');
   const avatarBtn = document.getElementById('ap-user-avatar-btn');
   const avatarEl = document.getElementById('ap-user-avatar');
+  const nameEl = document.getElementById('ap-user-name');
+  const roleEl = document.getElementById('ap-user-role');
   const adminBtn = document.getElementById('ap-admin-btn');
 
   if(!_fbUser){
@@ -6832,11 +6900,15 @@ function _updateActionsPanelUserHeader(){
   }
 
   const email = _fbUser.email || '';
+  const name = email.split('@')[0];
   const initials = email.slice(0,2).toUpperCase();
+  const role = _fbUserRole === 'admin' ? 'Administrador' : 'Usuario';
 
   if(header) header.style.display = '';
   if(avatarBtn) avatarBtn.title = email;
   if(avatarEl) avatarEl.textContent = initials;
+  if(nameEl) nameEl.textContent = name;
+  if(roleEl) roleEl.textContent = role;
   if(adminBtn){
     adminBtn.style.display = _fbUserRole === 'admin' ? '' : 'none';
   }

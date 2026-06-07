@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mirador · Filtros móvil v2 — barra inferior</title>
+<style>
+:root{
+  --bg:#0b1220;--s1:#141d2e;--s2:#1a2438;--s3:#243049;
+  --border:#2a3548;--border2:#3b4a63;
+  --text:#e2e8f0;--muted:#7c8aa0;--acc:#3b82f6;--acc-dim:#3b82f622;
+  --acc-text:#93c5fd;--danger:#f87171;--danger-dim:#ef444418;
+  --r:10px;--font:'Segoe UI',system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --bnav-h:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:#060a12;color:var(--text);min-height:100dvh}
+
+.demo-hdr{
+  position:sticky;top:0;z-index:200;background:rgba(6,10,18,.94);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);padding:12px 14px
+}
+.demo-hdr h1{font-size:13px;font-weight:600;margin-bottom:4px}
+.demo-hdr p{font-size:11px;color:var(--muted);line-height:1.45}
+.demo-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:10px;padding:3px 8px;border-radius:6px;background:var(--s2);border:1px solid var(--border);color:var(--acc-text)}
+
+.phone-wrap{display:flex;justify-content:center;padding:14px 10px 28px}
+.phone{
+  width:min(390px,100%);height:min(820px,90dvh);
+  background:var(--bg);border:1px solid var(--border2);border-radius:28px;
+  overflow:hidden;display:flex;flex-direction:column;position:relative;
+  box-shadow:0 20px 50px rgba(0,0,0,.4)
+}
+.notch{height:26px;background:var(--s1);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.notch i{width:72px;height:4px;background:var(--s3);border-radius:2px;display:block}
+
+/* topbar */
+.topbar{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:8px 12px;gap:6px;background:#130f28;border-bottom:1px solid var(--border);flex-shrink:0
+}
+.tb-l{display:flex;align-items:center;gap:6px}
+.logo{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center}
+.app-name{font-size:14px;font-weight:600}
+.toggle{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:18px;padding:3px}
+.toggle span{padding:6px 10px;border-radius:14px;font-size:11px;color:rgba(255,255,255,.4)}
+.toggle span.on{background:rgba(255,255,255,.14);color:#fff}
+.tb-r{display:flex;justify-content:flex-end}
+.menu-btn{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:15px;cursor:pointer}
+
+.tabs{display:flex;gap:3px;padding:6px 10px 0;background:#0a0814;border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{
+  padding:7px 10px 5px;border-radius:8px 8px 0 0;background:var(--s2);border:1px solid var(--border);
+  border-bottom:none;min-width:140px;flex-shrink:0
+}
+.tab.on{background:var(--bg);border-color:var(--acc);border-top:2px solid var(--acc)}
+.tab-t{font-size:11px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tab-m{font-size:9px;color:var(--muted);margin-top:2px}
+
+.stats{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.st{flex:1;padding:6px 10px;border-right:1px solid var(--border);text-align:center}
+.st:last-child{border-right:none}
+.st-l{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.st-v{font-size:15px;font-weight:700;color:var(--acc-text);margin-top:1px}
+
+/* ── Búsqueda en tiempo real (siempre visible) ── */
+.search-live{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0
+}
+.search-live svg{flex-shrink:0;color:var(--muted)}
+.search-live input{
+  flex:1;border:none;background:transparent;color:var(--text);
+  font-size:14px;font-family:var(--font);outline:none;min-width:0
+}
+.search-live input::placeholder{color:var(--muted)}
+/* Una sola X: sin botón nativo del navegador */
+.search-live input::-webkit-search-cancel-button,
+.search-live input::-webkit-search-decoration{display:none;-webkit-appearance:none}
+.search-clear{
+  width:28px;height:28px;border-radius:50%;border:none;background:var(--s2);
+  color:var(--muted);font-size:14px;cursor:pointer;flex-shrink:0;display:none
+}
+.search-clear.show{display:flex;align-items:center;justify-content:center}
+
+/* ── Barra filtros activos + desfiltrado rápido ── */
+.active-bar{
+  display:none;align-items:center;gap:8px;padding:7px 10px 7px 12px;
+  background:linear-gradient(90deg,var(--acc-dim),transparent);
+  border-bottom:1px solid rgba(59,130,246,.25);flex-shrink:0;min-height:40px
+}
+.active-bar.show{display:flex}
+.active-pills{
+  flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none
+}
+.active-pills::-webkit-scrollbar{display:none}
+.active-count{
+  flex-shrink:0;font-size:10px;font-weight:700;color:var(--acc-text);
+  background:var(--acc-dim);border:1px solid rgba(59,130,246,.35);
+  padding:3px 7px;border-radius:10px
+}
+.apill{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:16px;font-size:11px;font-weight:500;
+  background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.45);color:#dbeafe
+}
+.apill button{
+  background:none;border:none;color:#93c5fd;cursor:pointer;
+  font-size:13px;line-height:1;padding:0 0 0 2px
+}
+
+/* Botón desfiltrado rápido — zona de la imagen */
+.btn-quick-clear{
+  flex-shrink:0;display:flex;align-items:center;gap:5px;
+  padding:6px 11px;border-radius:20px;
+  border:1px solid rgba(239,68,68,.45);background:var(--danger-dim);
+  color:var(--danger);font-size:11px;font-weight:600;cursor:pointer;
+  font-family:var(--font);white-space:nowrap;transition:background .12s,transform .1s
+}
+.btn-quick-clear:active{transform:scale(.96);background:rgba(239,68,68,.22)}
+.btn-quick-clear svg{flex-shrink:0}
+
+/* alternativa icon-only (comentada en UI, ambas en leyenda) */
+.btn-quick-clear.icon-only{padding:6px 9px;gap:0}
+
+.content{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:calc(var(--bnav-h) + var(--safe-b))
+}
+.trow{
+  display:grid;grid-template-columns:1fr 72px;padding:10px 12px;
+  border-bottom:1px solid var(--border);font-size:12px
+}
+.trow.hdr{background:var(--s2);font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;position:sticky;top:0;z-index:1}
+.trow .sub{color:var(--muted);font-size:10px;margin-top:2px}
+.trow.gone{display:none}
+
+/* bottom nav */
+.bnav{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  display:flex;background:var(--s1);border-top:1px solid var(--border);
+  padding:4px 6px calc(4px + var(--safe-b));height:calc(var(--bnav-h) + var(--safe-b))
+}
+.bn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:none;background:none;color:var(--muted);font-size:10px;cursor:pointer;
+  font-family:var(--font);padding:4px;border-radius:8px;transition:color .12s,background .12s
+}
+.bn.on{color:var(--acc-text);background:var(--acc-dim)}
+.bn-ico{font-size:20px;line-height:1;position:relative}
+.bn-badge{
+  position:absolute;top:-5px;right:-10px;min-width:16px;height:16px;border-radius:8px;
+  background:var(--danger);color:#fff;font-size:9px;font-weight:700;
+  display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--s1)
+}
+.bn-badge.on{display:flex}
+
+/* filter sheet */
+.overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:80;
+  display:none;align-items:center;justify-content:center;padding:14px
+}
+.overlay.open{display:flex}
+.sheet{
+  width:100%;max-height:82%;background:var(--s1);border:1px solid var(--border2);
+  border-radius:16px;display:flex;flex-direction:column;overflow:hidden;
+  animation:pop .22s ease
+}
+@keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.sh{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)}
+.sh h2{font-size:15px}
+.sh button{width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--text);font-size:18px;cursor:pointer}
+.sb{flex:1;overflow-y:auto;padding:14px 16px}
+.sf{padding:12px 16px calc(12px + var(--safe-b));border-top:1px solid var(--border);display:flex;gap:8px}
+.sec{margin-bottom:16px}
+.sec-t{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;font-weight:600}
+.field{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font)}
+.chip-group{margin-bottom:12px}
+.chip-group-t{font-size:10px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 14px;border-radius:20px;
+  border:1.5px solid #4b5f7a;background:#1e2d45;
+  font-size:13px;font-weight:500;color:#f1f5f9;cursor:pointer;
+  transition:background .12s,border-color .12s,box-shadow .12s;
+  box-shadow:0 1px 3px rgba(0,0,0,.25)
+}
+.chip:hover{border-color:#60a5fa;background:#243352}
+.chip.on{
+  background:rgba(59,130,246,.28);border-color:#3b82f6;color:#fff;
+  box-shadow:0 0 0 2px rgba(59,130,246,.25)
+}
+.chip .n{
+  font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+  background:rgba(0,0,0,.25);color:#cbd5e1;min-width:20px;text-align:center
+}
+.chip.on .n{background:rgba(255,255,255,.2);color:#fff}
+.tog{display:flex;gap:8px;flex-wrap:wrap}
+.tog label{
+  display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--r);
+  border:1.5px solid #4b5f7a;background:#1e2d45;font-size:13px;color:#e2e8f0;cursor:pointer
+}
+.tog label.on{border-color:#3b82f6;background:rgba(59,130,246,.25);color:#fff}
+.field{color:#f1f5f9;background:#1e2d45;border-color:#4b5f7a}
+.btn{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);color:var(--text)}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+
+.legend{
+  margin:0 12px 24px;padding:14px;border-radius:var(--r);
+  background:var(--s1);border:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.55
+}
+.legend h3{font-size:12px;color:var(--text);margin-bottom:8px}
+.legend ul{padding-left:16px}
+.legend li{margin-bottom:6px}
+.legend strong{color:var(--acc-text)}
+.callout{
+  margin-top:10px;padding:10px 12px;border-radius:8px;
+  background:var(--danger-dim);border:1px solid rgba(239,68,68,.3);font-size:11px;color:#fca5a5
+}
+</style>
+</head>
+<body>
+
+<header class="demo-hdr">
+  <h1>Mirador · Bosquejo v2 — Barra inferior + búsqueda en vivo</h1>
+  <p>Propuesta prioritaria: navegación abajo, búsqueda siempre visible arriba, y botón de desfiltrado rápido en la barra de filtros activos.</p>
+  <div class="demo-tags">
+    <span class="tag">Barra inferior</span>
+    <span class="tag">Búsqueda tiempo real</span>
+    <span class="tag">Limpiar rápido</span>
+  </div>
+</header>
+
+<div class="phone-wrap">
+  <div class="phone" id="phone">
+    <div class="notch"><i></i></div>
+
+    <div class="topbar">
+      <div class="tb-l"><div class="logo"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg></div><span class="app-name">Mirador</span></div>
+      <div class="toggle"><span class="on">Tabla</span><span>Pills</span></div>
+      <div class="tb-r"><button class="menu-btn" type="button">☰</button></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on">
+        <div class="tab-t">Vacantes DPSA 2025</div>
+        <div class="tab-m" id="tabMeta">0 / 60 registros</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="st"><div class="st-l">Total</div><div class="st-v">60</div></div>
+      <div class="st"><div class="st-v" id="stVis" style="font-size:15px">0</div><div class="st-l">Visibles</div></div>
+      <div class="st"><div class="st-v" id="stFilt">0</div><div class="st-l">Filtros</div></div>
+    </div>
+
+    <!-- Búsqueda en tiempo real — NUNCA se oculta -->
+    <div class="search-live">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="liveSearch" type="text" placeholder="Buscar en la hoja…" autocomplete="off" inputmode="search" enterkeyhint="search">
+      <button class="search-clear" id="btnClrSearch" type="button" title="Borrar búsqueda">×</button>
+    </div>
+
+    <!-- Zona de la imagen: resumen + desfiltrado rápido -->
+    <div class="active-bar" id="activeBar">
+      <div class="active-pills" id="activePills"></div>
+      <button class="btn-quick-clear" id="btnQuickClear" type="button" title="Quitar todos los filtros">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        Limpiar
+      </button>
+    </div>
+
+    <div class="content" id="rows"></div>
+
+    <nav class="bnav">
+      <button class="bn on" type="button" data-tab="table"><span class="bn-ico">▦</span>Tabla</button>
+      <button class="bn" type="button" data-tab="filters" id="bnFilters">
+        <span class="bn-ico">⛃<span class="bn-badge" id="bnBadge">0</span></span>Filtros
+      </button>
+      <button class="bn" type="button" data-tab="menu"><span class="bn-ico">☰</span>Menú</button>
+    </nav>
+
+    <div class="overlay" id="overlay">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sh"><h2>Filtros avanzados</h2><button type="button" id="btnCloseSheet">×</button></div>
+        <div class="sb">
+          <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.4">La búsqueda de texto queda arriba en tiempo real. Aquí: chips, columna y opciones.</p>
+          <div class="sec">
+            <div class="sec-t">Buscar en columna</div>
+            <select class="field" id="fCol">
+              <option value="">Todas las columnas</option>
+              <option value="nombre">Nombre</option>
+              <option value="cargo">Cargo</option>
+              <option value="nivel">Nivel</option>
+            </select>
+          </div>
+          <div class="sec">
+            <div class="sec-t">Opciones</div>
+            <div class="tog">
+              <label id="lRegex"><input type="checkbox" id="fRegex"> Regex</label>
+              <label id="lExcl"><input type="checkbox" id="fExcl"> Excluir</label>
+            </div>
+          </div>
+          <div class="sec">
+            <div class="sec-t">Filtrar por valor</div>
+            <div class="chips" id="chipBox"></div>
+          </div>
+        </div>
+        <div class="sf">
+          <button class="btn" type="button" id="btnSheetClear">Limpiar chips</button>
+          <button class="btn p" type="button" id="btnSheetApply">Listo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="legend">
+  <h3>Flujo propuesto (v2)</h3>
+  <ul>
+    <li><strong>Búsqueda en vivo</strong> — siempre visible debajo de stats; filtra mientras escribes (como hoy).</li>
+    <li><strong>Barra de filtros activos</strong> — aparece solo con chips/columna/regex; muestra resumen compacto.</li>
+    <li><strong>Botón «Limpiar»</strong> — desfiltrado rápido de chips + opciones; la búsqueda en vivo se mantiene (o también se limpia si prefieres — pruébalo).</li>
+    <li><strong>Barra inferior</strong> — Tabla · Filtros (badge) · Menú; «Filtros» abre el panel de chips avanzados.</li>
+  </ul>
+  <div class="callout">Corregido: pills visibles con alto contraste, una sola X en búsqueda, y pills activas removibles en la barra resumen.</div>
+</div>
+
+<script>
+const DATA = [
+  {nombre:'Sandra Ponce Zapata',cargo:'Almacenista',nivel:'Asistencial'},
+  {nombre:'William Erazo Rodríguez',cargo:'Asesor Comercial',nivel:'Profesional'},
+  {nombre:'José Félix Bonells Rovira',cargo:'Asesor Comercial',nivel:'Profesional'},
+  {nombre:'Olga Lucía Niño Hernández',cargo:'Asesor Comercial',nivel:'Profesional'},
+  {nombre:'Carolina del Pilar Hernández V.',cargo:'Coordinadora',nivel:'Directivo'},
+  {nombre:'Gloria Esperanza Giraldo López',cargo:'Asesor Comercial',nivel:'Profesional'},
+  {nombre:'Alejandro Alfaro Murillo',cargo:'Supervisor',nivel:'Directivo'},
+  {nombre:'José Manuel Sánchez Tamayo',cargo:'Asesor Comercial',nivel:'Profesional'},
+  {nombre:'María Fernanda Ruiz Castro',cargo:'Analista',nivel:'Profesional'},
+  {nombre:'Carlos Andrés Mejía Ortiz',cargo:'Director Técnico',nivel:'Directivo'},
+];
+while(DATA.length<60){const s=DATA[DATA.length%10];DATA.push({...s,nombre:s.nombre+' '+DATA.length});}
+
+const CHIPS={nivel:['Asistencial','Profesional','Directivo'],cargo:['Asesor Comercial','Almacenista','Coordinadora','Director Técnico','Supervisor','Analista']};
+const S={live:'',col:'',regex:false,excl:false,chip:null,chipCol:null};
+
+const $=id=>document.getElementById(id);
+const eh=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+
+function matchRow(r){
+  const q=S.live.trim().toLowerCase();
+  if(q){
+    const hay=[r.nombre,r.cargo,r.nivel].join(' ').toLowerCase();
+    let hit=S.regex?(()=>{try{return new RegExp(q,'i').test(hay)}catch{return false}})():hay.includes(q);
+    if(S.col){
+      const v=String(r[S.col]||'').toLowerCase();
+      hit=S.regex?(()=>{try{return new RegExp(q,'i').test(v)}catch{return false}})():v.includes(q);
+    }
+    if(S.excl?!hit:hit) return false;
+    else if(!S.excl&&!hit) return false;
+  }
+  if(S.chip&&S.chipCol&&r[S.chipCol]!==S.chip) return false;
+  return true;
+}
+
+function advCount(){
+  let n=0;
+  if(S.chip) n++;
+  if(S.regex) n++;
+  if(S.excl) n++;
+  if(S.col) n++;
+  return n;
+}
+function totalFilt(){
+  let n=advCount();
+  if(S.live.trim()) n++;
+  return n;
+}
+
+function render(){
+  let vis=0,html='<div class="trow hdr"><span>Denominación</span><span>Nivel</span></div>';
+  DATA.forEach(r=>{
+    const ok=matchRow(r);
+    if(ok) vis++;
+    html+=`<div class="trow${ok?'':' gone'}"><span><strong>${r.nombre}</strong><div class="sub">${r.cargo}</div></span><span>${r.nivel}</span></div>`;
+  });
+  $('rows').innerHTML=html;
+  $('stVis').textContent=vis;
+  $('tabMeta').textContent=vis+' / 60 registros';
+
+  const n=totalFilt(), adv=advCount();
+  $('stFilt').textContent=n;
+  const badge=$('bnBadge');
+  badge.textContent=adv||'';
+  badge.classList.toggle('on',adv>0);
+
+  const bar=$('activeBar'), pills=$('activePills');
+  if(n>0){
+    bar.classList.add('show');
+    let ph=`<span class="active-count">${n}</span>`;
+    if(S.live.trim()) ph+=`<span class="apill">"${eh(S.live.trim())}"<button type="button" data-rm="live" title="Quitar">×</button></span>`;
+    if(S.chip) ph+=`<span class="apill">${eh(S.chipCol)}: ${eh(S.chip)}<button type="button" data-rm="chip" title="Quitar">×</button></span>`;
+    if(S.regex) ph+=`<span class="apill">Regex<button type="button" data-rm="regex" title="Quitar">×</button></span>`;
+    if(S.excl) ph+=`<span class="apill">Excluir<button type="button" data-rm="excl" title="Quitar">×</button></span>`;
+    pills.innerHTML=ph;
+    pills.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{
+      const k=b.dataset.rm;
+      if(k==='live'){S.live='';$('liveSearch').value='';}
+      if(k==='chip'){S.chip=null;S.chipCol=null;syncChipUI();}
+      if(k==='regex'){S.regex=false;$('fRegex').checked=false;syncChipUI();}
+      if(k==='excl'){S.excl=false;$('fExcl').checked=false;syncChipUI();}
+      render();
+    });
+  } else bar.classList.remove('show');
+
+  $('btnClrSearch').classList.toggle('show',!!S.live.trim());
+}
+
+function buildChips(){
+  let h='';
+  const labels={nivel:'Nivel',cargo:'Cargo'};
+  Object.entries(CHIPS).forEach(([col,vals])=>{
+    h+=`<div class="chip-group"><div class="chip-group-t">${labels[col]||col}</div><div class="chips">`;
+    vals.forEach(v=>{
+      const c=DATA.filter(r=>r[col]===v).length;
+      h+=`<button type="button" class="chip" data-c="${col}" data-v="${v}">${v}<span class="n">${c}</span></button>`;
+    });
+    h+=`</div></div>`;
+  });
+  $('chipBox').innerHTML=h;
+  $('chipBox').querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{
+    const {c,v}=ch.dataset;
+    if(S.chip===v&&S.chipCol===c){S.chip=null;S.chipCol=null;}
+    else{S.chip=v;S.chipCol=c;}
+    syncChipUI();render();
+  });
+}
+function syncChipUI(){
+  $('chipBox').querySelectorAll('.chip').forEach(ch=>{
+    ch.classList.toggle('on',ch.dataset.v===S.chip&&ch.dataset.c===S.chipCol);
+  });
+  $('lRegex').classList.toggle('on',S.regex);
+  $('lExcl').classList.toggle('on',S.excl);
+}
+
+function clearAdvanced(){
+  S.chip=null;S.chipCol=null;S.col='';S.regex=false;S.excl=false;
+  $('fCol').value='';$('fRegex').checked=false;$('fExcl').checked=false;
+  syncChipUI();render();
+}
+function clearAll(){
+  S.live='';$('liveSearch').value='';
+  clearAdvanced();
+}
+
+$('liveSearch').oninput=()=>{S.live=$('liveSearch').value;render();};
+$('btnClrSearch').onclick=()=>{S.live='';$('liveSearch').value='';render();};
+$('btnQuickClear').onclick=()=>{clearAdvanced();}; // solo chips/opciones; búsqueda viva queda
+$('fCol').onchange=()=>{S.col=$('fCol').value;render();};
+$('fRegex').onchange=()=>{S.regex=$('fRegex').checked;syncChipUI();render();};
+$('fExcl').onchange=()=>{S.excl=$('fExcl').checked;syncChipUI();render();};
+$('btnSheetClear').onclick=clearAdvanced;
+$('btnSheetApply').onclick=()=>$('overlay').classList.remove('open');
+$('btnCloseSheet').onclick=()=>$('overlay').classList.remove('open');
+$('overlay').onclick=e=>{if(e.target===$('overlay'))$('overlay').classList.remove('open');};
+$('bnFilters').onclick=()=>$('overlay').classList.add('open');
+
+buildChips();render();
+
+// Demo: precargar y abrir panel para ver pills corregidas
+setTimeout(()=>{
+  $('liveSearch').value='lol'; S.live='lol';
+  S.chip='Profesional'; S.chipCol='nivel';
+  $('fCol').value=''; syncChipUI(); render();
+  $('overlay').classList.add('open');
+},400);
+</script>
+</body>
+</html>

@@ -21,7 +21,10 @@ test.describe('Móvil — modo Tabla', () => {
   test('botones móvil visibles', async ({ page }) => {
     await expect(page.locator('#btn-pills-mode')).toBeVisible();
     await expect(page.locator('#btn-mobile-sheets')).toBeVisible();
-    await expect(page.locator('#btn-actions')).toBeVisible();
+    await expect(page.locator('#topbar #btn-actions')).toBeHidden();
+    await expect(page.locator('#mobile-bnav')).toBeVisible();
+    await expect(page.locator('#mbnav-menu')).toBeVisible();
+    await expect(page.locator('#mbnav-filters')).toBeVisible();
     await expect(page.locator('#btn-open-file')).toBeHidden();
     await expect(page.locator('#btn-my-docs')).toBeHidden();
   });

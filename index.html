@@ -940,7 +940,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,
   #topbar #btn-open-file,#topbar #btn-my-docs{display:none!important}
   #topbar-center #btn-pills-mode{display:inline-flex!important;margin:0!important}
-  #topbar #btn-actions{display:inline-flex!important}
+  #topbar #btn-actions{display:none!important}
   #topbar #btn-pills-mode,#topbar #btn-actions,#topbar #btn-mobile-sheets{
     min-height:36px!important;height:36px!important;box-sizing:border-box!important
   }
@@ -983,15 +983,19 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Stats bar: scroll horizontal, tarjetas más pequeñas */
   .scard{padding:4px 10px;min-width:70px}
   .scard-val{font-size:15px}
-  /* Chips bar: compactar */
-  #chips-bar{padding:4px 10px;height:34px}
-  #chip-search{width:160px;font-size:11px}
-  /* Searchbar: reorganizar en columna */
-  #searchbar{flex-wrap:wrap;padding:6px 10px;gap:5px}
-  #search-input{width:100%;min-width:0;flex:none;order:0;font-size:13px;padding:8px 12px}
-  #regex-toggle,#excl-toggle{font-size:10px}
-  #search-col{font-size:11px;max-width:130px}
-  #btn-clear-inline{font-size:11px;padding:4px 8px;margin-left:auto}
+  /* Chips bar: oculta en móvil (chips en panel Filtros) */
+  #chips-bar:not(.pills-mode){display:none!important}
+  #pills-filter-btn{display:none!important}
+  /* Searchbar: búsqueda en vivo simplificada */
+  #searchbar{flex-wrap:nowrap;padding:8px 12px;gap:8px;align-items:center}
+  #search-input{
+    flex:1;min-width:0;width:auto;order:0;font-size:14px;padding:10px 12px;
+    border-radius:var(--r);border:1px solid var(--border);background:var(--bg)
+  }
+  #search-input::-webkit-search-cancel-button{display:none}
+  #btn-search-clear-mobile.show{display:flex!important}
+  #regex-toggle,#excl-toggle,#search-col,#btn-clear-inline,
+  #recent-toggle,#btn-regex-flags,#search-recents,#focus-exit-search{display:none!important}
   #focus-exit-search{font-size:10px;padding:3px 8px}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
@@ -1055,8 +1059,89 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   button,a,.tab,.chip,.mpill,.doc-item,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   /* Permitir selección en inputs y texto */
   input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
+  /* Barra filtros activos + desfiltrado rápido */
+  #mobile-active-bar{
+    display:none;align-items:center;gap:8px;padding:7px 10px 7px 12px;
+    background:linear-gradient(90deg,var(--acc-dim),transparent);
+    border-bottom:1px solid rgba(59,130,246,.25);flex-shrink:0;min-height:40px
+  }
+  #mobile-active-bar.show{display:flex}
+  #mobile-active-pills{
+    flex:1;min-width:0;display:flex;align-items:center;gap:6px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none
+  }
+  #mobile-active-pills::-webkit-scrollbar{display:none}
+  .mf-active-count{
+    flex-shrink:0;font-size:10px;font-weight:700;color:var(--acc-text);
+    background:var(--acc-dim);border:1px solid rgba(59,130,246,.35);
+    padding:3px 7px;border-radius:10px
+  }
+  .mf-apill{
+    flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+    padding:5px 10px;border-radius:16px;font-size:11px;font-weight:500;
+    background:rgba(59,130,246,.18);border:1px solid rgba(59,130,246,.45);color:#dbeafe
+  }
+  .mf-apill button{background:none;border:none;color:#93c5fd;cursor:pointer;font-size:13px;padding:0;line-height:1}
+  #btn-mobile-quick-clear{
+    flex-shrink:0;display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;
+    border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.1);color:var(--danger);
+    font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap
+  }
+  body{padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}
 }
 #mobile-escape-btn{display:none}
+#btn-search-clear-mobile{display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0}
+/* Barra inferior móvil */
+#mobile-bnav{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:840;
+  background:var(--s1);border-top:1px solid var(--border);
+  padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px));height:calc(52px + env(safe-area-inset-bottom,0px))
+}
+.mbnav-inner{display:flex;width:100%}
+.mbnav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border:none;background:none;color:var(--muted);font-size:10px;cursor:pointer;
+  font-family:var(--font);padding:4px;border-radius:8px;transition:color .12s,background .12s
+}
+.mbnav-btn.on{color:var(--acc-text);background:var(--acc-dim)}
+.mbnav-ico{font-size:20px;line-height:1;position:relative}
+.mbnav-badge{
+  position:absolute;top:-5px;right:-10px;min-width:16px;height:16px;border-radius:8px;
+  background:var(--danger);color:#fff;font-size:9px;font-weight:700;
+  display:none;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--s1)
+}
+.mbnav-badge.on{display:flex}
+/* Panel filtros móvil */
+#mobile-filter-overlay{
+  display:none;position:fixed;inset:0;z-index:860;background:rgba(0,0,0,.55);
+  align-items:center;justify-content:center;padding:max(14px,env(safe-area-inset-top,0px)) 14px max(14px,env(safe-area-inset-bottom,0px))
+}
+#mobile-filter-overlay.open{display:flex}
+.mf-sheet{
+  width:min(440px,calc(100vw - 28px));max-height:min(88dvh,calc(100dvh - 28px));
+  background:var(--s1);border:1px solid var(--border2);border-radius:16px;
+  display:flex;flex-direction:column;overflow:hidden
+}
+.mf-sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mf-sheet-hdr h3{font-size:15px;font-weight:600;margin:0}
+.mf-sheet-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--text);font-size:18px;cursor:pointer}
+.mf-sheet-body{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+.mf-sheet-ftr{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0}
+.mf-sec{margin-bottom:16px}
+.mf-sec-t{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;font-weight:600}
+.mf-field{width:100%;padding:10px 12px;border-radius:var(--r);border:1px solid var(--border2);background:var(--s2);color:var(--text);font-size:13px;font-family:var(--font)}
+.mf-tog{display:flex;gap:8px;flex-wrap:wrap}
+.mf-tog label{display:flex;align-items:center;gap:6px;padding:9px 14px;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--s2);font-size:13px;color:var(--text);cursor:pointer}
+.mf-tog label.on{border-color:var(--acc);background:rgba(59,130,246,.22);color:#fff}
+.mf-chips-host{display:flex;flex-wrap:wrap;gap:8px}
+.mf-chips-host .chip{
+  padding:9px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--s2);
+  font-size:13px;font-weight:500;color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.2)
+}
+.mf-chips-host .chip.active{background:rgba(59,130,246,.28);border-color:var(--acc);color:#fff}
+.mf-chips-host .chip-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.2);margin-left:4px}
+.mf-btn{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.mf-btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
 
 /* Modales/paneles: layout fijado al abrir (no salta al redimensionar) */
 html[data-modal-vp="mobile"] #actions-panel{
@@ -1444,7 +1529,8 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
 </div>
 <div id="chip-dropdown"></div>
 <div id="searchbar">
-  <input type="text" id="search-input" placeholder="&#128269;  Buscar en la hoja..." oninput="onSearch()" onkeydown="_onSearchKey(event)" disabled/>
+  <input type="text" id="search-input" placeholder="&#128269;  Buscar en la hoja..." oninput="onSearch();_updateMobileActiveBar();_updateSearchClearBtn()" onkeydown="_onSearchKey(event)" disabled inputmode="search" enterkeyhint="search"/>
+  <button type="button" id="btn-search-clear-mobile" onclick="_clearLiveSearch()" title="Borrar búsqueda" style="display:none">×</button>
   <div id="search-recents"></div>
   <label id="recent-toggle" title="Guardar búsquedas recientes" style="display:none;align-items:center;gap:4px;font-size:10px;color:var(--muted);cursor:pointer;flex-shrink:0;white-space:nowrap;user-select:none">
     <input type="checkbox" id="chk-recent" style="accent-color:var(--acc)" onchange="_toggleRecentSave()"/> Recientes
@@ -1471,6 +1557,15 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   <button id="btn-date-cols" style="display:none"></button>
   <button class="btn" id="btn-clear-inline" onclick="clearFilters()" disabled title="Limpiar filtros" style="padding:5px 8px;font-size:12px;margin-left:auto">✕ Limpiar</button>
   <button id="focus-exit-search" onclick="exitFocusMode()" style="display:none;padding:4px 10px;border-radius:4px;font-size:10px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc);cursor:pointer;margin-left:4px">⊙ Salir enfoque</button>
+</div>
+
+<!-- Barra filtros activos móvil -->
+<div id="mobile-active-bar">
+  <div id="mobile-active-pills"></div>
+  <button type="button" id="btn-mobile-quick-clear" onclick="clearChipFiltersOnly()" title="Quitar filtros de columnas">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
+    Limpiar
+  </button>
 </div>
 
 <!-- Panel Mis Documentos -->
@@ -2268,6 +2363,7 @@ function restoreTabUI(){
   $('table-wrap').style.display='flex';
   updateBreadcrumb();
   setStatus(`"${tab.activeSheet||'Datos'}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas`);
+  _mobileUiRefresh();
 }
 
 function setSelectValue(id, val){
@@ -2301,6 +2397,7 @@ function showDropzone(full=true){
     $('sheet-list').innerHTML='<div style="padding:10px 12px;color:var(--muted);font-size:11px">Abre un .xlsx</div>';
   }
   updateStatusBar();
+  _mobileUiRefresh();
 }
 
 // ── CARGA DE ARCHIVO ──────────────────────────────────────────────────────────
@@ -2546,6 +2643,7 @@ function precalcColStats(tab){
 function buildChips(){
   const tab=T(); if(!tab) return;
   if(!tab.colUniques) precalcColStats(tab);
+  if(_mfChipsMounted) _mfUnmountChips();
 
   const bar=$('chips-bar');
   $('chips-placeholder').style.display='none';
@@ -2589,7 +2687,8 @@ function buildChips(){
 function updateChipStates(){
   const tab=T(); if(!tab) return;
   if(!tab.colUniques) precalcColStats(tab); // guardia: nunca acceder null
-  const chips=$('chips-bar').querySelectorAll('.chip[data-col]');
+  const chips=[...$('chips-bar').querySelectorAll('.chip[data-col]'),
+    ...($('mf-chips-host')?.querySelectorAll('.chip[data-col]')||[])];
   if(!chips.length) return;
 
   // Obtener solo las columnas que tienen chip para limitar la pasada
@@ -2642,6 +2741,7 @@ function updateChipStates(){
   // Update toggle badge and clear button
   setTimeout(_updateChipsBadge, 50);
   _updateClearChipBtn();
+  _mobileUiRefresh();
 }
 
 function toggleChipsBar(){
@@ -3233,6 +3333,7 @@ function buildSearchCombo(){
   _lastComboCols=colKey; // mismas columnas, no reconstruir
   _lastComboTab=tab;
   $('search-col').innerHTML='<option>(Todas las columnas)</option>'+tab.columns.map(c=>`<option value="${eh(c)}">${eh(c)}</option>`).join('');
+  _mfSyncOptionsUI?.();
 }
 function buildDateColCombo(){
   const tab=T(); if(!tab) return;
@@ -3397,8 +3498,9 @@ function clearFilters(){
   $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
   const cr=$('chk-regex'); if(cr) cr.checked=false;
   const ce=$('chk-excl'); if(ce) ce.checked=false;
-  closeDropdown(); updateChipStates(); applyFilters();
+  closeDropdown(); closeMobileFilterSheet(); updateChipStates(); applyFilters();
   if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
+  _mobileUiRefresh();
   toast('Filtros limpiados');
 }
 
@@ -6298,6 +6400,151 @@ function drawPieChart(ctx,canvas,labels,values,colors,isDonut,tc,mc){
   });
 }
 
+// ── FILTROS MÓVIL (barra inferior + panel) ────────────────────────────────────
+let _mfChipsMounted = false;
+function _isMobileUi(){ return window.innerWidth <= 500; }
+function _colFilterLabel(col, val){
+  if(Array.isArray(val)) return val.length===1?val[0]:val.length+' valores';
+  if(val==='__NULL__') return 'sin cédula';
+  if(val==='__WITH__') return 'con cédula';
+  if(typeof val==='string'&&val.startsWith('__CONTAINS__:')) return 'contiene "'+val.slice(13)+'"';
+  if(typeof val==='string'&&val.startsWith('__DATE_RANGE__:')) return val.slice(14).split('__TO__:').join(' → ');
+  return String(val);
+}
+function clearChipFiltersOnly(){
+  const tab=T(); if(!tab) return;
+  tab.colFilters={};
+  $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
+  closeDropdown();
+  if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
+  updateChipStates(); applyFilters();
+}
+function _clearLiveSearch(){
+  $('search-input').value='';
+  onSearch();
+  _updateSearchClearBtn();
+  _updateMobileActiveBar();
+}
+function _updateSearchClearBtn(){
+  const btn=$('btn-search-clear-mobile'); if(!btn) return;
+  const q=($('search-input')?.value||'').trim();
+  const show=_isMobileUi()&&q;
+  btn.style.display=show?'flex':'none';
+  btn.classList.toggle('show',show);
+}
+function _updateMobileBnav(){
+  const bnav=$('mobile-bnav'); if(!bnav) return;
+  const tab=T();
+  const show=_isMobileUi()&&tab?.rawData?.length>0;
+  bnav.style.display=show?'flex':'none';
+  if(!show) return;
+  const n=Object.keys(tab.colFilters||{}).length;
+  const badge=$('mbnav-filter-badge');
+  if(badge){
+    badge.textContent=n>0?String(n):'';
+    badge.classList.toggle('on',n>0);
+  }
+  $('mbnav-table')?.classList.toggle('on',!_pillsOn&&!$('mobile-filter-overlay')?.classList.contains('open'));
+  $('mbnav-filters')?.classList.toggle('on',$('mobile-filter-overlay')?.classList.contains('open'));
+}
+function _updateMobileActiveBar(){
+  const bar=$('mobile-active-bar'), host=$('mobile-active-pills');
+  if(!bar||!host) return;
+  if(!_isMobileUi()){ bar.classList.remove('show'); return; }
+  const tab=T();
+  const parts=[];
+  const q=($('search-input')?.value||'').trim();
+  if(q) parts.push({rm:'search', html:'"'+eh(q)+'"'});
+  if(tab){
+    Object.entries(tab.colFilters||{}).forEach(([col,val])=>{
+      parts.push({rm:'col:'+col, html:eh(col)+': '+eh(_colFilterLabel(col,val))});
+    });
+  }
+  if($('chk-regex')?.checked) parts.push({rm:'regex', html:'Regex'});
+  if($('chk-excl')?.checked) parts.push({rm:'excl', html:'Excluir'});
+  if(!parts.length){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  let h=`<span class="mf-active-count">${parts.length}</span>`;
+  parts.forEach(p=>{
+    h+=`<span class="mf-apill">${p.html}<button type="button" data-rm="${p.rm}" aria-label="Quitar">×</button></span>`;
+  });
+  host.innerHTML=h;
+  host.querySelectorAll('[data-rm]').forEach(btn=>{
+    btn.onclick=()=>{
+      const k=btn.dataset.rm;
+      if(k==='search') _clearLiveSearch();
+      else if(k==='regex'){ const c=$('chk-regex'); if(c){c.checked=false;onRegexChange();}}
+      else if(k==='excl'){ const c=$('chk-excl'); if(c){c.checked=false;applyFilters();}}
+      else if(k.startsWith('col:')) removeColFilter(k.slice(4));
+      _updateMobileActiveBar();
+    };
+  });
+}
+function _mobileUiRefresh(){
+  _updateMobileBnav();
+  _updateMobileActiveBar();
+  _updateSearchClearBtn();
+}
+function _mfSyncOptionsUI(){
+  const sc=$('search-col'), mf=$('mf-search-col');
+  if(sc&&mf){ mf.innerHTML=sc.innerHTML; mf.value=sc.value; }
+  const rx=$('chk-regex'), mrx=$('mf-chk-regex');
+  if(rx&&mrx){ mrx.checked=rx.checked; $('mf-l-regex')?.classList.toggle('on',rx.checked); }
+  const ex=$('chk-excl'), mex=$('mf-chk-excl');
+  if(ex&&mex){ mex.checked=ex.checked; $('mf-l-excl')?.classList.toggle('on',ex.checked); }
+}
+function mobileFilterColChange(val){
+  const sc=$('search-col'); if(sc){ sc.value=val; onSearchColChange(); }
+  _mfSyncOptionsUI();
+}
+function mobileFilterRegexToggle(on){
+  const c=$('chk-regex'); if(c){ c.checked=on; onRegexChange(); }
+  $('mf-l-regex')?.classList.toggle('on',on);
+  _updateMobileActiveBar();
+}
+function mobileFilterExclToggle(on){
+  const c=$('chk-excl'); if(c){ c.checked=on; applyFilters(); }
+  $('mf-l-excl')?.classList.toggle('on',on);
+  _updateMobileActiveBar();
+}
+function _mfMountChips(){
+  if(_mfChipsMounted) return;
+  const host=$('mf-chips-host'), bar=$('chips-bar'), ref=$('chips-right');
+  if(!host||!bar) return;
+  [...bar.querySelectorAll('.chip[data-col]')].forEach(ch=>host.appendChild(ch));
+  _mfChipsMounted=true;
+}
+function _mfUnmountChips(){
+  if(!_mfChipsMounted) return;
+  const host=$('mf-chips-host'), bar=$('chips-bar'), ref=$('chips-right');
+  if(!host||!bar) return;
+  [...host.querySelectorAll('.chip')].forEach(ch=>bar.insertBefore(ch, ref));
+  _mfChipsMounted=false;
+}
+function openMobileFilterSheet(){
+  if(!_isMobileUi()) return;
+  const tab=T(); if(!tab?.rawData?.length){ toast('Carga datos primero'); return; }
+  buildChips();
+  _mfMountChips();
+  _mfSyncOptionsUI();
+  $('mobile-filter-overlay')?.classList.add('open');
+  _lockModalViewport();
+  scheduleOverlayCheck();
+  _updateMobileBnav();
+}
+function closeMobileFilterSheet(){
+  _mfUnmountChips();
+  $('mobile-filter-overlay')?.classList.remove('open');
+  scheduleOverlayCheck?.();
+  _updateMobileBnav();
+}
+function mobileBnavTable(){
+  closeMobileFilterSheet();
+  if(_pillsOn) _exitPillsMode();
+  _updateMobileBnav();
+}
+window.addEventListener('resize', ()=>{ _mobileUiRefresh(); if(!_isMobileUi()) closeMobileFilterSheet(); });
+
 // ── INICIO ────────────────────────────────────────────────────────────────────
 applyTheme(currentTheme);
 if(!promptSessionRestore()) restoreSession();
@@ -6307,6 +6554,7 @@ initChipSearch();
 initFocusModes();
 _sidebarInit();
 _renderRecentSearches();
+_mobileUiRefresh();
 
 // ── MODO PILLS ────────────────────────────────────────────────────────────────
 const PILLS_KEY = 'mirador_pills_v1';
@@ -6359,7 +6607,7 @@ function _exitPillsMode(){
   if(_pillsFichaOpen) pillsCloseFicha();
 }
 function togglePillsMode(){
-  if(_pillsOn){ _exitPillsMode(); return; }
+  if(_pillsOn){ _exitPillsMode(); _mobileUiRefresh(); return; }
   _pillsOn = true;
   const btn = $('btn-pills-mode');
   btn.classList.add('pills-on');
@@ -6400,6 +6648,7 @@ function togglePillsMode(){
       renderPillsView();
       if(typeof renderTabs === 'function') renderTabs();
     }
+  _mobileUiRefresh();
 }
 
 function pillsToggleMobileFilter(){
@@ -6788,6 +7037,7 @@ function toggleActionsPanel(){
   const p=$('actions-panel');
   if(!p) return;
   if(p.classList.contains('open')){ closeActionsPanel(); return; }
+  closeMobileFilterSheet();
 
   // Actualizar header del usuario
   _updateActionsPanelUserHeader();
@@ -7460,6 +7710,7 @@ openFileTab = function(input){
 
 // ── BOTÓN ESCAPE MÓVIL ─────────────────────────────────────────────────────────
 function closeAllOverlays(){
+  closeMobileFilterSheet();
   const overlays = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
     'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
@@ -7480,7 +7731,7 @@ const _OVERLAY_IDS = [
   'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
   'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
   'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay',
-  'fb-admin-overlay', 'fb-user-menu'
+  'mobile-filter-overlay', 'fb-admin-overlay', 'fb-user-menu'
 ];
 function _anyOverlayOpen(){
   return _OVERLAY_IDS.some(id => {
@@ -7526,6 +7777,53 @@ window.addEventListener('resize', scheduleOverlayCheck);
 window._lockModalViewport = _lockModalViewport;
 window.scheduleOverlayCheck = scheduleOverlayCheck;
 </script>
+
+<!-- Barra inferior móvil -->
+<nav id="mobile-bnav" aria-label="Navegación móvil">
+  <div class="mbnav-inner">
+    <button type="button" class="mbnav-btn on" id="mbnav-table" onclick="mobileBnavTable()">
+      <span class="mbnav-ico">▦</span>Tabla
+    </button>
+    <button type="button" class="mbnav-btn" id="mbnav-filters" onclick="openMobileFilterSheet()">
+      <span class="mbnav-ico">⛃<span class="mbnav-badge" id="mbnav-filter-badge">0</span></span>Filtros
+    </button>
+    <button type="button" class="mbnav-btn" id="mbnav-menu" onclick="toggleActionsPanel()">
+      <span class="mbnav-ico">☰</span>Menú
+    </button>
+  </div>
+</nav>
+
+<!-- Panel filtros avanzados móvil -->
+<div id="mobile-filter-overlay" onclick="closeMobileFilterSheet()">
+  <div class="mf-sheet" onclick="event.stopPropagation()">
+    <div class="mf-sheet-hdr">
+      <h3>Filtros avanzados</h3>
+      <button type="button" class="mf-sheet-close" onclick="closeMobileFilterSheet()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="mf-sheet-body">
+      <p style="font-size:11px;color:var(--muted);margin-bottom:14px;line-height:1.4">La búsqueda de texto queda arriba en tiempo real. Aquí: columnas, chips y opciones.</p>
+      <div class="mf-sec">
+        <div class="mf-sec-t">Buscar en columna</div>
+        <select class="mf-field" id="mf-search-col" onchange="mobileFilterColChange(this.value)"></select>
+      </div>
+      <div class="mf-sec">
+        <div class="mf-sec-t">Opciones</div>
+        <div class="mf-tog">
+          <label id="mf-l-regex"><input type="checkbox" id="mf-chk-regex" onchange="mobileFilterRegexToggle(this.checked)"> Regex</label>
+          <label id="mf-l-excl"><input type="checkbox" id="mf-chk-excl" onchange="mobileFilterExclToggle(this.checked)"> Excluir</label>
+        </div>
+      </div>
+      <div class="mf-sec">
+        <div class="mf-sec-t">Filtrar por columna</div>
+        <div class="mf-chips-host" id="mf-chips-host"></div>
+      </div>
+    </div>
+    <div class="mf-sheet-ftr">
+      <button type="button" class="mf-btn" onclick="clearChipFiltersOnly()">Limpiar chips</button>
+      <button type="button" class="mf-btn primary" onclick="closeMobileFilterSheet()">Listo</button>
+    </div>
+  </div>
+</div>
 
 <button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 </body>

@@ -20,11 +20,13 @@ test.describe('Móvil — modo Pills', () => {
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
   });
 
-  test('botón Filtros expande chips', async ({ page }) => {
-    const filterBtn = page.locator('#pills-filter-btn');
-    await expect(filterBtn).toBeVisible();
-    await filterBtn.click();
-    await expect(page.locator('#chips-bar.pills-mode')).toBeVisible();
+  test('barra inferior abre panel de filtros', async ({ page }) => {
+    await expect(page.locator('#mobile-bnav')).toBeVisible();
+    await page.locator('#mbnav-filters').click();
+    await expect(page.locator('#mobile-filter-overlay')).toHaveClass(/open/);
+    await expect(page.locator('#mf-chips-host .chip').first()).toBeVisible();
+    await page.evaluate(() => closeMobileFilterSheet());
+    await expect(page.locator('#mobile-filter-overlay')).not.toHaveClass(/open/);
   });
 
   test('cerrar última pestaña limpia pills', async ({ page }) => {

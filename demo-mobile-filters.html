@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mirador · Demo filtros móvil</title>
+<style>
+:root{
+  --bg:#0b1220;--s1:#141d2e;--s2:#1a2438;--s3:#243049;
+  --border:#2a3548;--border2:#3b4a63;
+  --text:#e2e8f0;--muted:#7c8aa0;--acc:#3b82f6;--acc-dim:#3b82f622;
+  --acc-text:#93c5fd;--success:#10b981;--danger:#f87171;--warn:#fbbf24;
+  --r:10px;--font:'Segoe UI',system-ui,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:#060a12;color:var(--text);min-height:100dvh}
+
+/* ── Selector de variantes ── */
+.demo-nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(6,10,18,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:12px 14px;
+}
+.demo-nav h1{font-size:13px;font-weight:600;letter-spacing:.04em;margin-bottom:8px}
+.demo-nav p{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.variant-tabs{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.vtab{
+  flex-shrink:0;padding:8px 14px;border-radius:20px;border:1px solid var(--border);
+  background:var(--s1);color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;
+  transition:all .15s;white-space:nowrap
+}
+.vtab.on{background:var(--acc-dim);border-color:var(--acc);color:var(--acc-text)}
+
+/* ── Phone frame ── */
+.phone-wrap{display:flex;justify-content:center;padding:16px 12px 32px}
+.phone{
+  width:min(390px,100%);height:min(780px,88dvh);
+  background:var(--bg);border:1px solid var(--border2);border-radius:28px;
+  overflow:hidden;display:flex;flex-direction:column;position:relative;
+  box-shadow:0 24px 60px rgba(0,0,0,.45)
+}
+.phone-notch{height:28px;background:var(--s1);flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.phone-notch span{width:80px;height:5px;background:var(--s3);border-radius:3px}
+
+/* ── App chrome ── */
+.app-topbar{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
+  padding:8px 12px;gap:8px;background:#130f28;border-bottom:1px solid var(--border);flex-shrink:0
+}
+.tb-left{display:flex;align-items:center;gap:6px}
+.tb-logo{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center}
+.tb-name{font-size:14px;font-weight:600}
+.tb-center{display:flex;justify-content:center}
+.tb-toggle{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:3px;gap:1px}
+.tb-seg{padding:6px 10px;border-radius:14px;font-size:11px;color:rgba(255,255,255,.4)}
+.tb-seg.on{background:rgba(255,255,255,.14);color:#fff}
+.tb-right{display:flex;justify-content:flex-end}
+.tb-menu{width:36px;height:36px;border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;cursor:pointer}
+
+.tabs-bar{display:flex;gap:3px;padding:6px 10px 0;background:#0a0814;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0}
+.tab{
+  padding:7px 10px 5px;border-radius:8px 8px 0 0;background:var(--s2);border:1px solid var(--border);
+  border-bottom:none;min-width:130px;flex-shrink:0
+}
+.tab.on{background:var(--bg);border-color:var(--acc);border-top:2px solid var(--acc);box-shadow:0 -2px 10px rgba(59,130,246,.2)}
+.tab-name{font-size:11px;font-weight:600;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tab-meta{font-size:9px;color:var(--muted);margin-top:2px}
+
+/* ── Stats + content ── */
+.stats{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);flex-shrink:0}
+.stat{padding:6px 12px;border-right:1px solid var(--border);flex-shrink:0}
+.stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase}
+.stat-val{font-size:14px;font-weight:600;color:var(--acc-text)}
+
+/* Variant A: compact active bar */
+.filter-bar{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0;min-height:44px
+}
+.filter-bar.hidden{display:none}
+.fb-summary{flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fb-summary strong{color:var(--acc-text);font-weight:600}
+.fb-pills{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0}
+.fb-pill{
+  flex-shrink:0;padding:4px 8px;border-radius:14px;font-size:10px;
+  background:var(--acc-dim);border:1px solid rgba(59,130,246,.35);color:var(--acc-text);
+  display:flex;align-items:center;gap:4px
+}
+.fb-pill button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;padding:0;line-height:1}
+
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.row{
+  display:grid;grid-template-columns:1fr 80px;padding:10px 12px;
+  border-bottom:1px solid var(--border);font-size:12px;gap:8px
+}
+.row-h{background:var(--s2);font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;position:sticky;top:0}
+.row .cargo{color:var(--muted);font-size:11px;margin-top:2px}
+.row.hidden{display:none}
+
+/* ── FAB ── */
+.fab{
+  position:absolute;right:16px;bottom:calc(72px + var(--safe-b));
+  width:52px;height:52px;border-radius:50%;border:none;
+  background:var(--acc);color:#fff;font-size:22px;cursor:pointer;
+  box-shadow:0 4px 20px rgba(59,130,246,.45);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;z-index:50
+}
+.fab:active{transform:scale(.94)}
+.fab-badge{
+  position:absolute;top:-2px;right:-2px;min-width:20px;height:20px;
+  border-radius:10px;background:var(--danger);color:#fff;
+  font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;
+  border:2px solid var(--bg);padding:0 5px
+}
+.fab.hidden{display:none}
+
+/* ── Filter sheet ── */
+.sheet-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:60;
+  display:none;align-items:center;justify-content:center;padding:16px
+}
+.sheet-overlay.open{display:flex}
+.sheet{
+  width:100%;max-height:min(88%,calc(100% - 32px));
+  background:var(--s1);border:1px solid var(--border2);border-radius:16px;
+  display:flex;flex-direction:column;overflow:hidden;
+  animation:sheetIn .25s cubic-bezier(.4,0,.2,1)
+}
+@keyframes sheetIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+.sheet-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0
+}
+.sheet-hdr h2{font-size:15px;font-weight:600}
+.sheet-close{width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--text);font-size:18px;cursor:pointer}
+.sheet-body{flex:1;overflow-y:auto;padding:14px 16px;-webkit-overflow-scrolling:touch}
+.sheet-ftr{
+  padding:12px 16px calc(12px + var(--safe-b));border-top:1px solid var(--border);
+  display:flex;gap:8px;flex-shrink:0;background:var(--s1)
+}
+
+/* ── Form sections ── */
+.sec{margin-bottom:18px}
+.sec-title{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;font-weight:600}
+.field{
+  width:100%;padding:11px 14px;border-radius:var(--r);border:1px solid var(--border);
+  background:var(--bg);color:var(--text);font-size:14px;font-family:var(--font);outline:none
+}
+.field:focus{border-color:var(--acc)}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1}
+select.field{appearance:none}
+
+.toggle-row{display:flex;flex-wrap:wrap;gap:8px}
+.toggle{
+  display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:var(--r);
+  border:1px solid var(--border);background:var(--bg);font-size:12px;color:var(--muted);cursor:pointer
+}
+.toggle.on{border-color:var(--acc);background:var(--acc-dim);color:var(--acc-text)}
+.toggle input{accent-color:var(--acc)}
+
+.chip-grid{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  padding:7px 12px;border-radius:20px;border:1px solid var(--border);background:var(--bg);
+  font-size:12px;color:var(--text);cursor:pointer;transition:all .12s
+}
+.chip:hover{border-color:var(--border2)}
+.chip.on{background:var(--acc-dim);border-color:var(--acc);color:var(--acc-text)}
+.chip .cnt{font-size:10px;color:var(--muted);margin-left:4px}
+.chip.on .cnt{color:var(--acc-text)}
+
+.active-list{display:flex;flex-direction:column;gap:6px}
+.active-item{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);
+  background:var(--bg);border:1px solid var(--border)
+}
+.active-item .lbl{flex:1;font-size:12px;min-width:0}
+.active-item .lbl strong{color:var(--acc-text)}
+.active-item button{background:none;border:none;color:var(--danger);cursor:pointer;font-size:16px;padding:4px}
+
+.btn{
+  flex:1;padding:12px;border-radius:var(--r);border:1px solid var(--border);
+  background:var(--s2);color:var(--text);font-size:13px;font-weight:600;
+  cursor:pointer;font-family:var(--font)
+}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.ghost{color:var(--muted)}
+
+/* Variant B: top filter button */
+.tb-filter{
+  display:none;align-items:center;gap:5px;padding:0 12px;height:36px;
+  border-radius:8px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);
+  color:#fff;font-size:11px;font-weight:500;cursor:pointer
+}
+.tb-filter .badge{min-width:16px;height:16px;border-radius:8px;background:var(--danger);font-size:9px;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* Variant C: bottom nav */
+.bottom-nav{
+  display:none;position:absolute;bottom:0;left:0;right:0;
+  background:var(--s1);border-top:1px solid var(--border);
+  padding:6px 8px calc(6px + var(--safe-b));z-index:40
+}
+.bnav{display:flex;justify-content:space-around}
+.bnav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px;border:none;background:none;color:var(--muted);font-size:10px;cursor:pointer;font-family:var(--font)
+}
+.bnav-btn.on{color:var(--acc-text)}
+.bnav-icon{font-size:20px;position:relative}
+.bnav-badge{position:absolute;top:-4px;right:-8px;min-width:14px;height:14px;border-radius:7px;background:var(--danger);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center}
+
+.statusbar{
+  padding:8px 12px calc(8px + var(--safe-b));background:var(--s1);border-top:1px solid var(--border);
+  font-size:11px;color:var(--muted);flex-shrink:0;display:flex;justify-content:space-between
+}
+.statusbar strong{color:var(--text)}
+
+/* Variant visibility */
+[data-variant="A"] .v-a{display:flex}
+[data-variant="B"] .v-b{display:flex}
+[data-variant="C"] .v-c{display:flex}
+[data-variant="B"] .fab,[data-variant="C"] .fab{display:none!important}
+[data-variant="C"] .bottom-nav{display:block}
+[data-variant="C"] .content{padding-bottom:56px}
+[data-variant="C"] .fab-alt{display:none}
+
+.note{
+  margin:0 14px 20px;padding:12px 14px;border-radius:var(--r);
+  background:var(--s1);border:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.5
+}
+.note strong{color:var(--text)}
+</style>
+</head>
+<body>
+
+<nav class="demo-nav">
+  <h1>Mirador · Demo filtros móvil</h1>
+  <p>Toca una variante y prueba los filtros. Los 60 registros de ejemplo se actualizan en vivo.</p>
+  <div class="variant-tabs">
+    <button class="vtab on" data-v="A">A · FAB flotante</button>
+    <button class="vtab" data-v="B">B · Botón en topbar</button>
+    <button class="vtab" data-v="C">C · Barra inferior</button>
+  </div>
+</nav>
+
+<div class="phone-wrap">
+  <div class="phone" id="phone" data-variant="A">
+    <div class="phone-notch"><span></span></div>
+
+    <header class="app-topbar">
+      <div class="tb-left">
+        <div class="tb-logo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        </div>
+        <span class="tb-name">Mirador</span>
+      </div>
+      <div class="tb-center">
+        <div class="tb-toggle"><span class="tb-seg on">Tabla</span><span class="tb-seg">Pills</span></div>
+      </div>
+      <div class="tb-right">
+        <button class="tb-filter v-b" id="btnTopFilter" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filtros <span class="badge" id="topBadge">0</span>
+        </button>
+        <button class="tb-menu" type="button">☰</button>
+      </div>
+    </header>
+
+    <div class="tabs-bar">
+      <div class="tab on">
+        <div class="tab-name">Vacantes DPSA 2025</div>
+        <div class="tab-meta" id="tabMeta">60 registros</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val" id="statTotal">60</div></div>
+      <div class="stat"><div class="stat-lbl">Visibles</div><div class="stat-val" id="statVis">60</div></div>
+      <div class="stat"><div class="stat-lbl">Filtros</div><div class="stat-val" id="statFilt">0</div></div>
+    </div>
+
+    <!-- Barra resumen activa (variante A) -->
+    <div class="filter-bar v-a" id="filterBar">
+      <div class="fb-summary" id="fbSummary">Sin filtros activos</div>
+    </div>
+
+    <div class="content" id="content"></div>
+
+    <div class="statusbar">
+      <span><strong id="statusRows">60</strong> filas visibles</span>
+      <span id="statusHint">Doble toque → detalle</span>
+    </div>
+
+    <!-- FAB variante A -->
+    <button class="fab v-a fab-alt" id="fab" type="button" aria-label="Filtros">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      <span class="fab-badge" id="fabBadge" style="display:none">0</span>
+    </button>
+
+    <!-- Bottom nav variante C -->
+    <nav class="bottom-nav v-c">
+      <div class="bnav">
+        <button class="bnav-btn on" type="button"><span class="bnav-icon">▦</span>Tabla</button>
+        <button class="bnav-btn" type="button" id="btnBnavFilter"><span class="bnav-icon">⛃<span class="bnav-badge" id="bnavBadge" style="display:none">0</span></span>Filtros</button>
+        <button class="bnav-btn" type="button"><span class="bnav-icon">☰</span>Menú</button>
+      </div>
+    </nav>
+
+    <!-- Panel de filtros -->
+    <div class="sheet-overlay" id="overlay">
+      <div class="sheet" onclick="event.stopPropagation()">
+        <div class="sheet-hdr">
+          <h2>Filtros</h2>
+          <button class="sheet-close" id="btnClose" type="button">×</button>
+        </div>
+        <div class="sheet-body">
+          <section class="sec">
+            <div class="sec-title">Búsqueda en la hoja</div>
+            <input class="field" id="qSearch" type="search" placeholder="Buscar texto…" autocomplete="off">
+          </section>
+
+          <section class="sec">
+            <div class="sec-title">Columna</div>
+            <select class="field" id="qCol">
+              <option value="">Todas las columnas</option>
+              <option value="nombre">Nombre</option>
+              <option value="cargo">Cargo</option>
+              <option value="nivel">Nivel</option>
+              <option value="direccion">Dirección</option>
+            </select>
+          </section>
+
+          <section class="sec">
+            <div class="sec-title">Opciones</div>
+            <div class="toggle-row">
+              <label class="toggle" id="togRegex"><input type="checkbox" id="qRegex"> Regex</label>
+              <label class="toggle" id="togExcl"><input type="checkbox" id="qExcl"> Excluir</label>
+            </div>
+          </section>
+
+          <section class="sec">
+            <div class="sec-title">Filtrar por columna</div>
+            <div class="chip-grid" id="chipGrid"></div>
+          </section>
+
+          <section class="sec" id="secActive" style="display:none">
+            <div class="sec-title">Filtros activos</div>
+            <div class="active-list" id="activeList"></div>
+          </section>
+        </div>
+        <div class="sheet-ftr">
+          <button class="btn ghost" id="btnClear" type="button">Limpiar todo</button>
+          <button class="btn primary" id="btnApply" type="button">Aplicar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="note" id="variantNote">
+  <strong>Variante A — FAB flotante:</strong> botón siempre accesible sobre la tabla. Badge con cantidad de filtros. Barra resumen debajo de stats cuando hay filtros activos. Recomendada para Mirador.
+</p>
+
+<script>
+const DATA = [
+  {nombre:'Sandra Ponce Zapata',cargo:'Almacenista',nivel:'Asistencial',dir:'DPSA'},
+  {nombre:'William Erazo Rodríguez',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'José Félix Bonells Rovira',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Olga Lucía Niño Hernández',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Carolina del Pilar Hernández V.',cargo:'Coordinadora',nivel:'Directivo',dir:'DPSA'},
+  {nombre:'Gloria Esperanza Giraldo López',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Alejandro Alfaro Murillo',cargo:'Supervisor',nivel:'Directivo',dir:'DPSA'},
+  {nombre:'José Manuel Sánchez Tamayo',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'María Fernanda Ruiz Castro',cargo:'Analista',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Carlos Andrés Mejía Ortiz',cargo:'Director Técnico',nivel:'Directivo',dir:'DPSA'},
+  {nombre:'Laura Patricia Gómez Silva',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Ricardo Emilio Vargas Luna',cargo:'Almacenista',nivel:'Asistencial',dir:'DPSA'},
+  {nombre:'Diana Marcela Torres Ríos',cargo:'Coordinadora',nivel:'Directivo',dir:'DPSA'},
+  {nombre:'Felipe Augusto Herrera Díaz',cargo:'Asesor Comercial',nivel:'Profesional',dir:'DPSA'},
+  {nombre:'Angélica María Cortés Peña',cargo:'Analista',nivel:'Profesional',dir:'DPSA'},
+];
+
+// Expand to 60 rows
+while(DATA.length < 60){
+  const src = DATA[DATA.length % 15];
+  DATA.push({...src, nombre: src.nombre.replace(/(\w+)$/, (m,i) => m + ' ' + (DATA.length+1))});
+}
+
+const CHIP_OPTS = {
+  nivel: ['Asistencial','Profesional','Directivo','Operativo'],
+  cargo: ['Asesor Comercial','Almacenista','Coordinadora','Director Técnico','Supervisor','Analista'],
+  direccion: ['DPSA','Administración','Operaciones']
+};
+
+const state = { search:'', col:'', regex:false, excl:false, chips:{} };
+
+const $ = id => document.getElementById(id);
+
+function renderTable(){
+  const q = state.search.trim().toLowerCase();
+  const rows = $('content');
+  let html = '<div class="row row-h"><span>Denominación</span><span>Nivel</span></div>';
+  let vis = 0;
+  DATA.forEach((r,i) => {
+    let show = true;
+    if(q){
+      const hay = [r.nombre,r.cargo,r.nivel,r.dir].join(' ').toLowerCase();
+      const hit = state.regex ? new RegExp(q,'i').test(hay) : hay.includes(q);
+      show = state.excl ? !hit : hit;
+      if(state.col){
+        const v = String(r[state.col==='direccion'?'dir':state.col]||'').toLowerCase();
+        const ch = state.regex ? new RegExp(q,'i').test(v) : v.includes(q);
+        show = state.excl ? !ch : ch;
+      }
+    }
+    Object.entries(state.chips).forEach(([col,val]) => {
+      const field = col==='direccion'?'dir':col;
+      if(r[field] !== val) show = false;
+    });
+    if(show) vis++;
+    html += `<div class="row${show?'':' hidden'}" data-i="${i}">
+      <span><strong>${r.nombre}</strong><div class="cargo">${r.cargo}</div></span>
+      <span>${r.nivel}</span></div>`;
+  });
+  rows.innerHTML = html;
+  $('statVis').textContent = vis;
+  $('statusRows').textContent = vis;
+  $('tabMeta').textContent = vis + ' / 60 registros';
+}
+
+function countFilters(){
+  let n = 0;
+  if(state.search.trim()) n++;
+  if(Object.keys(state.chips).length) n += Object.keys(state.chips).length;
+  return n;
+}
+
+function updateUI(){
+  const n = countFilters();
+  $('statFilt').textContent = n;
+  const badge = n > 0 ? String(n) : '';
+  ['fabBadge','topBadge','bnavBadge'].forEach(id => {
+    const el = $(id); if(!el) return;
+    el.textContent = badge;
+    el.style.display = n ? 'flex' : 'none';
+  });
+  const bar = $('filterBar');
+  const sum = $('fbSummary');
+  if(n === 0){
+    bar.classList.add('hidden');
+    sum.textContent = 'Sin filtros activos';
+  } else {
+    bar.classList.remove('hidden');
+    const parts = [];
+    if(state.search.trim()) parts.push('"' + state.search.trim() + '"');
+    Object.entries(state.chips).forEach(([c,v]) => parts.push(c+': '+v));
+    sum.innerHTML = '<strong>'+n+'</strong> activo'+(n>1?'s':'')+': '+parts.join(' · ');
+  }
+  const sec = $('secActive');
+  const list = $('activeList');
+  const items = [];
+  if(state.search.trim()) items.push({lbl:'Búsqueda', val:state.search, key:'search'});
+  Object.entries(state.chips).forEach(([c,v]) => items.push({lbl:c, val:v, key:'chip:'+c}));
+  if(items.length){
+    sec.style.display = '';
+    list.innerHTML = items.map(it => `
+      <div class="active-item">
+        <span class="lbl"><strong>${it.lbl}:</strong> ${it.val}</span>
+        <button type="button" data-rm="${it.key}">×</button>
+      </div>`).join('');
+    list.querySelectorAll('[data-rm]').forEach(btn => btn.onclick = () => {
+      const k = btn.dataset.rm;
+      if(k==='search'){ state.search=''; $('qSearch').value=''; }
+      else { const col=k.slice(5); delete state.chips[col]; syncChips(); }
+      renderTable(); updateUI();
+    });
+  } else sec.style.display = 'none';
+}
+
+function syncChips(){
+  document.querySelectorAll('#chipGrid .chip').forEach(ch => {
+    const col = ch.dataset.col, val = ch.dataset.val;
+    ch.classList.toggle('on', state.chips[col]===val);
+  });
+}
+
+function buildChips(){
+  const grid = $('chipGrid');
+  let html = '';
+  Object.entries(CHIP_OPTS).forEach(([col, vals]) => {
+    vals.forEach(v => {
+      const cnt = DATA.filter(r => (col==='direccion'?r.dir:r[col])===v).length;
+      html += `<button type="button" class="chip" data-col="${col}" data-val="${v}">${v}<span class="cnt">${cnt}</span></button>`;
+    });
+  });
+  grid.innerHTML = html;
+  grid.querySelectorAll('.chip').forEach(ch => ch.onclick = () => {
+    const {col,val} = ch.dataset;
+    if(state.chips[col]===val) delete state.chips[col];
+    else state.chips[col] = val;
+    syncChips(); renderTable(); updateUI();
+  });
+}
+
+function openSheet(){ $('overlay').classList.add('open'); }
+function closeSheet(){ $('overlay').classList.remove('open'); }
+
+function readForm(){
+  state.search = $('qSearch').value;
+  state.col = $('qCol').value;
+  state.regex = $('qRegex').checked;
+  state.excl = $('qExcl').checked;
+  document.getElementById('togRegex').classList.toggle('on', state.regex);
+  document.getElementById('togExcl').classList.toggle('on', state.excl);
+}
+
+function clearAll(){
+  state.search=''; state.col=''; state.regex=false; state.excl=false; state.chips={};
+  $('qSearch').value=''; $('qCol').value=''; $('qRegex').checked=false; $('qExcl').checked=false;
+  syncChips(); renderTable(); updateUI();
+}
+
+// Events
+$('fab').onclick = openSheet;
+$('btnTopFilter').onclick = openSheet;
+$('btnBnavFilter').onclick = openSheet;
+$('overlay').onclick = e => { if(e.target===$('overlay')) closeSheet(); };
+$('btnClose').onclick = closeSheet;
+$('btnApply').onclick = () => { readForm(); renderTable(); updateUI(); closeSheet(); };
+$('btnClear').onclick = () => { clearAll(); };
+['qSearch','qCol','qRegex','qExcl'].forEach(id => {
+  $(id).addEventListener('input', () => { readForm(); renderTable(); updateUI(); });
+  $(id).addEventListener('change', () => { readForm(); renderTable(); updateUI(); });
+});
+
+document.querySelectorAll('.vtab').forEach(tab => tab.onclick = () => {
+  document.querySelectorAll('.vtab').forEach(t => t.classList.remove('on'));
+  tab.classList.add('on');
+  const v = tab.dataset.v;
+  $('phone').dataset.variant = v;
+  const notes = {
+    A:'<strong>Variante A — FAB flotante:</strong> botón siempre accesible sobre la tabla. Badge con cantidad de filtros. Barra resumen debajo de stats cuando hay filtros activos. <em>Recomendada para Mirador.</em>',
+    B:'<strong>Variante B — Botón en topbar:</strong> "Filtros" junto al menú hamburguesa. Ocupa menos espacio visual; el FAB no tapa filas de la tabla.',
+    C:'<strong>Variante C — Barra inferior:</strong> acceso tipo app nativa. Tabla | Filtros | Menú. Familiar en móvil pero requiere más altura de chrome.'
+  };
+  $('variantNote').innerHTML = notes[v];
+});
+
+buildChips();
+renderTable();
+updateUI();
+</script>
+</body>
+</html>

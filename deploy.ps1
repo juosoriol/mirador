@@ -3,15 +3,14 @@
 
 Write-Host "Deploying Mirador a Firebase..." -ForegroundColor Cyan
 
-$firebase = "npx -y firebase-tools@latest"
-$project  = "miradorapp-b9faf"
+$project = "miradorapp-b9faf"
 
 Write-Host "`nProyecto: $project" -ForegroundColor Yellow
-& $firebase use $project
+firebase use $project
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 Write-Host "`nIniciando deploy (hosting + firestore + storage + functions)..." -ForegroundColor Yellow
-& $firebase deploy --only hosting,firestore,storage,functions --project $project
+firebase deploy --only hosting,firestore,storage,functions --project $project
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nDeploy exitoso!" -ForegroundColor Green

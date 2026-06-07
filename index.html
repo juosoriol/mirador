@@ -936,7 +936,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar-right{display:flex!important;align-items:center!important;gap:6px!important;justify-self:end!important;flex-shrink:0}
   #topbar .logo{width:32px!important;height:32px!important;margin:0!important;flex-shrink:0}
   #topbar-breadcrumb{display:none!important}
-  #btn-session,#btn-focus,#btn-theme,#focus-exit,#btn-export,
+  #btn-session,#btn-focus,#btn-theme,#btn-export,
   #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,
   #topbar #btn-open-file,#topbar #btn-my-docs{display:none!important}
   #topbar-center #btn-pills-mode{display:inline-flex!important;margin:0!important}
@@ -995,8 +995,25 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #search-input::-webkit-search-cancel-button{display:none}
   #btn-search-clear-mobile.show{display:flex!important}
   #regex-toggle,#excl-toggle,#search-col,#btn-clear-inline,
-  #recent-toggle,#btn-regex-flags,#search-recents,#focus-exit-search{display:none!important}
+  #recent-toggle,#btn-regex-flags,#search-recents{display:none!important}
   #focus-exit-search{font-size:10px;padding:3px 8px}
+  body.focus-a #focus-exit,
+  body.focus-d #focus-exit{display:flex!important}
+  body.focus-b #focus-exit-search,
+  body.focus-c.focus-c-revealed #focus-exit-search{display:flex!important}
+  /* Botón flotante para salir de enfoque (topbar/search ocultos en móvil) */
+  #mobile-focus-exit{
+    display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px));left:50%;
+    transform:translateX(-50%);z-index:845;padding:10px 18px;border-radius:22px;
+    border:1px solid var(--acc);background:var(--s1);color:var(--acc-text);font-size:12px;
+    font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer;font-family:var(--font);
+    align-items:center;gap:6px;white-space:nowrap;touch-action:manipulation
+  }
+  body.focus-a #mobile-focus-exit,
+  body.focus-b #mobile-focus-exit,
+  body.focus-c #mobile-focus-exit,
+  body.focus-d #mobile-focus-exit{display:flex}
+  body.focus-c #focus-hover-strip{height:28px;touch-action:manipulation}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
   /* Modal hojas centrado (móvil) */
@@ -2128,7 +2145,7 @@ window.addEventListener('DOMContentLoaded', function(){
   const overlaysToClose = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
     'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu'
+    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'mobile-filter-overlay'
   ];
   overlaysToClose.forEach(id => {
     const el = document.getElementById(id);
@@ -2138,6 +2155,8 @@ window.addEventListener('DOMContentLoaded', function(){
   ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
     document.getElementById(id)?.remove();
   });
+  if(typeof _mfUnmountChips==='function') _mfUnmountChips();
+  if(typeof _mobileUiRefresh==='function') _mobileUiRefresh();
 });
 
 // ── TABS ──────────────────────────────────────────────────────────────────────
@@ -5923,6 +5942,7 @@ function applyFocusMode(id){
     btn.title=m?.label||'Modo enfocado';
     btn.style.color=id!=='none'?'var(--acc-text)':'';
   }
+  _mobileUiRefresh?.();
 }
 
 function openFocusMenu(){
@@ -5975,6 +5995,15 @@ function _initFocusCHover(){
   if(si){
     si.addEventListener('focus',()=>{ if(_focusMode==='focus-c'){_focusCSearchFocused=true; _focusCReveal(true);} });
     si.addEventListener('blur',()=>{ _focusCSearchFocused=false; });
+  }
+  const strip=$('focus-hover-strip');
+  if(strip){
+    strip.addEventListener('click',()=>{ if(_focusMode==='focus-c') _focusCReveal(true); });
+    strip.addEventListener('touchend',e=>{
+      if(_focusMode!=='focus-c') return;
+      e.preventDefault();
+      _focusCReveal(true);
+    },{passive:false});
   }
 }
 let _focusCSearchFocused=false;
@@ -7825,6 +7854,9 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
   </div>
 </div>
 
+<button id="mobile-focus-exit" type="button" onclick="exitFocusMode()" aria-label="Salir del modo enfoque">⊙ Salir enfoque</button>
+
 <button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
+<script>if(typeof _mobileUiRefresh==='function')_mobileUiRefresh();</script>
 </body>
 </html>

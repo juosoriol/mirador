@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<script>
+(function(){
+  var BUILD='20260606-topbar2', k='mirador_build_v';
+  var prev=localStorage.getItem(k);
+  if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
+  localStorage.setItem(k,BUILD);
+})();
+</script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>

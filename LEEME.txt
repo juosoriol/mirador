@@ -1,0 +1,18 @@
+Mirador — proyecto en C:\dev\mirador
+=====================================
+
+Abrir esta carpeta en Cursor (File → Open Folder → C:\dev\mirador)
+
+Servidor local:
+  Doble clic en SERVIDOR-LOCAL.bat
+  o: npm run dev
+  → http://localhost:8000
+
+Pruebas E2E:
+  Doble clic en INSTALAR-Y-PROBAR.bat
+  o: node scripts\write-e2e.mjs && npm test
+
+Producción:
+  https://miradorapp-b9faf.web.app
+
+La copia antigua en OneDrive ya no se usa.

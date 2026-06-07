@@ -6,8 +6,20 @@ ui-debug.log
 
 # Node
 node_modules/
+functions/node_modules/
 npm-debug.log
 yarn-error.log
+# Pruebas E2E
+.env.test
+tests/.auth/
+playwright-report/
+test-results/
+tests/fixtures/*.xlsx
+tests/fixtures/*.xls
+tests/fixtures/*.csv
+
+# Copia local anidada (no versionar)
+mirador/
 
 # Sistema
 .DS_Store

@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260606-hdr-fix', k='mirador_build_v';
+  var BUILD='20260606-pills-clear', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -2241,15 +2241,28 @@ function setSelectValue(id, val){
   s.selectedIndex=0; // fallback: primer elemento si el valor no existe
 }
 
+function _hideFileActions(){
+  ['btn-export','btn-actions','btn-mobile-sheets','btn-save-cloud'].forEach(id=>{
+    const e=$(id); if(e) e.style.display='none';
+  });
+  const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='none';
+  _updateSheetsBtn();
+}
 function showDropzone(full=true){
+  if(full) _resetPillsSurface();
   $('dropzone').style.display='flex';
   $('table-wrap').style.display='none';
   $('loading').style.display='none';
   $('stats-bar').classList.remove('visible');
   if(full){
+    enableControls(false);
+    _hideFileActions();
+    updateBreadcrumb();
+    setStatus('Abre un archivo .xlsx para comenzar.');
+    $('search-input').value='';
     $('chips-placeholder').style.display='inline';
     $('chips-right').style.display='none';
-    $('chips-bar').querySelectorAll('.chip').forEach(c=>c.remove());
+    $('chips-bar')?.querySelectorAll('.chip').forEach(c=>c.remove());
     $('sheet-list').innerHTML='<div style="padding:10px 12px;color:var(--muted);font-size:11px">Abre un .xlsx</div>';
   }
   updateStatusBar();
@@ -6245,17 +6258,46 @@ function _pillsInitials(s){
 }
 
 // ── TOGGLE PRINCIPAL ──────────────────────────────────────────────────────────
+function _resetPillsSurface(){
+  if(_pillsOn) _exitPillsMode();
+  $('pills-view')?.classList.remove('open');
+  const grid=$('pills-grid'); if(grid) grid.innerHTML='';
+  const cnt=$('pills-toolbar-count'); if(cnt) cnt.textContent='';
+  const pInp=$('pills-search-input'); if(pInp) pInp.value='';
+  const da=$('data-area'); if(da) da.style.display='';
+  const sb=$('searchbar'); if(sb) sb.style.display='';
+}
+function _exitPillsMode(){
+  if(!_pillsOn) return;
+  _pillsOn = false;
+  $('btn-pills-mode')?.classList.remove('pills-on');
+  const pv = $('pills-view');
+  const da = $('data-area');
+  const cb = $('chips-bar');
+  pv?.classList.remove('open');
+  if(da) da.style.display = '';
+  $('searchbar').style.display = '';
+  if(_pillsCbParent && cb){
+    cb.classList.remove('pills-mode','chips-collapsed');
+    cb.style.display = '';
+    _pillsCbParent.insertBefore(cb, _pillsCbNext);
+    _pillsCbParent = null; _pillsCbNext = null;
+  } else if(cb) {
+    cb.style.display = '';
+  }
+  if(_pillsFichaOpen) pillsCloseFicha();
+}
 function togglePillsMode(){
-  _pillsOn = !_pillsOn;
+  if(_pillsOn){ _exitPillsMode(); return; }
+  _pillsOn = true;
   const btn = $('btn-pills-mode');
-  btn.classList.toggle('pills-on', _pillsOn);
+  btn.classList.add('pills-on');
   const pv = $('pills-view');
   const da = $('data-area');
   const cb = $('chips-bar');
   const isMobile = window.innerWidth <= 500;
 
-  if(_pillsOn){
-    pv.classList.add('open');
+  pv.classList.add('open');
     da.style.display = 'none';
     $('searchbar').style.display = 'none';
 
@@ -6287,22 +6329,6 @@ function togglePillsMode(){
       renderPillsView();
       if(typeof renderTabs === 'function') renderTabs();
     }
-  } else {
-    pv.classList.remove('open');
-    da.style.display = '';
-    $('searchbar').style.display = '';
-
-    if(_pillsCbParent && cb){
-      // Restaurar chips-bar a su posición original
-      cb.classList.remove('pills-mode','chips-collapsed');
-      cb.style.display = '';
-      _pillsCbParent.insertBefore(cb, _pillsCbNext);
-      _pillsCbParent = null; _pillsCbNext = null;
-    } else {
-      cb.style.display = '';
-    }
-    if(_pillsFichaOpen) pillsCloseFicha();
-  }
 }
 
 function pillsToggleMobileFilter(){

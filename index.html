@@ -8,6 +8,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <title>Mirador — análisis de planillas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -144,6 +145,26 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #topbar .btn.success{background:#15803d;border-color:#16a34a;color:#fff}
 #topbar .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}
 #topbar .logo{background:var(--acc)}
+/* Escritorio: solo hamburguesa + usuario en la barra */
+@media(min-width:501px){
+  #topbar #btn-pills-mode,#topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
+  #topbar #btn-open-file,#topbar #btn-mobile-sheets,#topbar #btn-mobile-menu,
+  #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit{display:none!important}
+  #topbar #btn-actions{margin-left:auto!important}
+  #topbar .fb-user-badge{flex-direction:column;align-items:center;gap:4px;margin-left:6px}
+  #topbar #fb-admin-btn{
+    padding:3px 8px;border-radius:6px;border:1px solid rgba(99,102,241,.4);
+    background:rgba(99,102,241,.15);color:#a5b4fc;font-size:10px;font-weight:600;
+    cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2
+  }
+  #topbar #fb-admin-btn:hover{filter:brightness(1.08)}
+  #topbar .fb-user-avatar-circle{
+    width:32px;height:32px;border-radius:50%;background:#6366f1;display:flex;align-items:center;
+    justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);cursor:pointer
+  }
+  #actions-panel.open{min-width:260px;max-width:min(320px,calc(100vw - 24px))}
+}
+.fb-user-badge{display:flex;align-items:center;gap:8px;flex-shrink:0}
 #file-input{display:none}
 #tabs-bar{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:42px}
 #tabs-bar::-webkit-scrollbar{height:3px}
@@ -435,24 +456,41 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radius:4px;border:1px solid var(--border);background:var(--bg)}
 .cm-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:17px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .cm-actions{display:flex;justify-content:space-between;margin-top:14px}
-#fav-modal{width:440px;max-height:80vh;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
-.fav-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1)}
-.fav-header h3{font-size:15px;font-weight:600;color:var(--text);margin:0}
+#fav-overlay{position:fixed;inset:0;z-index:200}
+#fav-overlay.open{align-items:center;justify-content:center;padding:16px}
+@media(max-width:500px){
+  #fav-modal{max-height:min(78dvh, calc(100dvh - 24px))}
+}
+#fav-modal{
+  width:min(440px, calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:min(80dvh, calc(100dvh - 32px));
+  height:auto;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding:0!important;
+  overflow:hidden;
+  min-height:0;
+  box-sizing:border-box;
+}
+.fav-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1);gap:8px;min-width:0}
+.fav-header h3{font-size:15px;font-weight:600;color:var(--text);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .modal-close-new{width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;padding:0;line-height:1}
 .modal-close-new:hover{background:rgba(255,255,255,0.15)}
-#fav-modal > #fav-save-row,#fav-modal > #fav-list{padding:0 16px}
-#fav-modal > #fav-save-row{padding-top:16px}
-#fav-save-row{display:flex;gap:7px}
-#fav-name-input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none}
+#fav-save-row{display:flex;flex-direction:column;align-items:stretch;gap:8px;flex-shrink:0;padding:12px 16px;border-bottom:1px solid var(--border);min-width:0;box-sizing:border-box}
+#fav-name-input{width:100%;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none;box-sizing:border-box}
 #fav-name-input:focus{border-color:var(--acc)}
-#fav-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;min-height:40px}
-.fav-item{display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
+#fav-save-row .btn{width:100%;justify-content:center;box-sizing:border-box}
+#fav-list{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:5px;padding:12px 16px 16px;-webkit-overflow-scrolling:touch}
+.fav-item{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);min-width:0;box-sizing:border-box}
 .fav-item:hover{border-color:var(--border2)}
-.fav-item-info{flex:1;min-width:0}
-.fav-item-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fav-item-meta{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fav-load{padding:3px 10px;border-radius:var(--r);font-size:11px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer}
-.fav-del{padding:3px 7px;border-radius:var(--r);font-size:14px;background:none;border:none;color:var(--muted);cursor:pointer}
+.fav-item-info{flex:1 1 140px;min-width:0;max-width:100%}
+.fav-item-name{font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-item-meta{font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-item-actions{display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0;margin-left:auto}
+.fav-load{padding:4px 10px;border-radius:var(--r);font-size:11px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer;white-space:nowrap}
+.fav-del{padding:4px 8px;border-radius:var(--r);font-size:14px;background:none;border:none;color:var(--muted);cursor:pointer;flex-shrink:0}
 .fav-del:hover{color:var(--danger)}
 #fav-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0}
 /* Ocultar elementos solo-móvil por defecto */
@@ -861,9 +899,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar #btn-open-file{order:11}
   #topbar #btn-my-docs{order:20;margin-left:auto!important;margin-right:4px!important}
   #topbar #btn-mobile-sheets{order:21}
-  /* Panel acciones en móvil: sidebar retráctil izquierdo */
-  #actions-panel{display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important}
-  #actions-panel.open{left:0!important}
   /* Tabs: más compactas y scroll táctil mejorado */
   #tabs-bar{min-height:38px;padding:4px 8px 0;-webkit-overflow-scrolling:touch;touch-action:pan-x;scroll-behavior:smooth}
   #tabs-bar::-webkit-scrollbar{height:6px}
@@ -957,114 +992,56 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   button,a,.tab,.chip,.mpill,.doc-item,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   /* Permitir selección en inputs y texto */
   input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
-  /* ── MODALES OPTIMIZADOS PARA MÓVIL ── */
-  /* Todos los modales: pantalla completa con safe-areas */
-  .modal-overlay{
-    position:fixed!important;
-    padding:0!important;
-  }
-  .modal-box{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-    margin:0!important;
-    overflow-y:auto!important;
-  }
-
-  /* Theme modal */
-  #theme-modal{
-    width:100%!important;
-    max-width:100%!important;
-  }
-
-  /* Chart modal */
-  #chart-modal{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-  }
-
-  /* Header modal */
-  #hdr-modal{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-  }
-
-  /* Column panel */
-  #col-panel{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-  }
-
-  /* Detail panel */
-  #detail-panel{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-  }
-
-  /* Fav modal - mantener diseño centrado compacto en móvil */
-  #fav-modal{
-    max-width:90vw!important;
-    max-height:70vh!important;
-  }
-
-  /* Docs panel */
-  #docs-panel{
-    width:100%!important;
-    max-width:100%!important;
-    left:0!important;
-    right:0!important;
-    border-radius:16px 16px 0 0!important;
-    max-height:85vh!important;
-  }
-
-  /* Pills ficha panel - bottom sheet */
-  #pills-ficha-panel{
-    width:100%!important;
-    max-width:100%!important;
-    border-radius:16px 16px 0 0!important;
-    padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;
-  }
-
-  /* Botón escape: cerrar overlays en móvil */
-  #mobile-escape-btn.visible{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:6px;
-    position:fixed;
-    bottom:calc(12px + env(safe-area-inset-bottom,0px));
-    left:50%;
-    transform:translateX(-50%);
-    z-index:10000;
-    padding:10px 22px;
-    border-radius:24px;
-    border:1px solid var(--border2);
-    background:var(--s1);
-    color:var(--text);
-    font-size:13px;
-    font-weight:600;
-    cursor:pointer;
-    box-shadow:0 4px 20px rgba(0,0,0,.45);
-    font-family:var(--font);
-    touch-action:manipulation;
-  }
 }
 #mobile-escape-btn{display:none}
+
+/* Modales/paneles: layout fijado al abrir (no salta al redimensionar) */
+html[data-modal-vp="mobile"] #actions-panel{
+  display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;
+  width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;
+  border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;
+  transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important
+}
+html[data-modal-vp="mobile"] #actions-panel.open{left:0!important}
+html[data-modal-vp="mobile"] .modal-overlay{position:fixed!important;padding:0!important}
+html[data-modal-vp="mobile"] .modal-box:not(#fav-modal){
+  width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;
+  border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
+  margin:0!important;overflow-y:auto!important
+}
+html[data-modal-vp="mobile"] #fav-overlay.open{
+  align-items:center!important;justify-content:center!important;
+  padding:max(16px, env(safe-area-inset-top,0px)) 16px max(16px, env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #fav-modal{
+  width:min(440px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  height:auto!important;
+  max-height:min(75dvh, calc(100dvh - 48px))!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+  margin:0!important
+}
+html[data-modal-vp="mobile"] #theme-modal{width:100%!important;max-width:100%!important}
+html[data-modal-vp="mobile"] #chart-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
+html[data-modal-vp="mobile"] #hdr-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
+html[data-modal-vp="mobile"] #col-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
+html[data-modal-vp="mobile"] #detail-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
+html[data-modal-vp="mobile"] #docs-panel.open{align-items:flex-end!important;justify-content:center!important;padding:0!important}
+html[data-modal-vp="mobile"] #docs-panel .docs-modal{
+  width:100%!important;max-width:100%!important;max-height:85vh!important;
+  border-radius:16px 16px 0 0!important;margin:0!important
+}
+html[data-modal-vp="mobile"] #pills-ficha-panel{
+  width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
+  display:flex;align-items:center;justify-content:center;gap:6px;position:fixed;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:10000;
+  padding:10px 22px;border-radius:24px;border:1px solid var(--border2);background:var(--s1);color:var(--text);
+  font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);touch-action:manipulation
+}
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
@@ -1713,6 +1690,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
       <button onclick="closeActionsPanel()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
     </div>
   </div>
+  <button class="ap-item" id="ap-pills-mode" onclick="togglePillsMode();closeActionsPanel()">⊞ Tabla / Pills</button>
+  <button class="ap-item" id="ap-docs" onclick="openDocsPanel();closeActionsPanel()">📂 Documentos</button>
+  <button class="ap-item" id="ap-save-cloud" onclick="saveToCloud();closeActionsPanel()" style="display:none">☁️ Guardar en la nube</button>
+  <div class="ap-sep"></div>
   <!-- PRIMERA OPCIÓN: Favoritos/Vistas guardadas -->
   <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
   <div class="ap-sep"></div>
@@ -4729,7 +4710,7 @@ function renderViewsList(){ renderFavList(); }
 function renderFavList(){
   const favs=getFavs(), list=$('fav-list');
   if(!favs.length){list.innerHTML='<div id="fav-empty">Sin favoritos. Aplica filtros y guárdalos.</div>';return}
-  list.innerHTML=favs.map((f,i)=>`<div class="fav-item"><div class="fav-item-info"><div class="fav-item-name">${eh(f.name)}</div><div class="fav-item-meta">${eh(f.summary)} · ${eh(f.date||'')}</div>${f.state?.fileName?`<div style="font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${eh(f.state.fileName)}</div>`:''}</div><button class="fav-load" onclick="loadFavorite(${i})">▷ Cargar</button>${f.state?.fileName?`<button class="fav-load" onclick="openFileForFav(${i})" title="Seleccionar este archivo" style="background:var(--s2)">📂 Archivo</button>`:''}<button class="fav-del" onclick="deleteFavorite(${i})" title="Eliminar">🗑</button></div>`).join('');
+  list.innerHTML=favs.map((f,i)=>`<div class="fav-item"><div class="fav-item-info"><div class="fav-item-name">${eh(f.name)}</div><div class="fav-item-meta">${eh(f.summary)} · ${eh(f.date||'')}</div>${f.state?.fileName?`<div style="font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${eh(f.state.fileName)}</div>`:''}</div><div class="fav-item-actions"><button class="fav-load" onclick="loadFavorite(${i})">▷ Cargar</button>${f.state?.fileName?`<button class="fav-load" onclick="openFileForFav(${i})" title="Seleccionar este archivo" style="background:var(--s2)">📂 Archivo</button>`:''}<button class="fav-del" onclick="deleteFavorite(${i})" title="Eliminar">🗑</button></div></div>`).join('');
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────────────────────
@@ -5904,7 +5885,9 @@ function updateBreadcrumb(){
 // ── VISTAS / GRÁFICO (stubs para botones de toolbar) ────────────────────────
 function openViewsPanel(){
   renderViewsList();
+  window._lockModalViewport?.();
   $('fav-overlay').classList.add('open');
+  window.scheduleOverlayCheck?.();
   $('fav-name-input').focus();
 }
 
@@ -6557,6 +6540,8 @@ function toggleActionsPanel(){
   [['ap-graph','btn-graph'],['ap-cond','btn-cond'],['ap-cols','btn-cols'],
    ['ap-export','btn-export'],['ap-export-all','btn-export-all'],['ap-refresh','btn-refresh']
   ].forEach(([ap,btn])=>{ const a=$$(ap),b=$$(btn); if(a&&b) a.disabled=b.disabled; });
+  const scBtn=$('btn-save-cloud'), apSc=$('ap-save-cloud');
+  if(scBtn&&apSc) apSc.style.display=scBtn.style.display;
 
   // En móvil: mostrar overlay y sidebar desde la izquierda
   const overlay = $('actions-panel-overlay');
@@ -6568,13 +6553,15 @@ function toggleActionsPanel(){
     const btn=$('btn-actions');
     const r=btn?.getBoundingClientRect();
     if(r){
-      const panW=220;
+      const panW=280;
       let left=r.right-panW;
       if(left<8) left=8;
       p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
     } else { p.style.right='8px'; p.style.top='60px'; }
   }
+  _lockModalViewport();
   p.classList.add('open');
+  scheduleOverlayCheck();
   setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
 }
 function closeActionsPanel(){
@@ -6593,6 +6580,10 @@ function _showFileActions(){
   $('btn-export').style.display='';
   $('btn-actions').style.display='';
   $('btn-mobile-sheets').style.display='';
+  if(_fbUser){
+    const sc=$('btn-save-cloud'); if(sc) sc.style.display='';
+    const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='';
+  }
   // Habilitar items del menú móvil
   ['mm-export','mm-graph','mm-cond','mm-cols','mm-refresh'].forEach(id=>{
     const el=$(id); if(el) el.disabled=false;
@@ -6699,6 +6690,7 @@ firebase.initializeApp(_fbConfig);
 const _fbAuth    = firebase.auth();
 const _fbDb      = firebase.firestore();
 const _fbStorage = firebase.storage();
+const _fbFns     = firebase.functions();
 
 // Forzar configuración de Firestore
 _fbDb.settings({
@@ -6712,6 +6704,17 @@ _fbDb.enablePersistence({ synchronizeTabs: true })
 
 let _fbUser     = null;
 let _fbUserRole = null; // 'admin' | 'user'
+
+async function _fbSyncClaims(user){
+  try {
+    const res = await _fbFns.httpsCallable('syncUserClaims')();
+    await user.getIdToken(true);
+    return res.data?.role || null;
+  } catch(e){
+    console.warn('[Claims] No se pudieron sincronizar permisos:', e.message || e);
+    return null;
+  }
+}
 
 // ── App init ──────────────────────────────────────────────────────────────
 document.getElementById('login-loading').classList.add('show');
@@ -6745,6 +6748,14 @@ _fbAuth.onAuthStateChanged(async user => {
         return;
       }
       _fbUserRole = data.role || 'user';
+      const syncedRole = await _fbSyncClaims(user);
+      if(syncedRole) _fbUserRole = syncedRole;
+      else {
+        try {
+          const tr = await user.getIdTokenResult();
+          if(tr.claims.role) _fbUserRole = tr.claims.role;
+        } catch(_){}
+      }
       // Actualizar último acceso
       _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
     } catch(e){
@@ -6803,30 +6814,34 @@ function _fbUpdateUserUI(user){
   const initials = email.slice(0,2).toUpperCase();
   const topbar   = document.getElementById('topbar');
 
-  // Badge usuario
   let badge = document.getElementById('fb-user-badge');
   if(!badge){
     badge = document.createElement('div');
     badge.id = 'fb-user-badge';
-    badge.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0';
+    badge.className = 'fb-user-badge';
     topbar?.appendChild(badge);
   }
-  badge.innerHTML = `
-    <div title="${eh(email)}" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="fbShowUserMenu(this)">
-      <div style="width:30px;height:30px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);flex-shrink:0">${eh(initials)}</div>
-    </div>`;
+  badge.className = 'fb-user-badge';
 
-  // Botón Admin (solo si role === 'admin')
+  let avatarBtn = badge.querySelector('.fb-user-avatar-btn');
+  if(!avatarBtn){
+    badge.innerHTML = '';
+    avatarBtn = document.createElement('div');
+    avatarBtn.className = 'fb-user-avatar-btn';
+    avatarBtn.onclick = function(){ fbShowUserMenu(this); };
+    badge.appendChild(avatarBtn);
+  }
+  avatarBtn.title = email;
+  avatarBtn.innerHTML = `<div class="fb-user-avatar-circle">${eh(initials)}</div>`;
+
+  document.getElementById('fb-admin-btn')?.remove();
   if(_fbUserRole === 'admin'){
-    let adminBtn = document.getElementById('fb-admin-btn');
-    if(!adminBtn){
-      adminBtn = document.createElement('button');
-      adminBtn.id = 'fb-admin-btn';
-      adminBtn.innerHTML = '👥 Admin';
-      adminBtn.onclick = fbOpenAdminPanel;
-      adminBtn.style.cssText = 'padding:5px 11px;border-radius:8px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto';
-      topbar?.insertBefore(adminBtn, badge);
-    }
+    const adminBtn = document.createElement('button');
+    adminBtn.id = 'fb-admin-btn';
+    adminBtn.type = 'button';
+    adminBtn.innerHTML = '👥 Admin';
+    adminBtn.onclick = fbOpenAdminPanel;
+    badge.appendChild(adminBtn);
   }
 }
 
@@ -6873,7 +6888,7 @@ function fbChangePassword(){
 
 // ── PANEL ADMINISTRACIÓN ──────────────────────────────────────────────────
 async function fbOpenAdminPanel(){
-  if(_fbUserRole !== 'admin'){ alert('Sin permisos.'); return; }
+  if(!await _fbEnsureAdminClaim()){ alert('Sin permisos de administrador. Cierra sesión y vuelve a entrar.'); return; }
   document.getElementById('fb-user-menu')?.remove();
 
   // Cargar usuarios
@@ -7036,19 +7051,29 @@ async function saveToCloud(){
   }
 }
 
+async function _fbEnsureAdminClaim(){
+  let tr = await _fbUser.getIdTokenResult(true);
+  if(tr.claims.role === 'admin') return true;
+  if(_fbUserRole !== 'admin') return false;
+  await _fbSyncClaims(_fbUser);
+  tr = await _fbUser.getIdTokenResult(true);
+  return tr.claims.role === 'admin';
+}
+
 async function openDocsPanel(){
   if(!_fbUser){ alert('Debes iniciar sesión primero.'); return; }
 
+  _lockModalViewport();
   document.getElementById('docs-panel').classList.add('open');
-  checkOverlaysOpen();
+  scheduleOverlayCheck();
   const body = document.getElementById('docs-body');
   body.innerHTML = '<div class="docs-uploading">Cargando documentos...</div>';
 
   try {
+    const canListAll = await _fbEnsureAdminClaim();
     let query = _fbDb.collection('documents');
 
-    // Si no es admin, solo ver sus documentos
-    if(_fbUserRole !== 'admin'){
+    if(!canListAll){
       query = query.where('userId', '==', _fbUser.uid);
     }
 
@@ -7061,18 +7086,22 @@ async function openDocsPanel(){
 
     const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
 
-    // Obtener nombres de usuarios si es admin
+    // Solo listar usuarios si el token tiene claim admin (evita permission-denied)
     let users = {};
-    if(_fbUserRole === 'admin'){
-      const userSnap = await _fbDb.collection('users').get();
-      userSnap.docs.forEach(d => users[d.id] = d.data());
+    if(canListAll){
+      try {
+        const userSnap = await _fbDb.collection('users').get();
+        userSnap.docs.forEach(d => users[d.id] = d.data());
+      } catch(e){
+        console.warn('[Docs] No se pudieron cargar nombres de usuario:', e.message || e);
+      }
     }
 
     const html = docs.map(doc => {
       const date = doc.uploadedAt?.toDate();
       const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
       const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
-      const userName = _fbUserRole === 'admin' && doc.userId !== _fbUser.uid ?
+      const userName = canListAll && doc.userId !== _fbUser.uid ?
                        `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${eh(users[doc.userId]?.email || 'Usuario')})</span>` : '';
 
       return `
@@ -7090,7 +7119,7 @@ async function openDocsPanel(){
           <div class="doc-size">${sizeStr}</div>
           <div class="doc-actions">
             <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
-            ${doc.userId === _fbUser.uid || _fbUserRole === 'admin' ?
+            ${doc.userId === _fbUser.uid || canListAll ?
               `<button class="doc-btn danger" data-doc-delete="${eh(doc.id)}" data-doc-path="${eh(doc.storagePath||'')}">Eliminar</button>` : ''}
           </div>
         </div>`;
@@ -7186,6 +7215,8 @@ openFileTab = function(input){
   if(_fbUser){
     const btn = document.getElementById('btn-save-cloud');
     if(btn) btn.style.display = '';
+    const apSc = document.getElementById('ap-save-cloud');
+    if(apSc) apSc.style.display = '';
   }
 };
 
@@ -7203,29 +7234,59 @@ function closeAllOverlays(){
   checkOverlaysOpen();
 }
 
-// Mostrar botón escape cuando hay overlay abierto (solo móvil)
-function checkOverlaysOpen(){
-  const btn = document.getElementById('mobile-escape-btn');
-  if(!btn || window.innerWidth > 500){ btn?.classList.remove('visible'); return; }
-  const anyOpen = [
-    'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
-    'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu',
-    'fb-admin-overlay', 'fb-user-menu'
-  ].some(id => {
+// Overlays: fijar modo móvil/desktop al abrir para que no salten al redimensionar
+let _escapeBtnVisible = null;
+let _modalVp = null;
+let _overlayCheckRaf = null;
+const _OVERLAY_IDS = [
+  'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
+  'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
+  'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu',
+  'fb-admin-overlay', 'fb-user-menu'
+];
+function _anyOverlayOpen(){
+  return _OVERLAY_IDS.some(id => {
     const el = document.getElementById(id);
     return el && (el.classList.contains('open') || el.style.display === 'flex');
   });
-  btn.classList.toggle('visible', anyOpen);
 }
-
-new MutationObserver(() => checkOverlaysOpen()).observe(document.body, {
+function _lockModalViewport(){
+  if(!_modalVp) _modalVp = window.innerWidth <= 500 ? 'mobile' : 'desktop';
+  document.documentElement.dataset.modalVp = _modalVp;
+}
+function _updateModalViewport(){
+  if(!_anyOverlayOpen()){
+    _modalVp = null;
+    document.documentElement.removeAttribute('data-modal-vp');
+    return;
+  }
+  _lockModalViewport();
+}
+function scheduleOverlayCheck(){
+  if(_overlayCheckRaf) return;
+  _overlayCheckRaf = requestAnimationFrame(() => {
+    _overlayCheckRaf = null;
+    checkOverlaysOpen();
+  });
+}
+function checkOverlaysOpen(){
+  _updateModalViewport();
+  const btn = document.getElementById('mobile-escape-btn');
+  if(!btn) return;
+  const shouldShow = _modalVp === 'mobile' && _anyOverlayOpen();
+  if(_escapeBtnVisible === shouldShow) return;
+  _escapeBtnVisible = shouldShow;
+  btn.classList.toggle('visible', shouldShow);
+}
+new MutationObserver(scheduleOverlayCheck).observe(document.body, {
   subtree: true,
   attributes: true,
-  attributeFilter: ['class', 'style'],
+  attributeFilter: ['class'],
   childList: true
 });
-window.addEventListener('resize', checkOverlaysOpen);
+window.addEventListener('resize', scheduleOverlayCheck);
+window._lockModalViewport = _lockModalViewport;
+window.scheduleOverlayCheck = scheduleOverlayCheck;
 </script>
 
 <button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>

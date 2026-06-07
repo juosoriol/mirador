@@ -26,6 +26,9 @@ rules_version = '2';
 //   - uploadedAt: timestamp (required)
 //   - sheets: list (required)
 //
+// Admin role via custom claims (request.auth.token.role), sincronizado
+// por la Cloud Function syncUserClaims / onUserProfileWrite.
+//
 // ===============================================================
 
 service cloud.firestore {
@@ -39,15 +42,8 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function userDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-
     function isAdmin() {
-      return isAuthenticated()
-        && userDoc().exists
-        && userDoc().data.role == 'admin'
-        && userDoc().data.active != false;
+      return isAuthenticated() && request.auth.token.role == 'admin';
     }
 
     function isValidUserCreate() {

@@ -10,8 +10,8 @@ Write-Host "`nProyecto: $project" -ForegroundColor Yellow
 & $firebase use $project
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
-Write-Host "`nIniciando deploy (hosting + firestore + storage)..." -ForegroundColor Yellow
-& $firebase deploy --only hosting,firestore,storage --project $project
+Write-Host "`nIniciando deploy (hosting + firestore + storage + functions)..." -ForegroundColor Yellow
+& $firebase deploy --only hosting,firestore,storage,functions --project $project
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nDeploy exitoso!" -ForegroundColor Green

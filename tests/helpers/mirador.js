@@ -52,10 +52,16 @@ export async function isPillsOpen(page) {
   return page.locator('#pills-view').evaluate((el) => el.classList.contains('open'));
 }
 
+async function pillsToggleButton(page) {
+  const bnav = page.locator('#btn-pills-mode-bnav');
+  if (await bnav.isVisible()) return bnav;
+  return page.locator('#btn-pills-mode');
+}
+
 export async function enterPillsMode(page) {
   if (await isPillsOpen(page)) return;
 
-  const btn = page.locator('#btn-pills-mode');
+  const btn = await pillsToggleButton(page);
   if (await btn.isVisible()) {
     await btn.locator('.seg-pills').click();
   } else {
@@ -71,7 +77,7 @@ export async function enterPillsMode(page) {
 export async function exitPillsMode(page) {
   if (!(await isPillsOpen(page))) return;
 
-  const btn = page.locator('#btn-pills-mode');
+  const btn = await pillsToggleButton(page);
   if (await btn.isVisible()) {
     await btn.locator('.seg-table').click();
   } else {

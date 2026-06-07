@@ -14,12 +14,13 @@ test.describe('Móvil — modo Tabla', () => {
   test('carga archivo y muestra tabla', async ({ page }) => {
     await expect(page.locator('#table-wrap')).toBeVisible();
     await expect(page.locator('#table-body tr').first()).toBeVisible();
-    await expect(page.locator('#btn-pills-mode')).toBeVisible();
+    await expect(page.locator('#btn-pills-mode-bnav')).toBeVisible();
     expect(await getRowCount(page)).toBeGreaterThan(0);
   });
 
   test('botones móvil visibles', async ({ page }) => {
-    await expect(page.locator('#btn-pills-mode')).toBeVisible();
+    await expect(page.locator('#btn-pills-mode-bnav')).toBeVisible();
+    await expect(page.locator('#topbar #btn-pills-mode')).toBeHidden();
     await expect(page.locator('#btn-mobile-sheets')).toBeVisible();
     await expect(page.locator('#topbar #btn-actions')).toBeHidden();
     await expect(page.locator('#mobile-bnav')).toBeVisible();

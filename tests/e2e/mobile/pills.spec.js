@@ -15,7 +15,7 @@ test.describe('Móvil — modo Pills', () => {
   });
 
   test('pills visibles con toggle en topbar', async ({ page }) => {
-    await expect(page.locator('#btn-pills-mode')).toBeVisible();
+    await expect(page.locator('#btn-pills-mode-bnav')).toBeVisible();
     await expect(page.locator('#pills-view')).toHaveClass(/open/);
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
   });

@@ -1101,6 +1101,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);white-space:nowrap
   }
   body{padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}
+  /* Evitar que el teclado desplace el layout al enfocar manualmente */
+  html,body{overflow-anchor:none}
+  #main,#data-area,#table-wrap{overflow-anchor:none}
 }
 #mobile-escape-btn{display:none}
 #btn-search-clear-mobile{display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0}
@@ -3196,7 +3199,6 @@ function renderCdpContent(col){
       ci.addEventListener('click',e=>e.stopPropagation());
       ci.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); closeDropdown(); } });
       if(containsActive){
-        setTimeout(()=>{ci.focus();ci.setSelectionRange(ci.value.length,ci.value.length);},40);
         renderItems(containsVal.toLowerCase());
       }
     }
@@ -3211,7 +3213,6 @@ function renderCdpContent(col){
       si.addEventListener('keydown',e=>{
         if(e.key==='Enter'){ e.preventDefault(); closeDropdown(); }
       });
-      if(!containsActive) setTimeout(()=>si.focus(),40);
     }
   }
 
@@ -3269,11 +3270,12 @@ function cdpToggleVal(v){
     if(lbl) lbl.textContent=newSel.size;
   }
 
-  // Restore cursor exactly where it was
+  // Restore search text without stealing focus (evita saltos de viewport en móvil)
   if(si&&prevQ){
     si.value=prevQ;
-    if(prevSelStart!=null) si.setSelectionRange(prevSelStart,prevSelEnd??prevSelStart);
-    si.focus();
+    if(document.activeElement===si && prevSelStart!=null){
+      si.setSelectionRange(prevSelStart,prevSelEnd??prevSelStart);
+    }
   }
 }
 
@@ -4386,10 +4388,7 @@ function openPanelAllValues(col){
   renderList();
 
   const si=$('pv-search');
-  if(si){
-    si.addEventListener('input',()=>renderList(si.value.toLowerCase().trim()));
-    setTimeout(()=>si.focus(),40);
-  }
+  if(si) si.addEventListener('input',()=>renderList(si.value.toLowerCase().trim()));
 }
 
 function _pvToggle(col,val){
@@ -4467,10 +4466,7 @@ function openStatsPanelPicker(){
   renderList();
 
   const si=$('sp-search');
-  if(si){
-    si.addEventListener('input',()=>renderList(si.value.toLowerCase().trim()));
-    setTimeout(()=>si.focus(),40);
-  }
+  if(si) si.addEventListener('input',()=>renderList(si.value.toLowerCase().trim()));
 }
 
 function toggleStatsPanel(col){
@@ -6089,16 +6085,6 @@ function initFocusModes(){
       _focusMode==='none'?openFocusMenu():exitFocusMode();
       return;
     }
-    // Global typing: if no input focused and a printable char is pressed, focus search
-    const active=document.activeElement;
-    const inInput=active&&(active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'||active.isContentEditable);
-    if(!inInput&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key?.length===1&&T()?.rawData?.length){
-      const si=$('search-input');
-      if(si&&!si.disabled){
-        si.focus();
-        // Let the character land naturally in the input (don't preventDefault)
-      }
-    }
   });
 }
 
@@ -6165,7 +6151,6 @@ function _applyRecentSearch(idx){
   const si=$('search-input'); if(!si) return;
   si.value=r.q;
   si.dispatchEvent(new Event('input'));
-  si.focus();
   // Bump to top
   _addRecentSearch(r.q);
 }
@@ -6252,9 +6237,6 @@ function openViewsPanel(){
   window._lockModalViewport?.();
   $('fav-overlay').classList.add('open');
   window.scheduleOverlayCheck?.();
-  if(window.innerWidth>500){
-    requestAnimationFrame(()=>$('fav-name-input')?.focus({preventScroll:true}));
-  }
 }
 
 // ── GRÁFICAS ──────────────────────────────────────────────────────────────────
@@ -6462,6 +6444,12 @@ function drawPieChart(ctx,canvas,labels,values,colors,isDonut,tc,mc){
 // ── FILTROS MÓVIL (barra inferior + panel) ────────────────────────────────────
 let _mfChipsMounted = false;
 function _isMobileUi(){ return window.innerWidth <= 500; }
+function _blurActiveInput(){
+  const el=document.activeElement;
+  if(!el) return;
+  const tag=el.tagName;
+  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') el.blur();
+}
 function _colFilterLabel(col, val){
   if(Array.isArray(val)) return val.length===1?val[0]:val.length+' valores';
   if(val==='__NULL__') return 'sin cédula';
@@ -6598,6 +6586,7 @@ function _mfUnmountChips(){
 }
 function openMobileFilterSheet(){
   if(!_isMobileUi()) return;
+  _blurActiveInput();
   const tab=T(); if(!tab?.rawData?.length){ toast('Carga datos primero'); return; }
   tab.searchText=$('search-input')?.value??tab.searchText??'';
   const bar=$('chips-bar'), host=$('mf-chips-host');
@@ -6613,6 +6602,7 @@ function openMobileFilterSheet(){
 }
 function closeMobileFilterSheet(){
   _mfUnmountChips();
+  _blurActiveInput();
   $('mobile-filter-overlay')?.classList.remove('open');
   scheduleOverlayCheck?.();
   _updateMobileBnav();
@@ -7111,6 +7101,7 @@ function toggleActionsPanel(){
   const p=$('actions-panel');
   if(!p) return;
   if(p.classList.contains('open')){ closeActionsPanel(); return; }
+  _blurActiveInput();
   closeMobileFilterSheet();
 
   // Actualizar header del usuario
@@ -7196,7 +7187,7 @@ function pillsOnSearch(val){
 
 function pillsClearSearch(){
   const inp = $('pills-search-input');
-  if(inp){ inp.value=''; inp.focus(); }
+  if(inp) inp.value='';
   const mainInput = $('search-input');
   if(mainInput) mainInput.value = '';
   const clr = $('pills-search-clear');
@@ -7217,8 +7208,7 @@ togglePillsMode = function(){
     if(inp){ inp.value = v; inp.style.borderColor = v ? 'var(--acc)' : 'var(--border)'; }
     const clr = $('pills-search-clear');
     if(clr) clr.style.display = v ? 'block' : 'none';
-    // Enfocar el buscador pills en móvil
-    if(window.innerWidth <= 500) setTimeout(()=>inp?.focus(), 350);
+    _blurActiveInput();
   } else {
     // Al salir de pills, limpiar pills search
     const inp = $('pills-search-input');

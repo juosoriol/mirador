@@ -316,7 +316,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #chips-right{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0;position:sticky;right:0;background:var(--s1);padding-left:6px}
 #chips-count{font-size:11px;color:var(--muted);white-space:nowrap}
 /* ── CHIP DROPDOWN — panel flotante multi-checkbox ── */
-#chip-dropdown{display:none;position:fixed;z-index:500;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.35);width:min(320px,92vw);flex-direction:column;overflow:hidden;max-height:min(420px,60dvh)}
+#chip-dropdown{display:none;position:fixed;z-index:900;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.35);width:min(320px,92vw);flex-direction:column;overflow:hidden;max-height:min(420px,60dvh)}
 #chip-dropdown.open{display:flex}
 #cdp-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
 #chip-dropdown-title{font-size:12px;font-weight:600;color:var(--text);text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
@@ -1169,16 +1169,25 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .mf-chips-host{display:flex;flex-wrap:wrap;gap:8px}
 .mf-chips-host .chip{
   padding:9px 14px;border-radius:20px;border:1.5px solid var(--border2);background:var(--s2);
-  font-size:13px;font-weight:500;color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.15);transition:all .15s
+  font-size:13px;font-weight:500;color:var(--muted);box-shadow:0 1px 3px rgba(0,0,0,.15);transition:all .15s;
+  opacity:.72
 }
 .mf-chips-host .chip.active{
-  background:linear-gradient(135deg,rgba(59,130,246,.45),rgba(37,99,235,.35));
-  border-color:#60a5fa;color:#fff;font-weight:600;
-  box-shadow:0 0 0 2px rgba(59,130,246,.35),0 2px 8px rgba(59,130,246,.25)
+  opacity:1!important;
+  background:linear-gradient(135deg,#2563eb,#1d4ed8)!important;
+  border-color:#93c5fd!important;color:#fff!important;font-weight:600!important;
+  box-shadow:0 0 0 2px rgba(147,197,253,.55),0 4px 14px rgba(37,99,235,.45)!important
 }
-.mf-chips-host .chip.active::before{content:'✓ ';font-size:11px;font-weight:700;color:#93c5fd}
-.mf-chips-host .chip.active .chip-count{background:rgba(255,255,255,.22);color:#fff}
+.mf-chips-host .chip.active::before{content:'✓ ';font-size:12px;font-weight:800;color:#dbeafe}
+.mf-chips-host .chip.active .chip-val{color:#fff!important}
+.mf-chips-host .chip.active .chip-x{
+  display:inline-flex!important;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.25)!important;
+  color:#fff!important;font-size:12px;margin-left:2px
+}
+.mf-chips-host .chip.active .chip-count{background:rgba(255,255,255,.25)!important;color:#fff!important}
 .mf-chips-host .chip-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.2);margin-left:4px}
+.chip-val{color:var(--acc-text);font-weight:600}
 .mf-sec-hint{font-size:10px;color:var(--acc-text);margin:-4px 0 8px;font-weight:500}
 .mf-btn{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .mf-btn.primary{background:var(--acc);border-color:var(--acc);color:#fff}
@@ -2667,6 +2676,8 @@ function buildChips(){
   const tab=T(); if(!tab) return;
   if(!tab.colUniques) precalcColStats(tab);
   if(_mfChipsMounted) _mfUnmountChips();
+  $('mf-chips-host')?.querySelectorAll('.chip').forEach(c=>c.remove());
+  _mfChipsMounted=false;
 
   const bar=$('chips-bar');
   $('chips-placeholder').style.display='none';
@@ -2741,7 +2752,7 @@ function updateChipStates(){
       } else {
         label = val==='__NULL__'?'sin cédula':val==='__WITH__'?'con cédula':val?.startsWith('__CONTAINS__:')?`contiene "${val.slice(13)}"`:val?.startsWith('__DATE_RANGE__:')?`${val.slice(14).split('__TO__:')[0]||'*'} → ${val.split('__TO__:')[1]||'*'}`:String(val);
       }
-      chip.innerHTML=`${isSpec?'🪪 ':isDate?'📅 ':''}${eh(col)}: <strong style="color:var(--acc-text)">${eh(label)}</strong> <span class="chip-x">×</span>`;
+      chip.innerHTML=`${isSpec?'🪪 ':isDate?'📅 ':''}${eh(col)}: <strong class="chip-val">${eh(label)}</strong> <span class="chip-x">×</span>`;
     } else if(isSpec){
       const nulls=tab.colNulls[col]||0;
       chip.innerHTML=`🪪 ${eh(col)} ${nulls>0?'⚠️':''}<span class="chip-count">${nulls} nulos</span>`;
@@ -6589,8 +6600,11 @@ function openMobileFilterSheet(){
   if(!_isMobileUi()) return;
   const tab=T(); if(!tab?.rawData?.length){ toast('Carga datos primero'); return; }
   tab.searchText=$('search-input')?.value??tab.searchText??'';
-  buildChips();
-  _mfMountChips();
+  const bar=$('chips-bar'), host=$('mf-chips-host');
+  const chipCount=bar.querySelectorAll('.chip[data-col]').length+(host?.querySelectorAll('.chip[data-col]').length||0);
+  if(chipCount===0) buildChips();
+  if(!_mfChipsMounted) _mfMountChips();
+  updateChipStates();
   _mfSyncOptionsUI();
   $('mobile-filter-overlay')?.classList.add('open');
   _lockModalViewport();

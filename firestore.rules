@@ -1,0 +1,122 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model — Mirador
+// ===============================================================
+//
+// Collection: users
+// Document ID: Firebase Auth UID
+// Fields:
+//   - email: string (required)
+//   - name: string (required)
+//   - role: string (required) — 'user' | 'admin'
+//   - active: bool (required)
+//   - createdAt: timestamp (required on create)
+//   - createdBy: string (optional, admin-created users)
+//   - lastLogin: timestamp (optional, self-update only)
+//
+// Collection: documents
+// Document ID: auto-generated
+// Fields:
+//   - userId: string (required, immutable)
+//   - fileName: string (required)
+//   - size: number (required)
+//   - storagePath: string (required)
+//   - downloadURL: string (required)
+//   - uploadedAt: timestamp (required)
+//   - sheets: list (required)
+//
+// Admin role via custom claims (request.auth.token.role), sincronizado
+// por la Cloud Function syncUserClaims / onUserProfileWrite.
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+
+    function isValidUserCreate() {
+      return request.resource.data.keys().hasAll(['email', 'role', 'active', 'createdAt', 'name'])
+        && request.resource.data.role == 'user'
+        && request.resource.data.active == true
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100;
+    }
+
+    function isValidAdminUserCreate() {
+      return request.resource.data.keys().hasAll(['name', 'email', 'role', 'active', 'createdAt', 'createdBy'])
+        && request.resource.data.role in ['user', 'admin']
+        && request.resource.data.active == true
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 320;
+    }
+
+    function isValidUserSelfUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLogin'])
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.active == resource.data.active
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.name == resource.data.name;
+    }
+
+    function isValidAdminUserUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['active'])
+        && request.resource.data.active is bool
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.name == resource.data.name;
+    }
+
+    function isValidDocumentCreate() {
+      return request.resource.data.keys().hasAll(['userId', 'fileName', 'size', 'storagePath', 'downloadURL', 'uploadedAt', 'sheets'])
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.fileName is string
+        && request.resource.data.fileName.size() > 0
+        && request.resource.data.fileName.size() <= 255
+        && request.resource.data.size is number
+        && request.resource.data.size > 0
+        && request.resource.data.size <= 10485760
+        && request.resource.data.storagePath is string
+        && request.resource.data.storagePath.matches('^users/' + request.auth.uid + '/.+')
+        && request.resource.data.downloadURL is string
+        && request.resource.data.sheets is list
+        && request.resource.data.sheets.size() <= 100;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if (isOwner(userId) && isValidUserCreate())
+        || (isAdmin() && isValidAdminUserCreate());
+      allow update: if (isOwner(userId) && isValidUserSelfUpdate())
+        || (isAdmin() && userId != request.auth.uid && isValidAdminUserUpdate());
+      allow delete: if false;
+    }
+
+    match /documents/{docId} {
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidDocumentCreate();
+      allow update: if false;
+      allow delete: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+  }
+}

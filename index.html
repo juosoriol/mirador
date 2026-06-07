@@ -138,8 +138,10 @@ html[data-theme="dashboard-purple"]{
   --font:'Segoe UI',system-ui,sans-serif;--r:6px;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
-#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;min-width:0}
-#topbar-left,#topbar-right{display:contents}
+#topbar{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;min-width:0}
+#topbar-left{display:flex;align-items:center;gap:8px;min-width:0;justify-self:start}
+#topbar-center{display:flex;align-items:center;justify-content:center;justify-self:center}
+#topbar-right{display:flex;align-items:center;gap:6px;justify-self:end;flex-shrink:0}
 #topbar-breadcrumb .tb-sep,#topbar-breadcrumb #tb-rowinfo{flex-shrink:0}
 #topbar-breadcrumb #tb-filename,#topbar-breadcrumb #tb-sheetname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .logo{width:26px;height:26px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
@@ -156,22 +158,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #topbar .btn.success{background:#15803d;border-color:#16a34a;color:#fff}
 #topbar .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}
 #topbar .logo{background:var(--acc)}
+#topbar .app-title{flex-shrink:0}
+@media(max-width:500px){
+  #topbar .app-title span{display:none}
+  #topbar .app-title{font-size:14px!important;font-weight:600!important;margin:0!important}
+}
+/* Panel de acciones: drawer desde la derecha */
+#actions-panel{
+  top:0;right:-280px;left:auto;bottom:0;width:280px;min-width:280px;max-height:100vh;
+  border-radius:0;border-right:none;border-left:1px solid var(--border2);
+  box-shadow:-4px 0 24px rgba(0,0,0,.3);
+  transition:right .3s cubic-bezier(.4,0,.2,1);overflow-y:auto
+}
+#actions-panel.open{right:0}
 /* Escritorio: Pills + Hojas + hamburguesa; usuario dentro del menú */
 @media(min-width:501px){
-  #topbar-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
-  #topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px}
-  #topbar .app-title{min-width:0;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
-  #topbar-breadcrumb{min-width:0;flex:1 1 auto;overflow:hidden;flex-shrink:1!important}
+  #topbar-breadcrumb{display:none!important}
   #topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
   #topbar #btn-open-file,#topbar #btn-mobile-menu,
   #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit,
   #topbar .fb-user-badge{display:none!important}
-  #topbar #btn-pills-mode{margin-left:0!important}
-  #topbar #btn-mobile-sheets{display:inline-flex!important}
+  #topbar #btn-pills-mode{display:inline-flex!important;margin:0!important;flex-shrink:0!important}
   #topbar #btn-actions{display:inline-flex!important}
-}
-@media(min-width:501px) and (max-width:1100px){
-  #topbar .app-title span{display:none}
 }
 @media(min-width:501px) and (max-width:820px){
   #btn-sheets-label{display:none}
@@ -179,7 +187,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   .pills-toggle-seg svg{display:block}
 }
 @media(min-width:501px){
-  #actions-panel.open{min-width:280px;max-width:min(320px,calc(100vw - 24px))}
   #mobile-sheets-overlay{align-items:center;justify-content:center;padding:20px}
   #mobile-sheets-overlay.open{background:rgba(0,0,0,.55)}
   #mobile-sheets-panel{
@@ -235,7 +242,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .ap-admin-btn{margin-top:2px;padding:5px 12px;border-radius:8px;border:1px solid rgba(99,102,241,.45);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
 .ap-admin-btn:hover{filter:brightness(1.08)}
 #file-input{display:none}
-#tabs-bar{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:42px}
+#tabs-bar{display:flex;align-items:flex-end;gap:3px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:56px}
 #tabs-bar::-webkit-scrollbar{height:3px}
 #tabs-empty-state{display:flex;align-items:center;gap:10px;padding:0 4px 8px;flex:1;opacity:.7}
 #tabs-empty-icon{font-size:15px;flex-shrink:0}
@@ -244,13 +251,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #tabs-empty-btn{padding:4px 12px;border-radius:var(--r);font-size:12px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .12s}
 #tabs-empty-btn:hover{background:#2563eb33}
 #tab-add{padding:5px 10px 5px;font-size:18px;color:var(--acc);cursor:pointer;line-height:1;margin-bottom:2px;flex-shrink:0;border-radius:4px;transition:background .1s;position:sticky;right:0;background:var(--tabs-bg,#161d2e);z-index:2}
-.tab{display:flex;align-items:center;gap:6px;padding:6px 12px 5px;border-radius:7px 7px 0 0;font-size:12px;cursor:pointer;border:0.5px solid transparent;border-bottom:none;position:relative;bottom:-1px;max-width:280px;min-width:0;flex-shrink:0;transition:background .1s}
-.tab.active{background:var(--bg);border-color:var(--border);color:var(--text)}
-.tab.inactive{background:var(--tab-inactive,#1a2438);color:var(--muted)}.tab.inactive:hover{background:var(--tab-inactive-hover,#1e2d45);color:var(--text)}
-.tab-icon{width:16px;height:16px;flex-shrink:0}
-.tab-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;font-size:11px}
-.tab-count{font-size:8px;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:8px;flex-shrink:0;color:var(--muted)}
-.tab.active .tab-count{color:var(--acc-text);background:var(--acc-dim)}
+.tab{display:flex;align-items:center;gap:8px;padding:8px 12px 6px;border-radius:8px 8px 0 0;font-size:12px;cursor:pointer;border:1px solid transparent;border-bottom:none;position:relative;bottom:-1px;max-width:300px;min-width:148px;flex-shrink:0;transition:background .15s,border-color .15s,box-shadow .15s}
+.tab.active{
+  background:var(--bg);border-color:var(--acc);border-top:2px solid var(--acc);
+  color:var(--text);box-shadow:0 -3px 14px rgba(59,130,246,.22);z-index:2
+}
+.tab.inactive{background:var(--tab-inactive,#1a2438);color:var(--muted);border-color:var(--border)}
+.tab.inactive:hover{background:var(--tab-inactive-hover,#1e2d45);color:var(--text);border-color:var(--border2)}
+.tab-icon{width:18px;height:18px;flex-shrink:0}
+.tab-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.tab-name{font-size:12px;font-weight:500;line-height:1.3;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tab.active .tab-name{font-weight:600;color:var(--text)}
+.tab-count{font-size:10px;background:rgba(255,255,255,.06);padding:2px 0;border-radius:0;flex-shrink:0;color:var(--muted);line-height:1.2;align-self:flex-start}
+.tab.active .tab-count{color:var(--acc-text);font-weight:600}
 .tab-star{font-size:12px;color:var(--s3);cursor:pointer;flex-shrink:0;transition:color .12s}
 .tab-star:hover{color:#f59e0b}
 .tab-star.on{color:#f59e0b}
@@ -407,8 +420,10 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 #statusbar{display:flex;align-items:center;gap:16px;padding:10px 16px;min-height:38px;background:var(--s1);border-top:1px solid var(--border);font-size:12px;color:var(--muted);flex-shrink:0}
 #statusbar .sv{color:var(--acc-text)}
 #status-msg{flex:1}
-#dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;color:var(--muted)}
+#dropzone{display:none;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;color:var(--muted);cursor:pointer}
 .drop-icon{width:60px;height:60px;background:var(--s2);border:2px dashed var(--border2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;transition:border-color .2s}
+#dropzone .drop-open-btn{margin-top:4px;padding:10px 20px;border-radius:10px;border:1px solid var(--border2);background:var(--s1);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)}
+#dropzone .drop-open-btn:hover{border-color:var(--acc);color:var(--acc-text)}
 #dropzone.dragover .drop-icon{border-color:var(--acc)}
 #dropzone h2{font-size:15px;font-weight:500;color:var(--text)}
 #loading{display:none;align-items:center;justify-content:center;flex:1;flex-direction:column;gap:12px;color:var(--muted)}
@@ -428,7 +443,7 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 .modal-close:hover{background:rgba(255,255,255,0.15)}
 .modal-close:active{background:rgba(255,255,255,0.2)}
 /* ── DETAIL OVERLAY (centrado) ── */
-#detail-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;padding:20px}
+#detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;padding:20px}
 #detail-overlay.open{display:flex}
 #detail-panel{width:600px;max-width:96vw;max-height:90vh;background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative}
 
@@ -577,8 +592,8 @@ input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radiu
   transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .22s
 }
 #mobile-sheets-overlay.open #mobile-sheets-panel{transform:scale(1);opacity:1}
-/* Panel de acciones (reemplaza botones individuales en topbar) */
-#actions-panel{display:none;position:fixed;z-index:800;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:200px;flex-direction:column}
+/* Panel de acciones (drawer lateral derecho) */
+#actions-panel{display:none;position:fixed;z-index:800;background:var(--s1);border:1px solid var(--border2);padding:6px 0;flex-direction:column}
 #actions-panel.open{display:flex}
 .ap-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:var(--text);cursor:pointer;transition:background .1s;font-family:var(--font);border:none;background:none;width:100%;text-align:left;white-space:nowrap}
 .ap-item:hover{background:var(--s2)}
@@ -756,9 +771,13 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 /* ── MODO PILLS ─────────────────────────────────────────────────────────────── */
 /* Toggle Pills — estilo segmented control */
-#btn-pills-mode{display:inline-flex;align-items:center;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:3px;gap:1px;cursor:pointer;flex-shrink:0;transition:border-color .2s}
+#topbar #btn-pills-mode,#topbar #btn-actions,#topbar #btn-mobile-sheets{
+  min-height:36px;height:36px;box-sizing:border-box;align-items:center
+}
+#btn-pills-mode{display:inline-flex;align-items:center;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:3px;gap:1px;cursor:pointer;flex-shrink:0;transition:border-color .2s;min-height:36px;height:36px;box-sizing:border-box}
 #btn-pills-mode:hover{border-color:rgba(255,255,255,.3)}
-.pills-toggle-seg{display:flex;align-items:center;gap:4px;padding:4px 9px;border-radius:16px;font-size:11px;font-weight:500;color:rgba(255,255,255,.45);transition:all .2s;white-space:nowrap;user-select:none;line-height:1}
+.pills-toggle-seg{display:flex;align-items:center;gap:4px;padding:6px 11px;border-radius:16px;font-size:11px;font-weight:500;color:rgba(255,255,255,.45);transition:all .2s;white-space:nowrap;user-select:none;line-height:1;height:100%}
+#topbar #btn-actions{padding:0 12px!important;min-width:36px;justify-content:center}
 #btn-pills-mode.pills-on .pills-toggle-seg.seg-table{color:rgba(255,255,255,.35);background:transparent}
 #btn-pills-mode:not(.pills-on) .pills-toggle-seg.seg-table{color:var(--topbar-text,#e2e8f0);background:rgba(255,255,255,.15)}
 #btn-pills-mode.pills-on .pills-toggle-seg.seg-pills{color:#fff;background:var(--acc)}
@@ -902,56 +921,35 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .mpill-d5 .pt-name{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.35}
   .mpill-d5 .pt-meta{font-size:12px}
   .mpill-d5 .pt-tag{font-size:11px}
-  /* Topbar móvil: 2 filas - fila 1: logo+nombre horizontal, fila 2: botones */
+  /* Topbar móvil: logo+nombre | toggle centrado | hojas + menú */
   #topbar{
-    flex-wrap:wrap!important;
-    padding:10px 12px 8px!important;
-    gap:0!important;
+    grid-template-columns:1fr auto 1fr!important;
+    padding:8px 12px!important;
+    gap:6px!important;
     height:auto!important;
-    padding-top:calc(12px + env(safe-area-inset-top,0px))!important;
+    min-height:50px!important;
+    padding-top:calc(10px + env(safe-area-inset-top,0px))!important;
     align-items:center!important;
   }
-
-  /* Fila 1: Logo + Nombre en línea horizontal */
-  #topbar .logo{
-    order:1;
-    width:32px!important;
-    height:32px!important;
-    margin:0 8px 10px 0!important;
-    flex-shrink:0;
-  }
-  #topbar .logo svg{display:block!important}
-  #topbar .app-title{
-    order:2;
-    margin:0 auto 10px 0!important;
-    font-size:15px!important;
-    font-weight:600!important;
-    align-self:center;
-  }
-  .app-title span{display:none!important}
+  #topbar-left{display:flex!important;align-items:center!important;gap:6px!important;min-width:0;justify-self:start!important}
+  #topbar-center{display:flex!important;justify-content:center!important;justify-self:center!important}
+  #topbar-right{display:flex!important;align-items:center!important;gap:6px!important;justify-self:end!important;flex-shrink:0}
+  #topbar .logo{width:32px!important;height:32px!important;margin:0!important;flex-shrink:0}
   #topbar-breadcrumb{display:none!important}
-
-  /* Ocultar elementos desktop */
   #btn-session,#btn-focus,#btn-theme,#focus-exit,#btn-export,
-  #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,#btn-pills-mode{display:none!important}
-
-  /* Line break después del título para forzar segunda fila */
-  #topbar .app-title::after{
-    content:'';
-    width:100%;
-    order:5;
+  #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,
+  #topbar #btn-open-file,#topbar #btn-my-docs{display:none!important}
+  #topbar-center #btn-pills-mode{display:inline-flex!important;margin:0!important}
+  #topbar #btn-actions{display:inline-flex!important}
+  #topbar #btn-pills-mode,#topbar #btn-actions,#topbar #btn-mobile-sheets{
+    min-height:36px!important;height:36px!important;box-sizing:border-box!important
   }
-
-  /* Fila 2: botones móvil — estilo unificado */
   #topbar #btn-actions,
-  #topbar #btn-open-file,
-  #topbar #btn-my-docs,
   #topbar #btn-mobile-sheets{
-    display:inline-flex!important;
     align-items:center!important;
     justify-content:center!important;
     gap:4px!important;
-    padding:6px 10px!important;
+    padding:0 12px!important;
     font-size:11px!important;
     font-weight:500!important;
     font-family:var(--font)!important;
@@ -963,33 +961,23 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     flex-shrink:0!important;
     touch-action:manipulation!important;
     -webkit-tap-highlight-color:transparent!important;
-    max-width:none!important;
-    overflow:visible!important;
   }
   #topbar #btn-actions svg,
-  #topbar #btn-open-file svg,
-  #topbar #btn-my-docs svg,
   #topbar #btn-mobile-sheets svg{
-    width:14px!important;
-    height:14px!important;
+    width:16px!important;
+    height:16px!important;
     flex-shrink:0!important;
     stroke:currentColor!important;
     fill:none!important;
   }
-  #topbar #btn-actions{order:10;margin-right:6px!important}
-  #topbar #btn-open-file{order:11}
-  #topbar #btn-my-docs{order:20;margin-left:auto!important;margin-right:4px!important}
-  #topbar #btn-mobile-sheets{order:21}
   /* Tabs: más compactas y scroll táctil mejorado */
   #tabs-bar{min-height:38px;padding:4px 8px 0;-webkit-overflow-scrolling:touch;touch-action:pan-x;scroll-behavior:smooth}
   #tabs-bar::-webkit-scrollbar{height:6px}
   #tabs-bar::-webkit-scrollbar-track{background:var(--tabs-bg)}
   #tabs-bar::-webkit-scrollbar-thumb{background:var(--acc);border-radius:3px}
-  .tab{padding:5px 8px 4px;max-width:200px;min-width:140px;touch-action:manipulation}
-  .tab-name{font-size:11px;font-weight:500;flex:1!important;min-width:60px!important}
-  .tab-count{font-size:9px!important;padding:2px 5px!important}
-  /* Estrella y cerrar: ocultar en móvil (demasiado pequeño para tocar) */
-  .tab-star,.tab-close{display:none!important}
+  .tab{padding:7px 10px 5px;max-width:220px;min-width:160px;touch-action:manipulation}
+  .tab-name{font-size:11px;-webkit-line-clamp:2}
+  .tab-count{font-size:9px!important}
   #tabs-empty-text{font-size:11px}
   #tabs-empty-btn{padding:3px 10px;font-size:11px}
   /* Stats bar: scroll horizontal, tarjetas más pequeñas */
@@ -1007,15 +995,14 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #focus-exit-search{font-size:10px;padding:3px 8px}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
-  /* Bottom sheet hojas (móvil) */
-  #mobile-sheets-overlay{align-items:flex-end;padding:0}
+  /* Modal hojas centrado (móvil) */
+  #mobile-sheets-overlay{align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
   #mobile-sheets-panel{
-    width:100%;max-height:60dvh;max-height:60vh;border-radius:16px 16px 0 0;border-bottom:none;
-    transform:translateY(100%);opacity:1;transition:transform .28s cubic-bezier(.4,0,.2,1)
+    width:min(440px,calc(100vw - 32px));max-height:min(75dvh,calc(100dvh - 48px));border-radius:14px;border-bottom:1px solid var(--border);
+    transform:scale(.96);opacity:0;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .22s
   }
-  #mobile-sheets-overlay.open #mobile-sheets-panel{transform:translateY(0)}
-  .ms-handle-wrap{display:flex;justify-content:center;padding:8px 0 2px;flex-shrink:0}
-  .ms-handle{width:36px;height:4px;background:var(--s2);border-radius:2px}
+  #mobile-sheets-overlay.open #mobile-sheets-panel{transform:scale(1);opacity:1}
+  .ms-handle-wrap{display:none}
   .ms-list{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   /* Statusbar: más amplio y legible en móvil */
   #statusbar{padding:8px 12px;height:calc(44px + env(safe-area-inset-bottom,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:12px}
@@ -1045,9 +1032,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   /* Chip bar más alto en móvil para facilitar toque */
   #chips-bar:not(.pills-mode){height:44px;padding:5px 10px}
   /* Tabs más altas */
-  #tabs-bar{min-height:46px}
-  .tab{padding:6px 10px;min-height:38px}
-  /* Fuentes secundarias UI: mínimo 11px */
+  #tabs-bar{min-height:58px}
+  .tab{padding:8px 10px;min-height:48px}
   .tab-count{font-size:10px}
   .tab-name{font-size:12px}
   .chip{font-size:12px}
@@ -1074,17 +1060,20 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 /* Modales/paneles: layout fijado al abrir (no salta al redimensionar) */
 html[data-modal-vp="mobile"] #actions-panel{
-  display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;
+  display:flex!important;position:fixed!important;top:0!important;right:-280px!important;left:auto!important;bottom:0!important;
   width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;
-  border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;
-  transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important
+  border-left:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;
+  transition:right .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:-4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important
 }
-html[data-modal-vp="mobile"] #actions-panel.open{left:0!important}
-html[data-modal-vp="mobile"] .modal-overlay{position:fixed!important;padding:0!important}
+html[data-modal-vp="mobile"] #actions-panel.open{right:0!important}
+html[data-modal-vp="mobile"] .modal-overlay{
+  position:fixed!important;align-items:center!important;justify-content:center!important;
+  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))!important
+}
 html[data-modal-vp="mobile"] .modal-box:not(#fav-modal){
-  width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;
-  border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-  margin:0!important;overflow-y:auto!important
+  width:min(480px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;
+  height:auto!important;max-height:min(85dvh,calc(100dvh - 48px))!important;
+  border-radius:12px!important;padding:16px!important;margin:0!important;overflow-y:auto!important
 }
 html[data-modal-vp="mobile"] #fav-overlay.open{
   align-items:center!important;justify-content:center!important;
@@ -1099,15 +1088,29 @@ html[data-modal-vp="mobile"] #fav-modal{
   overflow:hidden!important;
   margin:0!important
 }
-html[data-modal-vp="mobile"] #theme-modal{width:100%!important;max-width:100%!important}
-html[data-modal-vp="mobile"] #chart-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
-html[data-modal-vp="mobile"] #hdr-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
-html[data-modal-vp="mobile"] #col-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
-html[data-modal-vp="mobile"] #detail-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
-html[data-modal-vp="mobile"] #docs-panel.open{align-items:flex-end!important;justify-content:center!important;padding:0!important}
+html[data-modal-vp="mobile"] #theme-modal{width:min(480px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important}
+html[data-modal-vp="mobile"] #chart-modal{width:min(520px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;height:auto!important;max-height:min(85dvh,calc(100dvh - 48px))!important;border-radius:12px!important}
+html[data-modal-vp="mobile"] #hdr-modal{width:min(860px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;height:auto!important;max-height:min(90dvh,calc(100dvh - 48px))!important;border-radius:12px!important}
+html[data-modal-vp="mobile"] #col-panel-overlay.open{
+  position:fixed!important;align-items:center!important;justify-content:center!important;
+  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #col-panel{width:min(480px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;height:auto!important;max-height:min(85dvh,calc(100dvh - 48px))!important;border-radius:12px!important;padding:16px!important;border-left:none!important}
+html[data-modal-vp="mobile"] #detail-overlay.open{
+  position:fixed!important;align-items:center!important;justify-content:center!important;
+  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #detail-panel{
+  width:min(600px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;
+  height:auto!important;max-height:min(85dvh,calc(100dvh - 48px))!important;border-radius:12px!important;padding:0!important
+}
+html[data-modal-vp="mobile"] #docs-panel.open{
+  align-items:center!important;justify-content:center!important;
+  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))!important
+}
 html[data-modal-vp="mobile"] #docs-panel .docs-modal{
-  width:100%!important;max-width:100%!important;max-height:85vh!important;
-  border-radius:16px 16px 0 0!important;margin:0!important
+  width:min(900px,calc(100vw - 32px))!important;max-width:calc(100vw - 32px)!important;
+  max-height:min(85dvh,calc(100dvh - 48px))!important;border-radius:16px!important;margin:0!important
 }
 html[data-modal-vp="mobile"] #pills-ficha-panel{
   width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;
@@ -1244,14 +1247,20 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
 .docs-body{overflow-y:auto;flex:1;padding:20px 24px}
 .docs-empty{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px}
 .docs-list{display:flex;flex-direction:column;gap:10px}
-.doc-item{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;transition:all .15s;cursor:pointer}
+.doc-item{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;gap:4px 12px;padding:14px 16px;background:var(--s2);border:1px solid var(--border);border-radius:12px;transition:all .15s;cursor:pointer;align-items:center}
 .doc-item:hover{background:var(--s3);border-color:var(--border2)}
-.doc-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.doc-info{flex:1;min-width:0}
-.doc-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.doc-meta{font-size:11px;color:var(--muted);margin-top:3px}
-.doc-size{font-size:11px;color:var(--muted);padding:3px 8px;background:var(--s3);border-radius:6px;flex-shrink:0}
-.doc-actions{display:flex;gap:6px;flex-shrink:0}
+.doc-icon{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;flex-shrink:0;grid-row:1/span 2}
+.doc-info{min-width:0;grid-column:2}
+.doc-name{font-size:14px;font-weight:600;color:var(--text);line-height:1.35;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.doc-meta{font-size:11px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.doc-size{font-size:11px;color:var(--muted);padding:3px 8px;background:var(--s3);border-radius:6px;flex-shrink:0;display:inline-block}
+.doc-actions{display:flex;gap:6px;flex-shrink:0;grid-column:3;grid-row:1/span 2;align-self:center}
+@media(max-width:500px){
+  .doc-item{grid-template-columns:auto 1fr;grid-template-rows:auto auto auto}
+  .doc-icon{grid-row:1/span 2}
+  .doc-info{grid-column:2;grid-row:1/span 2}
+  .doc-actions{grid-column:1/span 2;grid-row:3;justify-content:flex-end;width:100%;padding-top:4px;border-top:1px solid var(--border);margin-top:2px}
+}
 .doc-btn{padding:7px 12px;font-size:11px;border-radius:8px;border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;font-weight:500}
 .doc-btn:hover{background:var(--s3);border-color:var(--border2)}
 .doc-btn.primary{background:var(--acc);color:#fff;border-color:var(--acc)}
@@ -1326,8 +1335,7 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
     <span id="tb-rowinfo" style="font-size:10px;color:var(--topbar-muted);margin-left:2px"></span>
   </div>
   </div>
-  <div id="topbar-right">
-  <!-- Toggle Pills / Tabla — siempre visible -->
+  <div id="topbar-center">
   <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills">
     <span class="pills-toggle-seg seg-table">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
@@ -1338,6 +1346,8 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
       Pills
     </span>
   </button>
+  </div>
+  <div id="topbar-right">
   <!-- Botón abrir archivo desde dispositivo (móvil) -->
   <button class="btn" id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1367,7 +1377,7 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   <button class="btn success" id="btn-export" onclick="exportExcel()" disabled style="display:none">&#8595; Exportar</button>
   <!-- Botón Acciones — panel con todas las herramientas -->
   <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Acciones">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="3" y1="6" x2="21" y2="6"/>
       <line x1="3" y1="12" x2="21" y2="12"/>
       <line x1="3" y1="18" x2="21" y2="18"/>
@@ -1503,10 +1513,13 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
     </div>
   </div>
   <div id="data-area">
-    <div id="dropzone" ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
+    <div id="dropzone" role="button" tabindex="0" title="Abrir archivo Excel"
+      onclick="openFilePicker()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFilePicker()}"
+      ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
       <div class="drop-icon">📊</div>
       <h2>Arrastra tu archivo Excel aquí</h2>
-      <p style="font-size:12px">o haz clic en <strong>+</strong> en las pestañas</p>
+      <p style="font-size:12px">o haz clic para elegir un archivo</p>
+      <button type="button" class="drop-open-btn" onclick="event.stopPropagation();openFilePicker()">📂 Abrir archivo</button>
       <p style="font-size:11px;margin-top:4px;color:var(--muted)">Mirador — Abre varios archivos en pestañas independientes</p>
     </div>
     <div id="loading"><div class="spinner"></div><span>Cargando...</span></div>
@@ -1781,6 +1794,7 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
   </div>
   <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
   <div class="ap-sep"></div>
+  <button class="ap-item" id="ap-open-file" onclick="document.getElementById('file-input').click();closeActionsPanel()">📄 Abrir local (sin internet)</button>
   <button class="ap-item" id="ap-docs" onclick="openDocsPanel();closeActionsPanel()">📂 Documentos</button>
   <button class="ap-item" id="ap-save-cloud" onclick="saveToCloud();closeActionsPanel()" style="display:none">☁️ Guardar en la nube</button>
   <div class="ap-sep"></div>
@@ -1849,6 +1863,7 @@ let activeTabId  = null;
 let tabCounter   = 0;
 let searchTimer  = null;
 let lastClick    = null;
+let _pillsOn     = false;
 
 // Acceso rápido al tab activo
 const T = () => tabs.get(activeTabId);
@@ -1911,16 +1926,7 @@ function promptSessionRestore(){
   if(!saved||!saved.tabs||!saved.tabs.length) return false;
   const withData=saved.tabs.filter(t=>t.rawData&&t.rawData.length>0).length;
   if(!withData) return false;
-  // En móvil: auto-restaurar directamente (btn-session está oculto)
-  if(window.innerWidth<=500){
-    restoreSession();
-    toast('Sesión restaurada');
-    return true;
-  }
-  // Desktop: iluminar botón y mostrar panel
-  const btn=$('btn-session');
-  if(btn){ btn.style.color='var(--acc-text)'; btn.style.borderColor='var(--acc)'; }
-  openSessionPanel();
+  restoreSession();
   return true;
 }
 
@@ -2077,7 +2083,9 @@ function renderTabs(){
     const total=tab.rawData.length;
     const vis=tab.filtered.length;
     const hasFilter=Object.keys(tab.colFilters||{}).length>0||tab.searchText;
-    const cntLabel=hasFilter&&vis!==total?`${vis.toLocaleString()} / ${total.toLocaleString()}`:(total?total.toLocaleString():'—');
+    const cntLabel=hasFilter&&vis!==total
+      ?`${vis.toLocaleString()} / ${total.toLocaleString()} registros`
+      :(total?`${total.toLocaleString()} registros`:'Sin registros');
     const isActive=tab.id===activeTabId;
     const ext=_tabFileExt(tab.fileName);
     const iconSvg=_tabFileIcon(ext,tab.color);
@@ -2086,9 +2094,10 @@ function renderTabs(){
     const div=el('div',{cls:'tab '+(isActive?'active':'inactive'),'data-id':tab.id});
     div.innerHTML=`
       <span class="tab-icon">${iconSvg}</span>
-      <span class="tab-name" title="${eh(tab.fileName)}">${eh(tab.fileName)}</span>
-      ${tab._autoRefresh?'<span style="font-size:10px;color:var(--success);flex-shrink:0" title="Auto-refresh activo">&#x21BB;</span>':''}
-      <span class="tab-count">${cntLabel}</span>
+      <div class="tab-body">
+        <span class="tab-name" title="${eh(tab.fileName)}">${eh(tab.fileName)}</span>
+        <span class="tab-count">${cntLabel}${tab._autoRefresh?' <span style="color:var(--success)" title="Auto-refresh activo">&#x21BB;</span>':''}</span>
+      </div>
       <span class="tab-star${isFav?' on':''}" data-star="${tab.id}" title="${isFav?'Quitar favorito':'Marcar favorito'}">&#9733;</span>
       <span class="tab-close" data-close="${tab.id}" title="Cerrar">×</span>`;
 
@@ -2100,6 +2109,16 @@ function renderTabs(){
     div.oncontextmenu=e=>{e.preventDefault();_tabCtx(e,tab.id);};
     bar.insertBefore(div,addBtn);
   });
+  _updateSheetsBtn();
+  _syncDataAreaView();
+}
+
+function _syncDataAreaView(){
+  const tab=T();
+  if(tabs.size>0&&activeTabId&&tab?.rawData?.length){
+    $('dropzone').style.display='none';
+    if(!$('pills-view')?.classList.contains('open')) $('table-wrap').style.display='flex';
+  }
 }
 
 // File extension detection
@@ -2223,7 +2242,18 @@ function restoreTabUI(){
   if(!tab){showDropzone(true);return}
   closeDropdown();
   renderSheetsSidebar();
-  if(!tab.rawData.length){showDropzone(false);setStatus('Sin datos.');return}
+  if(!tab.rawData.length){
+    if(tab.workbook){
+      $('loading').style.display='flex';
+      $('dropzone').style.display='none';
+      $('table-wrap').style.display='none';
+      setStatus('Cargando datos…');
+      return;
+    }
+    showDropzone(false);
+    setStatus('Sin datos.');
+    return;
+  }
   $('search-input').value = tab.searchText||'';
   buildSearchCombo();
   setSelectValue('search-col', tab.searchCol);
@@ -2247,7 +2277,7 @@ function setSelectValue(id, val){
 }
 
 function _hideFileActions(){
-  ['btn-export','btn-actions','btn-mobile-sheets','btn-save-cloud'].forEach(id=>{
+  ['btn-export','btn-mobile-sheets','btn-save-cloud'].forEach(id=>{
     const e=$(id); if(e) e.style.display='none';
   });
   const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='none';
@@ -2274,11 +2304,29 @@ function showDropzone(full=true){
 }
 
 // ── CARGA DE ARCHIVO ──────────────────────────────────────────────────────────
+function openFilePicker(){
+  const inp=$('file-input');
+  if(!inp) return;
+  inp.click();
+}
 function onDragOver(e){e.preventDefault();$('dropzone').classList.add('dragover')}
 function onDrop(e){e.preventDefault();$('dropzone').classList.remove('dragover');[...e.dataTransfer.files].forEach(f=>{if(/\.(xlsx?|xlsb|xlsm|csv|tsv|ods|json|txt)$/i.test(f.name))processFile(f)})}
 function openFileTab(inp){[...inp.files].forEach(processFile);inp.value=''}
 
+function _fileLoadFailed(tabId, msg){
+  $('loading').style.display='none';
+  if(tabId != null && tabs.has(tabId) && !tabs.get(tabId)?.rawData?.length){
+    closeTab(tabId);
+  }
+  showDropzone(true);
+  toast(msg || 'No se pudo leer el archivo.', true);
+}
 function processFile(file){
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    _fileLoadFailed(null, 'La librería Excel no cargó. Recarga la página e inténtalo de nuevo.');
+    return;
+  }
   const tabId=createTab(file.name);
   const tab=tabs.get(tabId);
   tab._file=file; // guardar referencia al File para recargar
@@ -2290,16 +2338,19 @@ function processFile(file){
   r.onload=e=>{
     try{
       const tab=tabs.get(tabId);
+      if(!tab) return;
       tab.workbook=XLSX.read(e.target.result,{type:'array',cellDates:false});
       const meta=(tab.workbook.Workbook?.Sheets)||[];
       tab.sheets=tab.workbook.SheetNames.filter((_,i)=>{ const m=meta[i]; return !m||!m.Hidden; });
       if(!tab.sheets.length) tab.sheets=tab.workbook.SheetNames;
+      if(!tab.sheets.length) throw new Error('El archivo no tiene hojas visibles.');
       renderTabs();
       loadSheet(tab.sheets[0],tabId,false);
-      // Register in file manager
-      fmRegisterFile(tab.fileName, tab.sheets?.length||0, 0); // rawData aún no cargado aquí
-    }catch(err){$('loading').style.display='none';toast('Error: '+err.message,true)}
+      fmRegisterFile(tab.fileName, tab.sheets?.length||0, 0);
+    }catch(err){_fileLoadFailed(tabId, 'Error: '+err.message)}
   };
+  r.onerror=()=>_fileLoadFailed(tabId, 'No se pudo leer el archivo.');
+  r.onabort=()=>_fileLoadFailed(tabId, 'Lectura del archivo cancelada.');
   r.readAsArrayBuffer(file);
 }
 
@@ -3355,6 +3406,7 @@ function clearFilters(){
 const VT_ROW_H    = 30;
 const VT_BUFFER   = 12;
 let _vtRAF = null;
+let _vtRowTap = {idx:null, t:0};
 let _vtLastStart = -1;
 let _vtLastEnd = -1;
 let _frzLeftMap = {};   // col → exact left offset in px (measured from real DOM)
@@ -3487,8 +3539,17 @@ function _vtBuildRow(tab, row, renderCols, hid, frz, rules, txt, scol, allCols){
   if(tab.selected.has(i)) tr.className='selected';
   tr.dataset.idx=i;
   tr.dataset.vrow=row;
-  tr.onclick=e=>toggleRow(e,i);
-  tr.ondblclick=()=>openDetail(i);
+  tr.onclick=e=>{
+    const now=Date.now();
+    if(_vtRowTap.idx===i&&now-_vtRowTap.t<400){
+      _vtRowTap={idx:null,t:0};
+      openDetail(i);
+      return;
+    }
+    _vtRowTap={idx:i,t:now};
+    toggleRow(e,i);
+  };
+  tr.ondblclick=e=>{e.preventDefault();_vtRowTap={idx:null,t:0};openDetail(i);};
 
   renderCols.forEach(col=>{
     const td=document.createElement('td');
@@ -3732,7 +3793,9 @@ function openDetail(idx){
   _detailIdx=idx;
   document.querySelectorAll('.ds-btn').forEach(b=>b.classList.toggle('on',+b.dataset.ds===_detailStyle));
   renderDetailBody(idx);
+  window._lockModalViewport?.();
   $('detail-overlay').classList.add('open');
+  window.scheduleOverlayCheck?.();
 }
 
 function renderDetailBody(idx){
@@ -6028,7 +6091,9 @@ function openViewsPanel(){
   window._lockModalViewport?.();
   $('fav-overlay').classList.add('open');
   window.scheduleOverlayCheck?.();
-  $('fav-name-input').focus();
+  if(window.innerWidth>500){
+    requestAnimationFrame(()=>$('fav-name-input')?.focus({preventScroll:true}));
+  }
 }
 
 // ── GRÁFICAS ──────────────────────────────────────────────────────────────────
@@ -6236,6 +6301,8 @@ function drawPieChart(ctx,canvas,labels,values,colors,isDonut,tc,mc){
 // ── INICIO ────────────────────────────────────────────────────────────────────
 applyTheme(currentTheme);
 if(!promptSessionRestore()) restoreSession();
+if(tabs.size===0) showDropzone(true);
+else _syncDataAreaView();
 initChipSearch();
 initFocusModes();
 _sidebarInit();
@@ -6243,7 +6310,6 @@ _renderRecentSearches();
 
 // ── MODO PILLS ────────────────────────────────────────────────────────────────
 const PILLS_KEY = 'mirador_pills_v1';
-let _pillsOn     = false;
 let _pillsCfgOn  = false;
 let _pillsFichaIdx = 0;
 let _pillsFichaOpen = false;
@@ -6700,9 +6766,12 @@ function closeMobileSheets(){
 }
 function _updateSheetsBtn(){
   const tab = T();
+  const sheetsBtn = $('btn-mobile-sheets');
   const lbl = $('btn-sheets-label');
   const badge = $('btn-sheets-badge');
   const count = tab?.sheets?.length || 0;
+  const show = tabs.size === 1 && count > 0;
+  if(sheetsBtn) sheetsBtn.style.display = show ? '' : 'none';
   if(lbl) lbl.textContent = 'Hojas';
   if(badge){
     if(count > 1){
@@ -6730,22 +6799,9 @@ function toggleActionsPanel(){
   const scBtn=$('btn-save-cloud'), apSc=$('ap-save-cloud');
   if(scBtn&&apSc) apSc.style.display=scBtn.style.display;
 
-  // En móvil: mostrar overlay y sidebar desde la izquierda
   const overlay = $('actions-panel-overlay');
-  if(window.innerWidth <= 500){
-    p.style.left=''; p.style.top=''; p.style.right=''; p.style.width='';
-    if(overlay) overlay.style.display = 'block';
-  } else {
-    // Desktop: posicionar debajo del botón Acciones (sin overlay)
-    const btn=$('btn-actions');
-    const r=btn?.getBoundingClientRect();
-    if(r){
-      const panW=280;
-      let left=r.right-panW;
-      if(left<8) left=8;
-      p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
-    } else { p.style.right='8px'; p.style.top='60px'; }
-  }
+  p.style.left=''; p.style.top=''; p.style.right=''; p.style.width='';
+  if(overlay) overlay.style.display = 'block';
   _lockModalViewport();
   p.classList.add('open');
   scheduleOverlayCheck();
@@ -6765,8 +6821,7 @@ function _closeActionsPanelOutside(e){
 // Mostrar botones de archivo cuando hay datos cargados
 function _showFileActions(){
   $('btn-export').style.display='';
-  $('btn-actions').style.display='';
-  $('btn-mobile-sheets').style.display='';
+  _updateSheetsBtn();
   if(_fbUser){
     const sc=$('btn-save-cloud'); if(sc) sc.style.display='';
     const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='';
@@ -6877,7 +6932,7 @@ firebase.initializeApp(_fbConfig);
 const _fbAuth    = firebase.auth();
 const _fbDb      = firebase.firestore();
 const _fbStorage = firebase.storage();
-const _fbFns     = firebase.functions();
+const _fbFns     = firebase.app().functions('us-central1');
 
 // Forzar configuración de Firestore
 _fbDb.settings({
@@ -6896,7 +6951,9 @@ async function _fbSyncClaims(user){
   try {
     const res = await _fbFns.httpsCallable('syncUserClaims')();
     await user.getIdToken(true);
-    return res.data?.role || null;
+    const role = res.data?.role || null;
+    if(role) _fbUserRole = role;
+    return role;
   } catch(e){
     console.warn('[Claims] No se pudieron sincronizar permisos:', e.message || e);
     return null;
@@ -6907,52 +6964,55 @@ async function _fbSyncClaims(user){
 document.getElementById('login-loading').classList.add('show');
 document.getElementById('login-main-content').style.display = 'none';
 
-_fbAuth.onAuthStateChanged(async user => {
+async function _fbInitUserProfile(user){
+  try {
+    const docRef = _fbDb.collection('users').doc(user.uid);
+    const doc = await docRef.get();
+    let data;
+    if(!doc.exists){
+      data = {
+        email: user.email,
+        role: 'user',
+        active: true,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        name: user.displayName || user.email.split('@')[0]
+      };
+      await docRef.set(data);
+    } else {
+      data = doc.data();
+    }
+
+    if(data.active === false){
+      _fbAuth.signOut();
+      _fbShowLoginError('Tu cuenta está desactivada. Contacta al administrador.');
+      return;
+    }
+    _fbUserRole = data.role || 'user';
+    const syncedRole = await _fbSyncClaims(user);
+    if(syncedRole) _fbUserRole = syncedRole;
+    else {
+      try {
+        const tr = await user.getIdTokenResult(true);
+        if(tr.claims.role) _fbUserRole = tr.claims.role;
+      } catch(_){}
+    }
+    _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
+    _fbUpdateUserUI(user);
+  } catch(e){
+    console.error('[Firestore] Error leyendo documento:', e);
+    _fbUserRole = 'user';
+    _fbUpdateUserUI(user);
+  }
+}
+
+_fbAuth.onAuthStateChanged(user => {
   _fbUser = user;
   if(user){
-    // Leer rol desde Firestore
-    try {
-      const docRef = _fbDb.collection('users').doc(user.uid);
-      const doc = await docRef.get();
-      let data;
-      if(!doc.exists){
-        // Usuario sin documento → crear con rol user (admin se asigna desde consola o panel admin)
-        data = {
-          email: user.email,
-          role: 'user',
-          active: true,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          name: user.displayName || user.email.split('@')[0]
-        };
-        await docRef.set(data);
-      } else {
-        data = doc.data();
-      }
-
-      if(data.active === false){
-        _fbAuth.signOut();
-        _fbShowLoginError('Tu cuenta está desactivada. Contacta al administrador.');
-        return;
-      }
-      _fbUserRole = data.role || 'user';
-      const syncedRole = await _fbSyncClaims(user);
-      if(syncedRole) _fbUserRole = syncedRole;
-      else {
-        try {
-          const tr = await user.getIdTokenResult();
-          if(tr.claims.role) _fbUserRole = tr.claims.role;
-        } catch(_){}
-      }
-      // Actualizar último acceso
-      _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
-    } catch(e){
-      console.error('[Firestore] Error leyendo documento:', e);
-      _fbUserRole = 'user';
-    }
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('login-loading').classList.remove('show');
     document.getElementById('login-main-content').style.display = '';
     _fbUpdateUserUI(user);
+    _fbInitUserProfile(user);
   } else {
     _fbUserRole = null;
     document.getElementById('login-loading').classList.remove('show');
@@ -7057,7 +7117,14 @@ function fbChangePassword(){
 
 // ── PANEL ADMINISTRACIÓN ──────────────────────────────────────────────────
 async function fbOpenAdminPanel(){
-  if(!await _fbEnsureAdminClaim()){ alert('Sin permisos de administrador. Cierra sesión y vuelve a entrar.'); return; }
+  if(_fbUserRole !== 'admin'){
+    alert('Tu cuenta no tiene rol de administrador en Firestore.');
+    return;
+  }
+  if(!await _fbEnsureAdminClaim()){
+    alert('No se pudieron activar los permisos de admin. Cierra sesión, vuelve a entrar y espera unos segundos.');
+    return;
+  }
   document.getElementById('fb-user-menu')?.remove();
 
   // Cargar usuarios
@@ -7221,11 +7288,14 @@ async function saveToCloud(){
 }
 
 async function _fbEnsureAdminClaim(){
-  let tr = await _fbUser.getIdTokenResult(true);
-  if(tr.claims.role === 'admin') return true;
   if(_fbUserRole !== 'admin') return false;
-  await _fbSyncClaims(_fbUser);
-  tr = await _fbUser.getIdTokenResult(true);
+  for(let i = 0; i < 3; i++){
+    let tr = await _fbUser.getIdTokenResult(i > 0);
+    if(tr.claims.role === 'admin') return true;
+    await _fbSyncClaims(_fbUser);
+    await new Promise(r => setTimeout(r, 400));
+  }
+  const tr = await _fbUser.getIdTokenResult(true);
   return tr.claims.role === 'admin';
 }
 
@@ -7282,10 +7352,9 @@ async function openDocsPanel(){
             </svg>
           </div>
           <div class="doc-info">
-            <div class="doc-name">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
-            <div class="doc-meta">${dateStr} • ${doc.sheets?.length || 0} hoja(s)</div>
+            <div class="doc-name" title="${eh(doc.fileName || 'Sin nombre')}">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
+            <div class="doc-meta"><span>${dateStr} • ${doc.sheets?.length || 0} hoja(s)</span><span class="doc-size">${sizeStr}</span></div>
           </div>
-          <div class="doc-size">${sizeStr}</div>
           <div class="doc-actions">
             <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
             ${doc.userId === _fbUser.uid || canListAll ?

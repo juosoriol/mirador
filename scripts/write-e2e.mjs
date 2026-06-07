@@ -57,7 +57,8 @@ test.describe('Escritorio — modo Tabla', () => {
     await expect(page.locator('#table-wrap')).toBeVisible();
     await expect(page.locator('#table-body tr').first()).toBeVisible();
     expect(await getRowCount(page)).toBeGreaterThan(0);
-    await expect(page.locator('#topbar-breadcrumb')).toBeVisible();
+    await expect(page.locator('#topbar .app-title')).toBeVisible();
+    await expect(page.locator('#topbar-center #btn-pills-mode')).toBeVisible();
   });
 
   test('búsqueda filtra resultados', async ({ page }) => {
@@ -143,14 +144,16 @@ test.describe('Móvil — modo Tabla', () => {
   test('carga archivo y muestra tabla', async ({ page }) => {
     await expect(page.locator('#table-wrap')).toBeVisible();
     await expect(page.locator('#table-body tr').first()).toBeVisible();
-    await expect(page.locator('#btn-pills-mode')).toBeHidden();
+    await expect(page.locator('#btn-pills-mode')).toBeVisible();
     expect(await getRowCount(page)).toBeGreaterThan(0);
   });
 
   test('botones móvil visibles', async ({ page }) => {
-    await expect(page.locator('#btn-open-file')).toBeVisible();
+    await expect(page.locator('#btn-pills-mode')).toBeVisible();
     await expect(page.locator('#btn-mobile-sheets')).toBeVisible();
     await expect(page.locator('#btn-actions')).toBeVisible();
+    await expect(page.locator('#btn-open-file')).toBeHidden();
+    await expect(page.locator('#btn-my-docs')).toBeHidden();
   });
 
   test('modal Hojas abre en móvil', async ({ page }) => {
@@ -178,8 +181,8 @@ test.describe('Móvil — modo Pills', () => {
     await closeAllTabs(page);
   });
 
-  test('pills visibles sin toggle en topbar', async ({ page }) => {
-    await expect(page.locator('#btn-pills-mode')).toBeHidden();
+  test('pills visibles con toggle en topbar', async ({ page }) => {
+    await expect(page.locator('#btn-pills-mode')).toBeVisible();
     await expect(page.locator('#pills-view')).toHaveClass(/open/);
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
   });

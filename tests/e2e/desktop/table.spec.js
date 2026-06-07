@@ -15,7 +15,8 @@ test.describe('Escritorio — modo Tabla', () => {
     await expect(page.locator('#table-wrap')).toBeVisible();
     await expect(page.locator('#table-body tr').first()).toBeVisible();
     expect(await getRowCount(page)).toBeGreaterThan(0);
-    await expect(page.locator('#topbar-breadcrumb')).toBeVisible();
+    await expect(page.locator('#topbar .app-title')).toBeVisible();
+    await expect(page.locator('#topbar-center #btn-pills-mode')).toBeVisible();
   });
 
   test('búsqueda filtra resultados', async ({ page }) => {

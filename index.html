@@ -3,11 +3,21 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<script>
+(function(){
+  var BUILD='20260606-pills-clear', k='mirador_build_v';
+  var prev=localStorage.getItem(k);
+  if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
+  localStorage.setItem(k,BUILD);
+})();
+</script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
 <title>Mirador — análisis de planillas</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -128,8 +138,10 @@ html[data-theme="dashboard-purple"]{
   --font:'Segoe UI',system-ui,sans-serif;--r:6px;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none}
-#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden}
-#topbar::-webkit-scrollbar{height:0}
+#topbar{display:flex;align-items:center;gap:8px;padding:0 14px;height:48px;background:var(--topbar-bg,var(--s1));border-bottom:1px solid var(--border);flex-shrink:0;overflow:hidden;min-width:0}
+#topbar-left,#topbar-right{display:contents}
+#topbar-breadcrumb .tb-sep,#topbar-breadcrumb #tb-rowinfo{flex-shrink:0}
+#topbar-breadcrumb #tb-filename,#topbar-breadcrumb #tb-sheetname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .logo{width:26px;height:26px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
 .app-title{font-size:14px;font-weight:600;white-space:nowrap;color:var(--topbar-text,var(--text))}.app-title span{color:var(--acc-text)}
 .btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s1);color:var(--text);cursor:pointer;font-size:12px;font-family:var(--font);transition:background .12s,border-color .12s;white-space:nowrap;flex-shrink:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none}
@@ -144,6 +156,84 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #topbar .btn.success{background:#15803d;border-color:#16a34a;color:#fff}
 #topbar .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}
 #topbar .logo{background:var(--acc)}
+/* Escritorio: Pills + Hojas + hamburguesa; usuario dentro del menú */
+@media(min-width:501px){
+  #topbar-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
+  #topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px}
+  #topbar .app-title{min-width:0;overflow:hidden;text-overflow:ellipsis;flex-shrink:1}
+  #topbar-breadcrumb{min-width:0;flex:1 1 auto;overflow:hidden;flex-shrink:1!important}
+  #topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
+  #topbar #btn-open-file,#topbar #btn-mobile-menu,
+  #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit,
+  #topbar .fb-user-badge{display:none!important}
+  #topbar #btn-pills-mode{margin-left:0!important}
+  #topbar #btn-mobile-sheets{display:inline-flex!important}
+  #topbar #btn-actions{display:inline-flex!important}
+}
+@media(min-width:501px) and (max-width:1100px){
+  #topbar .app-title span{display:none}
+}
+@media(min-width:501px) and (max-width:820px){
+  #btn-sheets-label{display:none}
+  .pills-toggle-seg{gap:0;padding:5px 8px;font-size:0}
+  .pills-toggle-seg svg{display:block}
+}
+@media(min-width:501px){
+  #actions-panel.open{min-width:280px;max-width:min(320px,calc(100vw - 24px))}
+  #mobile-sheets-overlay{align-items:center;justify-content:center;padding:20px}
+  #mobile-sheets-overlay.open{background:rgba(0,0,0,.55)}
+  #mobile-sheets-panel{
+    width:min(480px,calc(100vw - 40px));max-height:min(78dvh,calc(100vh - 48px));
+    border-radius:14px;border-bottom:1px solid var(--border);
+    transform:scale(.96);opacity:0;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .22s
+  }
+  #mobile-sheets-overlay.open #mobile-sheets-panel{transform:scale(1);opacity:1}
+  #mobile-sheets-panel .ms-handle-wrap{display:none}
+}
+.ms-header{position:relative;display:flex;align-items:flex-start;gap:12px;padding:16px 48px 14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1)}
+.ms-header-icon{width:42px;height:42px;border-radius:10px;background:rgba(33,115,70,.14);border:1px solid rgba(33,115,70,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ms-header-text{flex:1;min-width:0}
+.ms-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-subtitle{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
+.ms-close{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1}
+.ms-close:hover{background:rgba(255,255,255,.15)}
+.ms-list{flex:1;overflow-y:auto;padding:12px 14px 16px;-webkit-overflow-scrolling:touch}
+.ms-hdr-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;margin-bottom:12px;border-radius:10px;font-size:12px;border:1px solid var(--border);background:var(--bg)}
+.ms-hdr-banner.manual{border-color:rgba(33,115,70,.45);background:rgba(33,115,70,.1)}
+.ms-hdr-banner-label{color:var(--muted);display:flex;align-items:center;gap:6px;min-width:0}
+.ms-hdr-banner.manual .ms-hdr-banner-label{color:#6ee7a0}
+.ms-hdr-banner-btn{padding:5px 11px;border-radius:7px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:var(--s1);color:var(--text);cursor:pointer;font-family:var(--font);flex-shrink:0}
+.ms-hdr-banner.manual .ms-hdr-banner-btn{border-color:rgba(33,115,70,.5);color:#6ee7a0;background:rgba(33,115,70,.12)}
+.ms-items{display:flex;flex-direction:column;gap:8px}
+.ms-item{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;width:100%;padding:11px 12px;border-radius:11px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;font-family:var(--font);text-align:left;transition:border-color .15s,background .15s,box-shadow .15s}
+.ms-item:hover{border-color:rgba(33,115,70,.45);background:var(--s2)}
+.ms-item.active{border-color:#217346;background:rgba(33,115,70,.14);box-shadow:0 0 0 1px rgba(33,115,70,.28),inset 3px 0 0 #217346}
+.ms-item-icon{width:38px;height:38px;border-radius:9px;background:rgba(33,115,70,.12);border:1px solid rgba(33,115,70,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ms-item.active .ms-item-icon{background:rgba(33,115,70,.22);border-color:rgba(33,115,70,.5)}
+.ms-item-body{min-width:0;display:flex;flex-direction:column;gap:2px}
+.ms-item-name{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-item.active .ms-item-name{color:#86efac;font-weight:600}
+.ms-item-meta{font-size:10px;color:var(--muted);letter-spacing:.02em}
+.ms-item.active .ms-item-meta{color:rgba(134,239,172,.75)}
+.ms-item-check{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;color:transparent;transition:all .15s}
+.ms-item.active .ms-item-check{background:#217346;border-color:#217346;color:#fff}
+.ms-empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px;line-height:1.5}
+#btn-mobile-sheets{position:relative}
+.sheets-badge{
+  position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:10px;
+  background:#ff3b30;color:#fff;font-size:10px;font-weight:700;display:none;align-items:center;justify-content:center;
+  border:2px solid var(--topbar-bg,#1e293b);line-height:1;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.35)
+}
+#ap-user-header{position:relative;padding:16px 16px 14px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.ap-user-close{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1}
+.ap-user-close:hover{background:rgba(255,255,255,.15)}
+.ap-user-stack{display:flex;flex-direction:column;align-items:center;gap:5px;padding:4px 28px 0;min-width:0}
+.ap-user-avatar-btn{cursor:pointer;border:none;background:none;padding:0;font-family:inherit}
+.ap-user-avatar-circle{width:44px;height:44px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2)}
+.ap-user-name{font-size:13px;font-weight:600;color:var(--text);text-align:center;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.2}
+.ap-user-role{font-size:11px;color:var(--muted);text-align:center;line-height:1.2}
+.ap-admin-btn{margin-top:2px;padding:5px 12px;border-radius:8px;border:1px solid rgba(99,102,241,.45);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
+.ap-admin-btn:hover{filter:brightness(1.08)}
 #file-input{display:none}
 #tabs-bar{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:42px}
 #tabs-bar::-webkit-scrollbar{height:3px}
@@ -250,7 +340,7 @@ input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--ac
 select{max-width:175px}
 input[type=date]{width:130px}
 #main{display:flex;flex:1;overflow:hidden;position:relative}
-#sidebar{width:10px;min-width:10px;background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:relative;transition:width .22s cubic-bezier(.4,0,.2,1),box-shadow .22s;overflow:hidden;z-index:10;clip-path:inset(0)}
+#sidebar{display:none!important}
 #sidebar.hovered{width:175px;position:absolute;left:0;top:0;bottom:0;box-shadow:4px 0 16px rgba(0,0,0,.4)}
 #sidebar.pinned{width:175px;position:relative;box-shadow:none}
 #sidebar-hover-strip{position:absolute;left:0;top:0;bottom:0;width:10px;cursor:pointer;z-index:5}
@@ -314,7 +404,7 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 @keyframes hl-fade{0%{background:#fbbf2466}100%{background:#fbbf2411}}
 #vt-info{flex-shrink:0;padding:3px 14px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);display:none;background:var(--s1)}
 #vt-info.visible{display:flex;align-items:center;gap:12px}
-#statusbar{display:flex;align-items:center;gap:14px;padding:4px 14px;background:var(--s1);border-top:1px solid var(--border);font-size:11px;color:var(--muted);flex-shrink:0}
+#statusbar{display:flex;align-items:center;gap:16px;padding:10px 16px;min-height:38px;background:var(--s1);border-top:1px solid var(--border);font-size:12px;color:var(--muted);flex-shrink:0}
 #statusbar .sv{color:var(--acc-text)}
 #status-msg{flex:1}
 #dropzone{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;color:var(--muted)}
@@ -435,29 +525,58 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radius:4px;border:1px solid var(--border);background:var(--bg)}
 .cm-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:17px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .cm-actions{display:flex;justify-content:space-between;margin-top:14px}
-#fav-modal{width:440px;max-height:80vh;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
-.fav-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1)}
-.fav-header h3{font-size:15px;font-weight:600;color:var(--text);margin:0}
+#fav-overlay{position:fixed;inset:0;z-index:200}
+#fav-overlay.open{align-items:center;justify-content:center;padding:16px}
+@media(max-width:500px){
+  #fav-modal{max-height:min(78dvh, calc(100dvh - 24px))}
+}
+#fav-modal{
+  width:min(440px, calc(100vw - 32px));
+  max-width:calc(100vw - 32px);
+  max-height:min(80dvh, calc(100dvh - 32px));
+  height:auto;
+  display:flex;
+  flex-direction:column;
+  gap:0;
+  padding:0!important;
+  overflow:hidden;
+  min-height:0;
+  box-sizing:border-box;
+}
+.fav-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1);gap:8px;min-width:0}
+.fav-header h3{font-size:15px;font-weight:600;color:var(--text);margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .modal-close-new{width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;padding:0;line-height:1}
 .modal-close-new:hover{background:rgba(255,255,255,0.15)}
-#fav-modal > #fav-save-row,#fav-modal > #fav-list{padding:0 16px}
-#fav-modal > #fav-save-row{padding-top:16px}
-#fav-save-row{display:flex;gap:7px}
-#fav-name-input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none}
+#fav-save-row{display:flex;flex-direction:column;align-items:stretch;gap:8px;flex-shrink:0;padding:12px 16px;border-bottom:1px solid var(--border);min-width:0;box-sizing:border-box}
+#fav-name-input{width:100%;min-width:0;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none;box-sizing:border-box}
 #fav-name-input:focus{border-color:var(--acc)}
-#fav-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px;min-height:40px}
-.fav-item{display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r)}
+#fav-save-row .btn{width:100%;justify-content:center;box-sizing:border-box}
+#fav-list{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:5px;padding:12px 16px 16px;-webkit-overflow-scrolling:touch}
+.fav-item{display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);min-width:0;box-sizing:border-box}
 .fav-item:hover{border-color:var(--border2)}
-.fav-item-info{flex:1;min-width:0}
-.fav-item-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fav-item-meta{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fav-load{padding:3px 10px;border-radius:var(--r);font-size:11px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer}
-.fav-del{padding:3px 7px;border-radius:var(--r);font-size:14px;background:none;border:none;color:var(--muted);cursor:pointer}
+.fav-item-info{flex:1 1 140px;min-width:0;max-width:100%}
+.fav-item-name{font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-item-meta{font-size:10px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav-item-actions{display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0;margin-left:auto}
+.fav-load{padding:4px 10px;border-radius:var(--r);font-size:11px;background:var(--acc-dim);border:1px solid var(--acc-text);color:var(--acc-text);cursor:pointer;white-space:nowrap}
+.fav-del{padding:4px 8px;border-radius:var(--r);font-size:14px;background:none;border:none;color:var(--muted);cursor:pointer;flex-shrink:0}
 .fav-del:hover{color:var(--danger)}
 #fav-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 0}
 /* Ocultar elementos solo-móvil por defecto */
 #mobile-menu{display:none}
-#mobile-sheets-overlay{display:none}
+/* Modal / bottom-sheet de hojas */
+#mobile-sheets-overlay{
+  display:none;position:fixed;inset:0;z-index:850;align-items:center;justify-content:center;
+  pointer-events:none;background:transparent;transition:background .25s;overflow:hidden;padding:20px
+}
+#mobile-sheets-overlay.open{display:flex!important;pointer-events:auto;background:rgba(0,0,0,.55)}
+#mobile-sheets-panel{
+  display:flex;flex-direction:column;background:var(--s1);border:1px solid var(--border);
+  width:min(440px,calc(100vw - 40px));max-height:min(72dvh,calc(100vh - 48px));
+  border-radius:14px;overflow:hidden;transform:scale(.96);opacity:0;
+  transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .22s
+}
+#mobile-sheets-overlay.open #mobile-sheets-panel{transform:scale(1);opacity:1}
 /* Panel de acciones (reemplaza botones individuales en topbar) */
 #actions-panel{display:none;position:fixed;z-index:800;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px 0;min-width:200px;flex-direction:column}
 #actions-panel.open{display:flex}
@@ -823,46 +942,44 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     order:5;
   }
 
-  /* Fila 2: Hamburguesa izquierda */
-  #btn-actions{
-    order:10;
-    padding:7px 11px!important;
+  /* Fila 2: botones móvil — estilo unificado */
+  #topbar #btn-actions,
+  #topbar #btn-open-file,
+  #topbar #btn-my-docs,
+  #topbar #btn-mobile-sheets{
     display:inline-flex!important;
-    margin-right:6px!important;
-  }
-  #btn-actions svg{width:18px!important;height:18px!important}
-
-  /* Botón Abrir archivo (solo móvil) */
-  #btn-open-file{
-    display:inline-flex!important;
-    order:11;
+    align-items:center!important;
+    justify-content:center!important;
+    gap:4px!important;
     padding:6px 10px!important;
     font-size:11px!important;
-    gap:4px;
-    background:rgba(59,130,246,0.15)!important;
-    border-color:rgba(59,130,246,0.4)!important;
-    color:#60a5fa!important;
+    font-weight:500!important;
+    font-family:var(--font)!important;
+    border-radius:var(--r)!important;
+    border:1px solid rgba(255,255,255,.2)!important;
+    background:rgba(255,255,255,.1)!important;
+    color:var(--topbar-text,var(--text))!important;
+    cursor:pointer!important;
+    flex-shrink:0!important;
+    touch-action:manipulation!important;
+    -webkit-tap-highlight-color:transparent!important;
+    max-width:none!important;
+    overflow:visible!important;
   }
-  #btn-open-file svg{width:14px!important;height:14px!important}
-
-  /* Fila 2: Documentos y Hojas derecha */
-  #btn-my-docs{
-    order:20;
-    padding:6px 10px!important;
-    font-size:11px!important;
-    margin-left:auto!important;
+  #topbar #btn-actions svg,
+  #topbar #btn-open-file svg,
+  #topbar #btn-my-docs svg,
+  #topbar #btn-mobile-sheets svg{
+    width:14px!important;
+    height:14px!important;
+    flex-shrink:0!important;
+    stroke:currentColor!important;
+    fill:none!important;
   }
-  #btn-my-docs svg{width:16px!important;height:16px!important}
-
-  #btn-mobile-sheets{
-    display:inline-flex!important;
-    order:21;
-    padding:6px 10px!important;
-    font-size:11px!important;
-  }
-  /* Panel acciones en móvil: sidebar retráctil izquierdo */
-  #actions-panel{display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important}
-  #actions-panel.open{left:0!important}
+  #topbar #btn-actions{order:10;margin-right:6px!important}
+  #topbar #btn-open-file{order:11}
+  #topbar #btn-my-docs{order:20;margin-left:auto!important;margin-right:4px!important}
+  #topbar #btn-mobile-sheets{order:21}
   /* Tabs: más compactas y scroll táctil mejorado */
   #tabs-bar{min-height:38px;padding:4px 8px 0;-webkit-overflow-scrolling:touch;touch-action:pan-x;scroll-behavior:smooth}
   #tabs-bar::-webkit-scrollbar{height:6px}
@@ -890,22 +1007,16 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #focus-exit-search{font-size:10px;padding:3px 8px}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
-  /* Botón de hojas móvil */
-  #btn-mobile-sheets{display:inline-flex!important}
-  /* Bottom sheet hojas */
-  #mobile-sheets-overlay{position:fixed;inset:0;z-index:850;display:flex;align-items:flex-end;pointer-events:none;background:transparent;transition:background .25s;overflow:hidden}
-  #mobile-sheets-overlay.open{pointer-events:auto;background:rgba(0,0,0,.55)}
-  #mobile-sheets-panel{background:var(--s1);border-radius:16px 16px 0 0;width:100%;max-height:60dvh;max-height:60vh;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);border:1px solid var(--border);border-bottom:none}
+  /* Bottom sheet hojas (móvil) */
+  #mobile-sheets-overlay{align-items:flex-end;padding:0}
+  #mobile-sheets-panel{
+    width:100%;max-height:60dvh;max-height:60vh;border-radius:16px 16px 0 0;border-bottom:none;
+    transform:translateY(100%);opacity:1;transition:transform .28s cubic-bezier(.4,0,.2,1)
+  }
   #mobile-sheets-overlay.open #mobile-sheets-panel{transform:translateY(0)}
   .ms-handle-wrap{display:flex;justify-content:center;padding:8px 0 2px;flex-shrink:0}
   .ms-handle{width:36px;height:4px;background:var(--s2);border-radius:2px}
-  .ms-title{padding:8px 16px 10px;font-size:13px;font-weight:600;color:var(--text);flex-shrink:0;border-bottom:1px solid var(--border)}
-  .ms-list{overflow-y:auto;scroll-behavior:smooth;flex:1;min-height:0;padding:6px 10px calc(12px + env(safe-area-inset-bottom))}
-  .ms-item{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text);transition:background .1s;border:1px solid transparent;margin-bottom:3px}
-  .ms-item:active{background:var(--s2)}
-  .ms-item.active{background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text);font-weight:600}
-  .ms-dot{width:8px;height:8px;border-radius:50%;background:var(--s3);flex-shrink:0}
-  .ms-item.active .ms-dot{background:var(--acc-text)}
+  .ms-list{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
   /* Statusbar: más amplio y legible en móvil */
   #statusbar{padding:8px 12px;height:calc(44px + env(safe-area-inset-bottom,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:12px}
   #statusbar>span:last-child{display:none} /* ocultar hint de teclado */
@@ -958,91 +1069,58 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   button,a,.tab,.chip,.mpill,.doc-item,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   /* Permitir selección en inputs y texto */
   input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
-  /* ── MODALES OPTIMIZADOS PARA MÓVIL ── */
-  /* Todos los modales: pantalla completa con safe-areas */
-  .modal-overlay{
-    position:fixed!important;
-    padding:0!important;
-  }
-  .modal-box{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-    margin:0!important;
-    overflow-y:auto!important;
-  }
+}
+#mobile-escape-btn{display:none}
 
-  /* Theme modal */
-  #theme-modal{
-    width:100%!important;
-    max-width:100%!important;
-  }
-
-  /* Chart modal */
-  #chart-modal{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-  }
-
-  /* Header modal */
-  #hdr-modal{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    max-height:100vh!important;
-    border-radius:0!important;
-  }
-
-  /* Column panel */
-  #col-panel{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-  }
-
-  /* Detail panel */
-  #detail-panel{
-    width:100%!important;
-    max-width:100%!important;
-    height:100vh!important;
-    border-radius:0!important;
-    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
-  }
-
-  /* Fav modal - mantener diseño centrado compacto en móvil */
-  #fav-modal{
-    max-width:90vw!important;
-    max-height:70vh!important;
-  }
-
-  /* Docs panel */
-  #docs-panel{
-    width:100%!important;
-    max-width:100%!important;
-    left:0!important;
-    right:0!important;
-    border-radius:16px 16px 0 0!important;
-    max-height:85vh!important;
-  }
-
-  /* Pills ficha panel - bottom sheet */
-  #pills-ficha-panel{
-    width:100%!important;
-    max-width:100%!important;
-    border-radius:16px 16px 0 0!important;
-    padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;
-  }
+/* Modales/paneles: layout fijado al abrir (no salta al redimensionar) */
+html[data-modal-vp="mobile"] #actions-panel{
+  display:flex!important;position:fixed!important;top:0!important;left:-280px!important;bottom:0!important;right:auto!important;
+  width:280px!important;max-height:100vh!important;min-width:280px!important;border-radius:0!important;
+  border-right:1px solid var(--border2)!important;border-bottom:1px solid var(--border)!important;
+  transition:left .3s cubic-bezier(.4,0,.2,1)!important;box-shadow:4px 0 24px rgba(0,0,0,.3)!important;overflow-y:auto!important
+}
+html[data-modal-vp="mobile"] #actions-panel.open{left:0!important}
+html[data-modal-vp="mobile"] .modal-overlay{position:fixed!important;padding:0!important}
+html[data-modal-vp="mobile"] .modal-box:not(#fav-modal){
+  width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;
+  border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
+  margin:0!important;overflow-y:auto!important
+}
+html[data-modal-vp="mobile"] #fav-overlay.open{
+  align-items:center!important;justify-content:center!important;
+  padding:max(16px, env(safe-area-inset-top,0px)) 16px max(16px, env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #fav-modal{
+  width:min(440px, calc(100vw - 32px))!important;
+  max-width:calc(100vw - 32px)!important;
+  height:auto!important;
+  max-height:min(75dvh, calc(100dvh - 48px))!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+  margin:0!important
+}
+html[data-modal-vp="mobile"] #theme-modal{width:100%!important;max-width:100%!important}
+html[data-modal-vp="mobile"] #chart-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
+html[data-modal-vp="mobile"] #hdr-modal{width:100%!important;max-width:100%!important;height:100vh!important;max-height:100vh!important;border-radius:0!important}
+html[data-modal-vp="mobile"] #col-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
+html[data-modal-vp="mobile"] #detail-panel{width:100%!important;max-width:100%!important;height:100vh!important;border-radius:0!important;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important}
+html[data-modal-vp="mobile"] #docs-panel.open{align-items:flex-end!important;justify-content:center!important;padding:0!important}
+html[data-modal-vp="mobile"] #docs-panel .docs-modal{
+  width:100%!important;max-width:100%!important;max-height:85vh!important;
+  border-radius:16px 16px 0 0!important;margin:0!important
+}
+html[data-modal-vp="mobile"] #pills-ficha-panel{
+  width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;
+  padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important
+}
+html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
+  display:flex;align-items:center;justify-content:center;gap:6px;position:fixed;
+  bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:10000;
+  padding:10px 22px;border-radius:24px;border:1px solid var(--border2);background:var(--s1);color:var(--text);
+  font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);touch-action:manipulation
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
-#hdr-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.7);z-index:400;align-items:center;justify-content:center;padding:16px}
+#hdr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;align-items:center;justify-content:center;padding:16px}
 #hdr-overlay.open{display:flex}
 #hdr-modal{background:var(--s1);border:1px solid var(--border);border-radius:12px;width:860px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 #hdr-modal-head{padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px;flex-shrink:0}
@@ -1227,27 +1305,30 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </div>
 
     <div class="login-footer" style="margin-top:20px">
-      Los archivos Excel se procesan localmente<br>en tu dispositivo. Nunca se suben a servidores.
+      Los archivos se procesan en tu dispositivo.<br>La subida a la nube es opcional y solo si tú lo eliges.
     </div>
   </div>
 </div>
 
 
 <div id="topbar">
-  <div class="logo" style="width:32px;height:32px;padding:0;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center">
+  <div id="topbar-left">
+  <div class="logo" style="width:32px;height:32px;padding:0;overflow:hidden;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
       <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/>
     </svg>
   </div>
-  <div class="app-title" style="margin-right:8px">Mirador <span style="opacity:.5;font-weight:400;font-size:12px">— análisis de planillas</span></div>
-  <div id="topbar-breadcrumb" style="display:none;align-items:center;gap:5px;font-size:12px;color:var(--topbar-muted,#94a3b8);flex-shrink:0">
+  <div class="app-title" style="margin-right:8px;flex-shrink:0">Mirador <span style="opacity:.5;font-weight:400;font-size:12px">— análisis de planillas</span></div>
+  <div id="topbar-breadcrumb" style="display:none;align-items:center;gap:5px;font-size:12px;color:var(--topbar-muted,#94a3b8);min-width:0">
     <span id="tb-filename" style="color:var(--topbar-muted)"></span>
-    <span style="opacity:.4">/</span>
+    <span class="tb-sep" style="opacity:.4">/</span>
     <span id="tb-sheetname" style="color:var(--topbar-text,#e2e8f0);font-weight:500"></span>
     <span id="tb-rowinfo" style="font-size:10px;color:var(--topbar-muted);margin-left:2px"></span>
   </div>
+  </div>
+  <div id="topbar-right">
   <!-- Toggle Pills / Tabla — siempre visible -->
-  <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills" style="margin-left:auto">
+  <button id="btn-pills-mode" onclick="togglePillsMode()" title="Alternar vista Tabla / Pills">
     <span class="pills-toggle-seg seg-table">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
       Tabla
@@ -1258,7 +1339,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </span>
   </button>
   <!-- Botón abrir archivo desde dispositivo (móvil) -->
-  <button id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
+  <button class="btn" id="btn-open-file" onclick="document.getElementById('file-input').click()" title="Abrir archivo" style="display:none">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
@@ -1267,25 +1348,26 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     </svg>
     Abrir
   </button>
-  <!-- Botón hojas (solo móvil ≤500px) -->
-  <button id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas" style="display:none;align-items:center;justify-content:center;padding:5px 8px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:var(--topbar-text,var(--text));cursor:pointer;font-size:11px;font-weight:500;flex-shrink:0;gap:4px;font-family:var(--font);max-width:100px;overflow:hidden">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+  <!-- Botón hojas → modal con todas las pestañas del libro -->
+  <button class="btn" id="btn-mobile-sheets" onclick="openMobileSheets()" title="Hojas del archivo" style="display:none">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="2" fill="#217346" opacity=".2"/><rect x="3" y="2" width="18" height="20" rx="2" stroke="#217346" stroke-width="1.5"/><path d="M3 8h18M8 8v14" stroke="#217346" stroke-width="1.2"/><rect x="10" y="11" width="9" height="2" rx=".5" fill="#217346"/><rect x="10" y="15" width="7" height="2" rx=".5" fill="#217346" opacity=".7"/></svg>
     <span id="btn-sheets-label" style="white-space:nowrap">Hojas</span>
+    <span id="btn-sheets-badge" class="sheets-badge"></span>
   </button>
   <!-- Botones de documentos en la nube -->
   <button class="btn" id="btn-save-cloud" onclick="saveToCloud()" title="Guardar en la nube" style="display:none;padding:5px 11px;background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:#10b981">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     Guardar
   </button>
-  <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos" style="padding:5px 11px">
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="#fbbf24" stroke="#f59e0b" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+  <button class="btn" id="btn-my-docs" onclick="openDocsPanel()" title="Mis documentos">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     Documentos
   </button>
   <!-- Botón Exportar — acción primaria, siempre visible cuando hay datos -->
   <button class="btn success" id="btn-export" onclick="exportExcel()" disabled style="display:none">&#8595; Exportar</button>
   <!-- Botón Acciones — panel con todas las herramientas -->
-  <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Acciones" style="padding:6px 10px">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+  <button class="btn" id="btn-actions" onclick="toggleActionsPanel()" title="Acciones">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="3" y1="6" x2="21" y2="6"/>
       <line x1="3" y1="12" x2="21" y2="12"/>
       <line x1="3" y1="18" x2="21" y2="18"/>
@@ -1311,6 +1393,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   <button id="btn-copy-all" onclick="copyFiltered()" style="display:none" disabled></button>
   <button id="btn-fav"      onclick="openViewsPanel()" style="display:none" disabled></button>
   <button id="btn-clear"    onclick="clearFilters()"  style="display:none" disabled></button>
+  </div>
   <input type="file" id="file-input" accept=".xlsx,.xls,.xlsb,.xlsm,.csv,.tsv,.ods,.json,.txt" onchange="openFileTab(this)" multiple/>
 </div>
 
@@ -1499,7 +1582,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   <span>Total: <span class="sv" id="st-total">0</span></span>
   <span>Visibles: <span class="sv" id="st-vis">0</span></span>
   <span>Sel: <span class="sv" id="st-sel">0</span></span>
-  <span style="margin-left:auto;font-size:10px;opacity:.45">g-click multi-sel · Doble-click ficha · Click derecho encabezado</span>
 </div>
 
 <div id="detail-overlay" onclick="closeDetail(event)">
@@ -1581,8 +1663,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   </div>
 </div>
 <!-- ── MODAL SELECTOR DE ENCABEZADOS ── -->
-<div id="hdr-overlay">
-  <div id="hdr-modal">
+<div id="hdr-overlay" onclick="if(event.target===this)cancelHdrPicker()">
+  <div id="hdr-modal" onclick="event.stopPropagation()">
     <div id="hdr-modal-head">
       <div id="hdr-modal-icon">🔍</div>
       <div id="hdr-modal-info">
@@ -1668,9 +1750,16 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 <!-- ── BOTTOM SHEET HOJAS (móvil) ── -->
 <div id="mobile-sheets-overlay" onclick="if(event.target===this)closeMobileSheets()">
-  <div id="mobile-sheets-panel">
+  <div id="mobile-sheets-panel" onclick="event.stopPropagation()">
     <div class="ms-handle-wrap"><div class="ms-handle"></div></div>
-    <div class="ms-title" id="ms-title">Hojas del archivo</div>
+    <div class="ms-header">
+      <div class="ms-header-icon" id="ms-header-icon"></div>
+      <div class="ms-header-text">
+        <div class="ms-title" id="ms-title">Hojas del archivo</div>
+        <div class="ms-subtitle" id="ms-subtitle">Selecciona una hoja</div>
+      </div>
+      <button type="button" class="ms-close" onclick="closeMobileSheets()" aria-label="Cerrar">×</button>
+    </div>
     <div class="ms-list" id="ms-list"></div>
   </div>
 </div>
@@ -1678,19 +1767,22 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 <!-- ── PANEL DE ACCIONES (desktop + móvil) ── -->
 <div id="actions-panel-overlay" onclick="closeActionsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:799"></div>
 <div id="actions-panel">
-  <!-- Header con usuario y rol -->
-  <div id="ap-user-header" style="padding:16px 16px 12px;border-bottom:1px solid var(--border);margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff" id="ap-user-avatar"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:2px" id="ap-user-name"></div>
-        <div style="font-size:12px;color:var(--text-muted)" id="ap-user-role"></div>
-      </div>
-      <button onclick="closeActionsPanel()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
+  <!-- Usuario + Admin (encima de favoritos) -->
+  <div id="ap-user-header" style="display:none">
+    <button type="button" class="ap-user-close" onclick="closeActionsPanel()" aria-label="Cerrar menú">×</button>
+    <div class="ap-user-stack">
+      <button type="button" class="ap-user-avatar-btn" id="ap-user-avatar-btn" onclick="fbShowUserMenu(this)">
+        <div class="ap-user-avatar-circle" id="ap-user-avatar"></div>
+      </button>
+      <div class="ap-user-name" id="ap-user-name"></div>
+      <div class="ap-user-role" id="ap-user-role"></div>
+      <button type="button" class="ap-admin-btn" id="ap-admin-btn" style="display:none" onclick="fbOpenAdminPanel();closeActionsPanel()">👥 Admin</button>
     </div>
   </div>
-  <!-- PRIMERA OPCIÓN: Favoritos/Vistas guardadas -->
   <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
+  <div class="ap-sep"></div>
+  <button class="ap-item" id="ap-docs" onclick="openDocsPanel();closeActionsPanel()">📂 Documentos</button>
+  <button class="ap-item" id="ap-save-cloud" onclick="saveToCloud();closeActionsPanel()" style="display:none">☁️ Guardar en la nube</button>
   <div class="ap-sep"></div>
   <button class="ap-item" id="ap-graph"   onclick="openGraphPanel();closeActionsPanel()" disabled>📊 Gráfico</button>
   <button class="ap-item ap-warn" id="ap-cond" onclick="openCondModal();closeActionsPanel()" disabled style="color:#fcd34d">⬛ Colores condicionales</button>
@@ -1770,7 +1862,12 @@ const safe = v => (v==null||v instanceof Object&&v.constructor.name==='DBNull') 
 const $  = id => document.getElementById(id);
 const el = (tag,props={},children=[]) => {
   const e=document.createElement(tag);
-  Object.entries(props).forEach(([k,v])=>{ if(k==='style')e.style.cssText=v; else if(k==='cls')e.className=v; else e[k]=v; });
+  Object.entries(props).forEach(([k,v])=>{
+    if(k==='style') e.style.cssText=v;
+    else if(k==='cls') e.className=v;
+    else if(k.startsWith('data-')) e.setAttribute(k, v);
+    else e[k]=v;
+  });
   children.forEach(c=>e.appendChild(typeof c==='string'?document.createTextNode(c):c));
   return e;
 };
@@ -2023,15 +2120,51 @@ function _tabFileIcon(ext,color){
   return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="14" height="14" rx="2.5" fill="${c}" opacity=".18"/><rect x="1" y="1" width="14" height="14" rx="2.5" stroke="${c}" stroke-width=".7"/><text x="8" y="11" text-anchor="middle" font-size="${info.size}" font-weight="500" font-family="system-ui,sans-serif" fill="${c}">${info.label}</text></svg>`;
 }
 
-// Star / favorite integration
+// Star → guardar/quitar vista inmediatamente
 function _tabIsFav(fileName){
-  const list=_fmLoad();
-  const f=list.find(x=>x.name===fileName);
-  return f?.fav||false;
+  return getFavs().some(f=>f.state?.fileName===fileName);
+}
+function _tabBuildViewState(tab){
+  return {
+    colFilters:JSON.parse(JSON.stringify(tab.colFilters||{})),
+    searchText:tab.searchText||$('search-input')?.value||'',
+    searchCol:tab.searchCol||$('search-col')?.value||'',
+    dateFrom:tab.dateFrom||$('date-from')?.value||'',
+    dateTo:tab.dateTo||$('date-to')?.value||'',
+    dateCol:tab.dateCol||$('date-col')?.value||'',
+    fileName:tab.fileName, activeSheet:tab.activeSheet, sheets:tab.sheets,
+    columns:tab.columns, rawData:tab.rawData, dateColsDetected:tab.dateColsDetected, color:tab.color
+  };
+}
+function _tabSaveView(tab){
+  const state=_tabBuildViewState(tab);
+  const name=(tab.fileName||'Vista').replace(/\.[^.]+$/,'');
+  const favs=getFavs();
+  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
+  const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
+  if(idx>=0) favs[idx]=fav; else favs.push(fav);
+  setFavs(favs);
+  const fmList=_fmLoad();
+  const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
+  if(fmIdx>=0 && !fmList[fmIdx].fav){ fmList[fmIdx].fav=true; _fmSave(fmList); }
+  toast(`⭐ Vista "${name}" guardada`);
+}
+function _tabRemoveView(tab){
+  const favs=getFavs();
+  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
+  if(idx<0) return;
+  const name=favs[idx].name;
+  favs.splice(idx,1);
+  setFavs(favs);
+  const fmList=_fmLoad();
+  const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
+  if(fmIdx>=0){ fmList[fmIdx].fav=false; _fmSave(fmList); }
+  toast(`"${name}" quitada de vistas`);
 }
 function _tabToggleFav(tab){
   if(!tab) return;
-  fmToggleFav(_fmLoad().findIndex(x=>x.name===tab.fileName));
+  if(_tabIsFav(tab.fileName)) _tabRemoveView(tab);
+  else _tabSaveView(tab);
   renderTabs();
 }
 
@@ -2113,15 +2246,28 @@ function setSelectValue(id, val){
   s.selectedIndex=0; // fallback: primer elemento si el valor no existe
 }
 
+function _hideFileActions(){
+  ['btn-export','btn-actions','btn-mobile-sheets','btn-save-cloud'].forEach(id=>{
+    const e=$(id); if(e) e.style.display='none';
+  });
+  const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='none';
+  _updateSheetsBtn();
+}
 function showDropzone(full=true){
+  if(full) _resetPillsSurface();
   $('dropzone').style.display='flex';
   $('table-wrap').style.display='none';
   $('loading').style.display='none';
   $('stats-bar').classList.remove('visible');
   if(full){
+    enableControls(false);
+    _hideFileActions();
+    updateBreadcrumb();
+    setStatus('Abre un archivo .xlsx para comenzar.');
+    $('search-input').value='';
     $('chips-placeholder').style.display='inline';
     $('chips-right').style.display='none';
-    $('chips-bar').querySelectorAll('.chip').forEach(c=>c.remove());
+    $('chips-bar')?.querySelectorAll('.chip').forEach(c=>c.remove());
     $('sheet-list').innerHTML='<div style="padding:10px 12px;color:var(--muted);font-size:11px">Abre un .xlsx</div>';
   }
   updateStatusBar();
@@ -2159,18 +2305,7 @@ function processFile(file){
 
 // ── HOJAS ─────────────────────────────────────────────────────────────────────
 function renderSheetsSidebar(){
-  const tab=T(); if(!tab) return;
-  _updateMobileSheetsBtn();
-  const hdrInfo = tab._manualHdrRow !== undefined && tab._manualHdrRow !== null
-    ? `<div style="padding:4px 12px 6px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">
-         Encabezado: fila <strong style="color:var(--acc-text)">${tab._manualHdrRow - (tab._hdrRangeStart||0) + 1}</strong>
-         <span onclick="reopenHdrPicker()" style="margin-left:6px;color:var(--acc-text);cursor:pointer;text-decoration:underline;font-size:10px">cambiar</span>
-       </div>` : '';
-  $('sheet-list').innerHTML=hdrInfo+tab.sheets.map(n=>`
-    <div class="sheet-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false)">
-      <div class="s-icon"></div>
-      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${eh(n)}</span>
-    </div>`).join('');
+  _updateSheetsBtn();
 }
 
 function loadSheet(name, tabId, preserveFilters){
@@ -4705,7 +4840,7 @@ function renderViewsList(){ renderFavList(); }
 function renderFavList(){
   const favs=getFavs(), list=$('fav-list');
   if(!favs.length){list.innerHTML='<div id="fav-empty">Sin favoritos. Aplica filtros y guárdalos.</div>';return}
-  list.innerHTML=favs.map((f,i)=>`<div class="fav-item"><div class="fav-item-info"><div class="fav-item-name">${eh(f.name)}</div><div class="fav-item-meta">${eh(f.summary)} · ${eh(f.date||'')}</div>${f.state?.fileName?`<div style="font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${eh(f.state.fileName)}</div>`:''}</div><button class="fav-load" onclick="loadFavorite(${i})">▷ Cargar</button>${f.state?.fileName?`<button class="fav-load" onclick="openFileForFav(${i})" title="Seleccionar este archivo" style="background:var(--s2)">📂 Archivo</button>`:''}<button class="fav-del" onclick="deleteFavorite(${i})" title="Eliminar">🗑</button></div>`).join('');
+  list.innerHTML=favs.map((f,i)=>`<div class="fav-item"><div class="fav-item-info"><div class="fav-item-name">${eh(f.name)}</div><div class="fav-item-meta">${eh(f.summary)} · ${eh(f.date||'')}</div>${f.state?.fileName?`<div style="font-size:9px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📄 ${eh(f.state.fileName)}</div>`:''}</div><div class="fav-item-actions"><button class="fav-load" onclick="loadFavorite(${i})">▷ Cargar</button>${f.state?.fileName?`<button class="fav-load" onclick="openFileForFav(${i})" title="Seleccionar este archivo" style="background:var(--s2)">📂 Archivo</button>`:''}<button class="fav-del" onclick="deleteFavorite(${i})" title="Eliminar">🗑</button></div></div>`).join('');
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────────────────────
@@ -4926,8 +5061,8 @@ function applyDateColSelection(){
 let _hdrPicker = null;
 // {tabId, sheetName, ws, range, detectedRow, selectedRow, preserveFilters, maxPreviewRows}
 
-const HDR_PREVIEW_ROWS = 60; // filas a mostrar en la vista previa
-const HDR_SCAN_ROWS    = 30; // filas a escanear para autodetección
+const HDR_PREVIEW_ROWS = 80; // filas a mostrar en la vista previa
+const HDR_SCAN_ROWS    = 50; // filas a escanear para autodetección
 
 /**
  * Autodetecta la fila de encabezado de mejor calidad en las primeras HDR_SCAN_ROWS filas.
@@ -4966,29 +5101,30 @@ function detectBestHeaderRow(ws, range){
  * Abre el modal picker. Escanea el workbook y muestra preview interactiva.
  * Si la autodetección es obvia (score alto), confirma directamente.
  */
-function openHdrPicker(tabId, sheetName, ws, range, preserveFilters){
+function openHdrPicker(tabId, sheetName, ws, range, preserveFilters, initialRow){
   const detectedRow = detectBestHeaderRow(ws, range);
+  const selectedRow = (initialRow != null && initialRow >= range.s.r && initialRow <= range.e.r)
+    ? initialRow : detectedRow;
 
   _hdrPicker = {
     tabId, sheetName, ws, range,
     detectedRow,
-    selectedRow: detectedRow,
+    selectedRow,
     preserveFilters,
     colCount: range.e.c - range.s.c + 1
   };
 
-  // Mostrar banner de autodetección
   const banner = $('hdr-auto-banner');
   banner.classList.add('show');
   $('hdr-auto-rownum').textContent = detectedRow - range.s.r + 1;
+  const manualInp = $('hdr-manual-input');
+  if(manualInp) manualInp.value = '';
 
-  // Construir vista previa
   renderHdrPreview();
-
-  // Abrir modal
+  window._lockModalViewport?.();
   $('hdr-overlay').classList.add('open');
-  // Scroll hasta la fila detectada
-  setTimeout(()=>scrollToHdrRow(detectedRow), 80);
+  window.scheduleOverlayCheck?.();
+  setTimeout(()=>scrollToHdrRow(selectedRow), 80);
 }
 
 /**
@@ -5099,11 +5235,8 @@ function jumpToHdrRow(val){
 
 function autoDetectHeaderAndApply(){
   if(!_hdrPicker) return;
-  const row = detectBestHeaderRow(_hdrPicker.ws, _hdrPicker.range);
-  _hdrPicker.selectedRow = row;
-  renderHdrPreview();
-  scrollToHdrRow(row);
-  toast(`Autodetección: fila ${row - _hdrPicker.range.s.r + 1}`);
+  _hdrPicker.selectedRow = detectBestHeaderRow(_hdrPicker.ws, _hdrPicker.range);
+  confirmHdrPicker();
 }
 
 function confirmHdrPicker(){
@@ -5111,8 +5244,9 @@ function confirmHdrPicker(){
   const {tabId, sheetName, ws, range, selectedRow, preserveFilters} = _hdrPicker;
   $('hdr-overlay').classList.remove('open');
   _hdrPicker = null;
-  // Llamar a processSheetWithRow con la fila elegida
+  window.scheduleOverlayCheck?.();
   _processSheetData(tabId, sheetName, ws, range, selectedRow, preserveFilters);
+  toast(`Encabezado aplicado: fila ${selectedRow - range.s.r + 1}`);
 }
 
 function cancelHdrPicker(){
@@ -5121,10 +5255,14 @@ function cancelHdrPicker(){
   const fallback = _hdrPicker._cancelFallback ?? null;
   $('hdr-overlay').classList.remove('open');
   _hdrPicker = null;
+  window.scheduleOverlayCheck?.();
   const tab = tabs.get(tabId);
-  if(fallback !== null && tab){
-    // Restaurar la fila anterior si se canceló desde reopenHdrPicker
+  if(fallback !== null && fallback !== undefined && tab){
     tab._manualHdrRow = fallback;
+    renderSheetsSidebar();
+    return;
+  }
+  if(tab && tab.rawData.length){
     renderSheetsSidebar();
     return;
   }
@@ -5135,15 +5273,19 @@ function cancelHdrPicker(){
 }
 
 function reopenHdrPicker(){
-  const tab = T(); if(!tab||!tab.workbook||!tab.activeSheet) return;
+  const tab = T();
+  if(!tab || !tab.activeSheet) return;
+  if(!tab.workbook){
+    toast('No se puede ajustar el encabezado sin el archivo original. Vuelve a abrir el .xlsx.', true);
+    return;
+  }
   const ws = tab.workbook.Sheets[tab.activeSheet]; if(!ws) return;
   const range = XLSX.utils.decode_range(ws['!ref']||'A1');
   const prevRow = tab._manualHdrRow;
   tab._manualHdrRow = null;
   _hdrPicker = null;
-  // Abrir picker; si el usuario cancela, restaurar la fila anterior
-  openHdrPicker(tab.id, tab.activeSheet, ws, range, true);
-  _hdrPicker._cancelFallback = prevRow;
+  openHdrPicker(tab.id, tab.activeSheet, ws, range, true, prevRow);
+  if(_hdrPicker) _hdrPicker._cancelFallback = prevRow;
 }
 
 // ── RECARGA / AUTO-REFRESH ──────────────────────────────────────────────────
@@ -5871,16 +6013,21 @@ function updateBreadcrumb(){
   if(!tab||!tab.rawData.length){if(bc)bc.style.display='none';return}
   if(bc) bc.style.display='flex';
   const fn=$('tb-filename'); const sn=$('tb-sheetname'); const ri=$('tb-rowinfo');
-  if(fn) fn.textContent=(tab.fileName||'').replace(/\.xlsx?$/i,'');
-  if(sn) sn.textContent=tab.activeSheet||'';
+  const fileLabel=(tab.fileName||'').replace(/\.xlsx?$/i,'');
+  const sheetLabel=tab.activeSheet||'';
+  if(fn) fn.textContent=fileLabel;
+  if(sn) sn.textContent=sheetLabel;
   const vis=tab.filtered.length, total=tab.rawData.length;
   if(ri) ri.textContent=`${vis.toLocaleString()} de ${total.toLocaleString()}`;
+  if(bc) bc.title=`${fileLabel} / ${sheetLabel} — ${vis.toLocaleString()} de ${total.toLocaleString()}`;
 }
 
 // ── VISTAS / GRÁFICO (stubs para botones de toolbar) ────────────────────────
 function openViewsPanel(){
   renderViewsList();
+  window._lockModalViewport?.();
   $('fav-overlay').classList.add('open');
+  window.scheduleOverlayCheck?.();
   $('fav-name-input').focus();
 }
 
@@ -6116,17 +6263,46 @@ function _pillsInitials(s){
 }
 
 // ── TOGGLE PRINCIPAL ──────────────────────────────────────────────────────────
+function _resetPillsSurface(){
+  if(_pillsOn) _exitPillsMode();
+  $('pills-view')?.classList.remove('open');
+  const grid=$('pills-grid'); if(grid) grid.innerHTML='';
+  const cnt=$('pills-toolbar-count'); if(cnt) cnt.textContent='';
+  const pInp=$('pills-search-input'); if(pInp) pInp.value='';
+  const da=$('data-area'); if(da) da.style.display='';
+  const sb=$('searchbar'); if(sb) sb.style.display='';
+}
+function _exitPillsMode(){
+  if(!_pillsOn) return;
+  _pillsOn = false;
+  $('btn-pills-mode')?.classList.remove('pills-on');
+  const pv = $('pills-view');
+  const da = $('data-area');
+  const cb = $('chips-bar');
+  pv?.classList.remove('open');
+  if(da) da.style.display = '';
+  $('searchbar').style.display = '';
+  if(_pillsCbParent && cb){
+    cb.classList.remove('pills-mode','chips-collapsed');
+    cb.style.display = '';
+    _pillsCbParent.insertBefore(cb, _pillsCbNext);
+    _pillsCbParent = null; _pillsCbNext = null;
+  } else if(cb) {
+    cb.style.display = '';
+  }
+  if(_pillsFichaOpen) pillsCloseFicha();
+}
 function togglePillsMode(){
-  _pillsOn = !_pillsOn;
+  if(_pillsOn){ _exitPillsMode(); return; }
+  _pillsOn = true;
   const btn = $('btn-pills-mode');
-  btn.classList.toggle('pills-on', _pillsOn);
+  btn.classList.add('pills-on');
   const pv = $('pills-view');
   const da = $('data-area');
   const cb = $('chips-bar');
   const isMobile = window.innerWidth <= 500;
 
-  if(_pillsOn){
-    pv.classList.add('open');
+  pv.classList.add('open');
     da.style.display = 'none';
     $('searchbar').style.display = 'none';
 
@@ -6158,22 +6334,6 @@ function togglePillsMode(){
       renderPillsView();
       if(typeof renderTabs === 'function') renderTabs();
     }
-  } else {
-    pv.classList.remove('open');
-    da.style.display = '';
-    $('searchbar').style.display = '';
-
-    if(_pillsCbParent && cb){
-      // Restaurar chips-bar a su posición original
-      cb.classList.remove('pills-mode','chips-collapsed');
-      cb.style.display = '';
-      _pillsCbParent.insertBefore(cb, _pillsCbNext);
-      _pillsCbParent = null; _pillsCbNext = null;
-    } else {
-      cb.style.display = '';
-    }
-    if(_pillsFichaOpen) pillsCloseFicha();
-  }
 }
 
 function pillsToggleMobileFilter(){
@@ -6477,47 +6637,81 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft' ||e.key==='ArrowUp')   pillsNavigate(-1);
 });
 
-// ── BOTTOM SHEET HOJAS (móvil) ───────────────────────────────────────────────
+// ── Icono hoja Excel (verde) ─────────────────────────────────────────────────
+function _excelSheetIcon(size){
+  const s=size||20, c='#217346';
+  return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="2" width="18" height="20" rx="2" fill="${c}" opacity=".18"/><rect x="3" y="2" width="18" height="20" rx="2" stroke="${c}" stroke-width="1.4"/><path d="M3 8h18M8 8v14" stroke="${c}" stroke-width="1.1" opacity=".75"/><rect x="10" y="11" width="9" height="2" rx=".5" fill="${c}"/><rect x="10" y="15" width="7" height="2" rx=".5" fill="${c}" opacity=".65"/><rect x="10" y="19" width="8" height="2" rx=".5" fill="${c}" opacity=".45"/></svg>`;
+}
+
+// ── Modal selector de hojas ──────────────────────────────────────────────────
 function openMobileSheets(){
   const tab = T();
   const overlay = $('mobile-sheets-overlay');
   const list    = $('ms-list');
   const title   = $('ms-title');
+  const subtitle= $('ms-subtitle');
+  const headerIcon = $('ms-header-icon');
   if(!overlay || !list) return;
 
-  if(!tab || !tab.sheets || !tab.sheets.length){
-    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:13px;text-align:center">Abre un archivo .xlsx primero</div>';
-    title.textContent = 'Hojas del archivo';
-  } else {
-    title.textContent = tab.fileName || 'Hojas del archivo';
+  if(headerIcon) headerIcon.innerHTML = _excelSheetIcon(24);
 
-    // Info de encabezado actual
-    const hdrInfo = (tab._manualHdrRow != null)
-      ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:var(--acc-dim);border:1px solid var(--acc);border-radius:8px;font-size:12px">
-           <span style="color:var(--acc-text)">📌 Encabezado: fila <strong>${tab._manualHdrRow - (tab._hdrRangeStart||0) + 1}</strong></span>
-           <button onclick="closeMobileSheets();reopenHdrPicker()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc-text);cursor:pointer;font-family:var(--font)">Cambiar</button>
+  if(!tab || !tab.sheets || !tab.sheets.length){
+    if(title) title.textContent = 'Hojas del archivo';
+    if(subtitle) subtitle.textContent = 'Abre un archivo .xlsx primero';
+    list.innerHTML = '<div class="ms-empty">📂 Abre un archivo Excel para ver sus hojas aquí</div>';
+  } else {
+    const sheetCount = tab.sheets.length;
+    const fileLabel = (tab.fileName || 'Archivo').replace(/\.[^.]+$/,'');
+    if(title) title.textContent = fileLabel;
+    if(subtitle) subtitle.textContent = `${sheetCount} hoja${sheetCount===1?'':'s'} · selecciona la activa`;
+
+    const hdrRow = tab._manualHdrRow != null ? tab._manualHdrRow - (tab._hdrRangeStart||0) + 1 : null;
+    const hdrInfo = hdrRow != null
+      ? `<div class="ms-hdr-banner manual">
+           <span class="ms-hdr-banner-label">${_excelSheetIcon(14)} Encabezado en fila <strong>${hdrRow}</strong></span>
+           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();setTimeout(reopenHdrPicker,0)">Cambiar</button>
          </div>`
-      : `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin-bottom:6px;background:var(--s2);border-radius:8px;font-size:12px">
-           <span style="color:var(--muted)">Encabezado: auto-detectado</span>
-           <button onclick="closeMobileSheets();reopenHdrPicker()" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:var(--s1);color:var(--muted);cursor:pointer;font-family:var(--font)">Cambiar</button>
+      : `<div class="ms-hdr-banner">
+           <span class="ms-hdr-banner-label">Encabezado auto-detectado</span>
+           <button type="button" class="ms-hdr-banner-btn" onclick="closeMobileSheets();setTimeout(reopenHdrPicker,0)">Ajustar</button>
          </div>`;
 
-    list.innerHTML = hdrInfo + tab.sheets.map(n=>`
-      <div class="ms-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false);closeMobileSheets();_updateMobileSheetsBtn()">
-        <span class="ms-dot"></span>
-        <span style="flex:1">${eh(n)}</span>
-        ${tab.activeSheet===n ? '<span style="font-size:16px">✓</span>' : ''}
-      </div>`).join('');
+    const items = tab.sheets.map((n,i)=>{
+      const active = tab.activeSheet===n;
+      return `<button type="button" class="ms-item${active?' active':''}" onclick="loadSheet('${ejs(n)}',null,false);closeMobileSheets();_updateSheetsBtn()">
+        <span class="ms-item-icon">${_excelSheetIcon(20)}</span>
+        <span class="ms-item-body">
+          <span class="ms-item-name">${eh(n)}</span>
+          <span class="ms-item-meta">${active?'Hoja activa':'Hoja '+(i+1)}</span>
+        </span>
+        <span class="ms-item-check">${active?'✓':''}</span>
+      </button>`;
+    }).join('');
+
+    list.innerHTML = hdrInfo + `<div class="ms-items">${items}</div>`;
   }
+  _lockModalViewport();
   overlay.classList.add('open');
+  scheduleOverlayCheck();
 }
 function closeMobileSheets(){
   $('mobile-sheets-overlay')?.classList.remove('open');
+  scheduleOverlayCheck();
 }
-function _updateMobileSheetsBtn(){
+function _updateSheetsBtn(){
   const tab = T();
   const lbl = $('btn-sheets-label');
+  const badge = $('btn-sheets-badge');
+  const count = tab?.sheets?.length || 0;
   if(lbl) lbl.textContent = 'Hojas';
+  if(badge){
+    if(count > 1){
+      badge.textContent = count > 99 ? '99+' : String(count);
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 }
 
 // ── PANEL DE ACCIONES ────────────────────────────────────────────────────────
@@ -6533,6 +6727,8 @@ function toggleActionsPanel(){
   [['ap-graph','btn-graph'],['ap-cond','btn-cond'],['ap-cols','btn-cols'],
    ['ap-export','btn-export'],['ap-export-all','btn-export-all'],['ap-refresh','btn-refresh']
   ].forEach(([ap,btn])=>{ const a=$$(ap),b=$$(btn); if(a&&b) a.disabled=b.disabled; });
+  const scBtn=$('btn-save-cloud'), apSc=$('ap-save-cloud');
+  if(scBtn&&apSc) apSc.style.display=scBtn.style.display;
 
   // En móvil: mostrar overlay y sidebar desde la izquierda
   const overlay = $('actions-panel-overlay');
@@ -6544,13 +6740,15 @@ function toggleActionsPanel(){
     const btn=$('btn-actions');
     const r=btn?.getBoundingClientRect();
     if(r){
-      const panW=220;
+      const panW=280;
       let left=r.right-panW;
       if(left<8) left=8;
       p.style.left=left+'px'; p.style.top=(r.bottom+4)+'px';
     } else { p.style.right='8px'; p.style.top='60px'; }
   }
+  _lockModalViewport();
   p.classList.add('open');
+  scheduleOverlayCheck();
   setTimeout(()=>document.addEventListener('click',_closeActionsPanelOutside,{once:true}),10);
 }
 function closeActionsPanel(){
@@ -6569,6 +6767,10 @@ function _showFileActions(){
   $('btn-export').style.display='';
   $('btn-actions').style.display='';
   $('btn-mobile-sheets').style.display='';
+  if(_fbUser){
+    const sc=$('btn-save-cloud'); if(sc) sc.style.display='';
+    const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='';
+  }
   // Habilitar items del menú móvil
   ['mm-export','mm-graph','mm-cond','mm-cols','mm-refresh'].forEach(id=>{
     const el=$(id); if(el) el.disabled=false;
@@ -6675,6 +6877,7 @@ firebase.initializeApp(_fbConfig);
 const _fbAuth    = firebase.auth();
 const _fbDb      = firebase.firestore();
 const _fbStorage = firebase.storage();
+const _fbFns     = firebase.functions();
 
 // Forzar configuración de Firestore
 _fbDb.settings({
@@ -6689,6 +6892,17 @@ _fbDb.enablePersistence({ synchronizeTabs: true })
 let _fbUser     = null;
 let _fbUserRole = null; // 'admin' | 'user'
 
+async function _fbSyncClaims(user){
+  try {
+    const res = await _fbFns.httpsCallable('syncUserClaims')();
+    await user.getIdToken(true);
+    return res.data?.role || null;
+  } catch(e){
+    console.warn('[Claims] No se pudieron sincronizar permisos:', e.message || e);
+    return null;
+  }
+}
+
 // ── App init ──────────────────────────────────────────────────────────────
 document.getElementById('login-loading').classList.add('show');
 document.getElementById('login-main-content').style.display = 'none';
@@ -6698,30 +6912,21 @@ _fbAuth.onAuthStateChanged(async user => {
   if(user){
     // Leer rol desde Firestore
     try {
-      console.log('[Auth] Usuario autenticado:', user.email, 'UID:', user.uid);
-      console.log('[Firestore] Intentando leer documento en ruta: users/' + user.uid);
       const docRef = _fbDb.collection('users').doc(user.uid);
-      console.log('[Firestore] Referencia del documento:', docRef.path);
       const doc = await docRef.get();
-      console.log('[Firestore] Documento obtenido. Existe:', doc.exists);
-      console.log('[Firestore] Metadata del documento:', doc.metadata);
       let data;
       if(!doc.exists){
-        // Usuario no registrado → crear documento automáticamente
-        console.warn('[Auth] Usuario sin documento, creando...');
-        const isFirstUser = (await _fbDb.collection('users').get()).empty;
+        // Usuario sin documento → crear con rol user (admin se asigna desde consola o panel admin)
         data = {
           email: user.email,
-          role: isFirstUser ? 'admin' : 'user', // Primer usuario = admin
+          role: 'user',
           active: true,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           name: user.displayName || user.email.split('@')[0]
         };
         await docRef.set(data);
-        console.log('[Auth] Documento creado:', data);
       } else {
         data = doc.data();
-        console.log('[Firestore] Datos del usuario:', data);
       }
 
       if(data.active === false){
@@ -6730,7 +6935,14 @@ _fbAuth.onAuthStateChanged(async user => {
         return;
       }
       _fbUserRole = data.role || 'user';
-      console.log('[Auth] Rol asignado:', _fbUserRole);
+      const syncedRole = await _fbSyncClaims(user);
+      if(syncedRole) _fbUserRole = syncedRole;
+      else {
+        try {
+          const tr = await user.getIdTokenResult();
+          if(tr.claims.role) _fbUserRole = tr.claims.role;
+        } catch(_){}
+      }
       // Actualizar último acceso
       _fbDb.collection('users').doc(user.uid).update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(()=>{});
     } catch(e){
@@ -6749,6 +6961,7 @@ _fbAuth.onAuthStateChanged(async user => {
     // Eliminar badge si existe
     document.getElementById('fb-user-badge')?.remove();
     document.getElementById('fb-admin-btn')?.remove();
+    _updateActionsPanelUserHeader();
   }
 });
 
@@ -6783,54 +6996,39 @@ function _fbShowLoginError(msg){
   e.textContent = msg; e.classList.add('show');
 }
 
-// ── UI: badge usuario + botón admin ──────────────────────────────────────
+// ── UI: avatar + admin en el menú hamburguesa ───────────────────────────
 function _fbUpdateUserUI(user){
-  const email    = user.email || '';
-  const initials = email.slice(0,2).toUpperCase();
-  const topbar   = document.getElementById('topbar');
-
-  // Badge usuario
-  let badge = document.getElementById('fb-user-badge');
-  if(!badge){
-    badge = document.createElement('div');
-    badge.id = 'fb-user-badge';
-    badge.style.cssText = 'display:flex;align-items:center;gap:8px;flex-shrink:0';
-    topbar?.appendChild(badge);
-  }
-  badge.innerHTML = `
-    <div title="${email}" style="display:flex;align-items:center;gap:6px;cursor:pointer" onclick="fbShowUserMenu(this)">
-      <div style="width:30px;height:30px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);flex-shrink:0">${initials}</div>
-    </div>`;
-
-  // Botón Admin (solo si role === 'admin')
-  if(_fbUserRole === 'admin'){
-    let adminBtn = document.getElementById('fb-admin-btn');
-    if(!adminBtn){
-      adminBtn = document.createElement('button');
-      adminBtn.id = 'fb-admin-btn';
-      adminBtn.innerHTML = '👥 Admin';
-      adminBtn.onclick = fbOpenAdminPanel;
-      adminBtn.style.cssText = 'padding:5px 11px;border-radius:8px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:auto';
-      topbar?.insertBefore(adminBtn, badge);
-    }
-  }
+  document.getElementById('fb-user-badge')?.remove();
+  document.getElementById('fb-admin-btn')?.remove();
+  _updateActionsPanelUserHeader();
 }
 
-// ── Actualizar header del panel de acciones con info del usuario ──
 function _updateActionsPanelUserHeader(){
-  if(!_fbUser) return;
+  const header = document.getElementById('ap-user-header');
+  const avatarBtn = document.getElementById('ap-user-avatar-btn');
+  const avatarEl = document.getElementById('ap-user-avatar');
+  const nameEl = document.getElementById('ap-user-name');
+  const roleEl = document.getElementById('ap-user-role');
+  const adminBtn = document.getElementById('ap-admin-btn');
+
+  if(!_fbUser){
+    if(header) header.style.display = 'none';
+    return;
+  }
+
   const email = _fbUser.email || '';
   const name = email.split('@')[0];
   const initials = email.slice(0,2).toUpperCase();
   const role = _fbUserRole === 'admin' ? 'Administrador' : 'Usuario';
 
-  const avatarEl = document.getElementById('ap-user-avatar');
-  const nameEl = document.getElementById('ap-user-name');
-  const roleEl = document.getElementById('ap-user-role');
-
+  if(header) header.style.display = '';
+  if(avatarBtn) avatarBtn.title = email;
   if(avatarEl) avatarEl.textContent = initials;
   if(nameEl) nameEl.textContent = name;
   if(roleEl) roleEl.textContent = role;
+  if(adminBtn){
+    adminBtn.style.display = _fbUserRole === 'admin' ? '' : 'none';
+  }
 }
 
 function fbShowUserMenu(el){
@@ -6841,7 +7039,7 @@ function fbShowUserMenu(el){
   menu.id = 'fb-user-menu';
   menu.style.cssText = `position:fixed;top:${rect.bottom+6}px;right:${window.innerWidth-rect.right}px;z-index:9000;background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:6px;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.4);font-family:var(--font)`;
   menu.innerHTML = `
-    <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">${_fbUser?.email}</div>
+    <div style="padding:8px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">${eh(_fbUser?.email||'')}</div>
     <button onclick="fbChangePassword()" style="width:100%;text-align:left;padding:7px 12px;border:none;background:none;color:var(--text);font-size:12px;cursor:pointer;border-radius:6px;font-family:var(--font)">🔑 Cambiar contraseña</button>
     <button onclick="_fbAuth.signOut();document.getElementById('fb-user-menu')?.remove()" style="width:100%;text-align:left;padding:7px 12px;border:none;background:none;color:#f87171;font-size:12px;cursor:pointer;border-radius:6px;font-family:var(--font)">↪ Cerrar sesión</button>`;
   document.body.appendChild(menu);
@@ -6859,7 +7057,7 @@ function fbChangePassword(){
 
 // ── PANEL ADMINISTRACIÓN ──────────────────────────────────────────────────
 async function fbOpenAdminPanel(){
-  if(_fbUserRole !== 'admin'){ alert('Sin permisos.'); return; }
+  if(!await _fbEnsureAdminClaim()){ alert('Sin permisos de administrador. Cierra sesión y vuelve a entrar.'); return; }
   document.getElementById('fb-user-menu')?.remove();
 
   // Cargar usuarios
@@ -6872,12 +7070,12 @@ async function fbOpenAdminPanel(){
 
   const rows = users.map(u=>`
     <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:10px 12px;font-size:12px;color:var(--text)">${u.name||'—'}</td>
-      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.email}</td>
-      <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.role==='admin'?'#4f46e522':'#16532422'};color:${u.role==='admin'?'#a5b4fc':'#4ade80'}">${u.role||'user'}</span></td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--text)">${eh(u.name||'—')}</td>
+      <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${eh(u.email||'')}</td>
+      <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.role==='admin'?'#4f46e522':'#16532422'};color:${u.role==='admin'?'#a5b4fc':'#4ade80'}">${eh(u.role||'user')}</span></td>
       <td style="padding:10px 12px"><span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${u.active!==false?'#16532422':'#450a0a22'};color:${u.active!==false?'#4ade80':'#f87171'}">${u.active!==false?'Activo':'Inactivo'}</span></td>
       <td style="padding:10px 12px">
-        ${u.id !== _fbUser.uid ? `<button onclick="fbToggleActive('${u.id}',${u.active!==false})" style="font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:var(--font)">${u.active!==false?'Desactivar':'Activar'}</button>` : '<span style="font-size:10px;color:var(--muted)">Tú</span>'}
+        ${u.id !== _fbUser.uid ? `<button data-fb-toggle="${eh(u.id)}" data-fb-active="${u.active!==false?'1':'0'}" style="font-size:10px;padding:3px 9px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--muted);cursor:pointer;font-family:var(--font)">${u.active!==false?'Desactivar':'Activar'}</button>` : '<span style="font-size:10px;color:var(--muted)">Tú</span>'}
       </td>
     </tr>`).join('');
 
@@ -6915,6 +7113,12 @@ async function fbOpenAdminPanel(){
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  overlay.querySelector('#fb-users-list')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-fb-toggle]');
+    if(!btn) return;
+    fbToggleActive(btn.dataset.fbToggle, btn.dataset.fbActive === '1');
+  });
+  checkOverlaysOpen();
 }
 
 async function fbCreateUser(){
@@ -7016,18 +7220,29 @@ async function saveToCloud(){
   }
 }
 
+async function _fbEnsureAdminClaim(){
+  let tr = await _fbUser.getIdTokenResult(true);
+  if(tr.claims.role === 'admin') return true;
+  if(_fbUserRole !== 'admin') return false;
+  await _fbSyncClaims(_fbUser);
+  tr = await _fbUser.getIdTokenResult(true);
+  return tr.claims.role === 'admin';
+}
+
 async function openDocsPanel(){
   if(!_fbUser){ alert('Debes iniciar sesión primero.'); return; }
 
+  _lockModalViewport();
   document.getElementById('docs-panel').classList.add('open');
+  scheduleOverlayCheck();
   const body = document.getElementById('docs-body');
   body.innerHTML = '<div class="docs-uploading">Cargando documentos...</div>';
 
   try {
+    const canListAll = await _fbEnsureAdminClaim();
     let query = _fbDb.collection('documents');
 
-    // Si no es admin, solo ver sus documentos
-    if(_fbUserRole !== 'admin'){
+    if(!canListAll){
       query = query.where('userId', '==', _fbUser.uid);
     }
 
@@ -7040,19 +7255,23 @@ async function openDocsPanel(){
 
     const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
 
-    // Obtener nombres de usuarios si es admin
+    // Solo listar usuarios si el token tiene claim admin (evita permission-denied)
     let users = {};
-    if(_fbUserRole === 'admin'){
-      const userSnap = await _fbDb.collection('users').get();
-      userSnap.docs.forEach(d => users[d.id] = d.data());
+    if(canListAll){
+      try {
+        const userSnap = await _fbDb.collection('users').get();
+        userSnap.docs.forEach(d => users[d.id] = d.data());
+      } catch(e){
+        console.warn('[Docs] No se pudieron cargar nombres de usuario:', e.message || e);
+      }
     }
 
     const html = docs.map(doc => {
       const date = doc.uploadedAt?.toDate();
       const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
       const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
-      const userName = _fbUserRole === 'admin' && doc.userId !== _fbUser.uid ?
-                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${users[doc.userId]?.email || 'Usuario'})</span>` : '';
+      const userName = canListAll && doc.userId !== _fbUser.uid ?
+                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${eh(users[doc.userId]?.email || 'Usuario')})</span>` : '';
 
       return `
         <div class="doc-item">
@@ -7063,19 +7282,25 @@ async function openDocsPanel(){
             </svg>
           </div>
           <div class="doc-info">
-            <div class="doc-name">${doc.fileName || 'Sin nombre'}${userName}</div>
+            <div class="doc-name">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
             <div class="doc-meta">${dateStr} • ${doc.sheets?.length || 0} hoja(s)</div>
           </div>
           <div class="doc-size">${sizeStr}</div>
           <div class="doc-actions">
-            <button class="doc-btn primary" onclick="openCloudDoc('${doc.id}')">Abrir</button>
-            ${doc.userId === _fbUser.uid || _fbUserRole === 'admin' ?
-              `<button class="doc-btn danger" onclick="deleteCloudDoc('${doc.id}', '${doc.storagePath}')">Eliminar</button>` : ''}
+            <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
+            ${doc.userId === _fbUser.uid || canListAll ?
+              `<button class="doc-btn danger" data-doc-delete="${eh(doc.id)}" data-doc-path="${eh(doc.storagePath||'')}">Eliminar</button>` : ''}
           </div>
         </div>`;
     }).join('');
 
     body.innerHTML = `<div class="docs-list">${html}</div>`;
+    body.querySelector('.docs-list')?.addEventListener('click', e => {
+      const openBtn = e.target.closest('[data-doc-open]');
+      const delBtn = e.target.closest('[data-doc-delete]');
+      if(openBtn) openCloudDoc(openBtn.dataset.docOpen);
+      if(delBtn) deleteCloudDoc(delBtn.dataset.docDelete, delBtn.dataset.docPath);
+    });
   } catch(e){
     console.error('Error cargando documentos:', e);
     body.innerHTML = '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' + e.message + '</div>';
@@ -7084,6 +7309,7 @@ async function openDocsPanel(){
 
 function closeDocsPanel(){
   document.getElementById('docs-panel').classList.remove('open');
+  checkOverlaysOpen();
 }
 
 async function openCloudDoc(docId){
@@ -7158,6 +7384,8 @@ openFileTab = function(input){
   if(_fbUser){
     const btn = document.getElementById('btn-save-cloud');
     if(btn) btn.style.display = '';
+    const apSc = document.getElementById('ap-save-cloud');
+    if(apSc) apSc.style.display = '';
   }
 };
 
@@ -7166,32 +7394,70 @@ function closeAllOverlays(){
   const overlays = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
     'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu'
+    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay'
   ];
   overlays.forEach(id => document.getElementById(id)?.classList.remove('open'));
   ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
     document.getElementById(id)?.remove();
   });
-  document.getElementById('mobile-escape-btn')?.classList.remove('visible');
+  checkOverlaysOpen();
 }
 
-// Mostrar botón escape cuando hay overlay abierto
-function checkOverlaysOpen(){
-  const anyOpen = [
-    'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
-    'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu',
-    'fb-admin-overlay', 'fb-user-menu'
-  ].some(id => {
+// Overlays: fijar modo móvil/desktop al abrir para que no salten al redimensionar
+let _escapeBtnVisible = null;
+let _modalVp = null;
+let _overlayCheckRaf = null;
+const _OVERLAY_IDS = [
+  'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
+  'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
+  'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay',
+  'fb-admin-overlay', 'fb-user-menu'
+];
+function _anyOverlayOpen(){
+  return _OVERLAY_IDS.some(id => {
     const el = document.getElementById(id);
     return el && (el.classList.contains('open') || el.style.display === 'flex');
   });
-  const btn = document.getElementById('mobile-escape-btn');
-  if(btn) btn.classList.toggle('visible', anyOpen);
 }
-setInterval(checkOverlaysOpen, 300);
+function _lockModalViewport(){
+  if(!_modalVp) _modalVp = window.innerWidth <= 500 ? 'mobile' : 'desktop';
+  document.documentElement.dataset.modalVp = _modalVp;
+}
+function _updateModalViewport(){
+  if(!_anyOverlayOpen()){
+    _modalVp = null;
+    document.documentElement.removeAttribute('data-modal-vp');
+    return;
+  }
+  _lockModalViewport();
+}
+function scheduleOverlayCheck(){
+  if(_overlayCheckRaf) return;
+  _overlayCheckRaf = requestAnimationFrame(() => {
+    _overlayCheckRaf = null;
+    checkOverlaysOpen();
+  });
+}
+function checkOverlaysOpen(){
+  _updateModalViewport();
+  const btn = document.getElementById('mobile-escape-btn');
+  if(!btn) return;
+  const shouldShow = _modalVp === 'mobile' && _anyOverlayOpen();
+  if(_escapeBtnVisible === shouldShow) return;
+  _escapeBtnVisible = shouldShow;
+  btn.classList.toggle('visible', shouldShow);
+}
+new MutationObserver(scheduleOverlayCheck).observe(document.body, {
+  subtree: true,
+  attributes: true,
+  attributeFilter: ['class'],
+  childList: true
+});
+window.addEventListener('resize', scheduleOverlayCheck);
+window._lockModalViewport = _lockModalViewport;
+window.scheduleOverlayCheck = scheduleOverlayCheck;
 </script>
 
-<!-- Botón escape móvil (solo ≤500px) -->
+<button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 </body>
 </html>

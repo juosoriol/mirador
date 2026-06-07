@@ -435,8 +435,13 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radius:4px;border:1px solid var(--border);background:var(--bg)}
 .cm-del{background:none;border:none;color:var(--danger);cursor:pointer;font-size:17px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
 .cm-actions{display:flex;justify-content:space-between;margin-top:14px}
-#fav-modal{width:440px;max-height:80vh;display:flex;flex-direction:column;gap:12px}
-#fav-modal h3{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px}
+#fav-modal{width:440px;max-height:80vh;display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
+.fav-header{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 12px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--s1)}
+.fav-header h3{font-size:15px;font-weight:600;color:var(--text);margin:0}
+.modal-close-new{width:28px;height:28px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;flex-shrink:0;padding:0;line-height:1}
+.modal-close-new:hover{background:rgba(255,255,255,0.15)}
+#fav-modal > #fav-save-row,#fav-modal > #fav-list{padding:0 16px}
+#fav-modal > #fav-save-row{padding-top:16px}
 #fav-save-row{display:flex;gap:7px}
 #fav-name-input{flex:1;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none}
 #fav-name-input:focus{border-color:var(--acc)}
@@ -1016,11 +1021,23 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
     padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
   }
 
-  /* Fav modal (vistas guardadas) */
+  /* Fav modal (vistas guardadas) - diseño reconstruido móvil */
   #fav-modal{
     width:100%!important;
     max-width:100%!important;
+    height:100vh!important;
     max-height:100vh!important;
+    padding:0!important;
+  }
+  .fav-header{
+    padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px!important;
+  }
+  #fav-modal > #fav-save-row{
+    padding:16px 16px 12px!important;
+  }
+  #fav-modal > #fav-list{
+    padding:0 16px calc(16px + env(safe-area-inset-bottom,0px))!important;
+    flex:1!important;
   }
   #fav-save-row{
     flex-direction:column!important;
@@ -1534,8 +1551,10 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 
 <div class="modal-overlay" id="fav-overlay" onclick="closeFavModal(event)">
   <div class="modal-box" id="fav-modal" onclick="event.stopPropagation()">
-    <button class="modal-close" onclick="closeFavModal()">×</button>
-    <h3 style="padding-right:40px">⭐ Mis vistas guardadas</h3>
+    <div class="fav-header">
+      <h3>⭐ Mis vistas guardadas</h3>
+      <button class="modal-close-new" onclick="closeFavModal()">×</button>
+    </div>
     <div id="fav-save-row">
       <input type="text" id="fav-name-input" placeholder="Nombre de la vista..." maxlength="60" onkeydown="if(event.key==='Enter')saveFavorite()"/>
       <button class="btn primary" onclick="saveFavorite()">💾 Guardar vista</button>

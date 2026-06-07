@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260606-topbar2', k='mirador_build_v';
+  var BUILD='20260606-topbar3', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -154,26 +154,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 #topbar .btn.success{background:#15803d;border-color:#16a34a;color:#fff}
 #topbar .btn.warn-btn{background:#92400e;border-color:#d97706;color:#fde68a}
 #topbar .logo{background:var(--acc)}
-/* Escritorio: solo hamburguesa + usuario en la barra */
+/* Escritorio: toggle Pills + hamburguesa en la barra; usuario dentro del menú */
 @media(min-width:501px){
-  #topbar #btn-pills-mode,#topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
+  #topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
   #topbar #btn-open-file,#topbar #btn-mobile-sheets,#topbar #btn-mobile-menu,
-  #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit{display:none!important}
-  #topbar #btn-actions{margin-left:auto!important}
-  #topbar .fb-user-badge{flex-direction:column;align-items:center;gap:4px;margin-left:6px}
-  #topbar #fb-admin-btn{
-    padding:3px 8px;border-radius:6px;border:1px solid rgba(99,102,241,.4);
-    background:rgba(99,102,241,.15);color:#a5b4fc;font-size:10px;font-weight:600;
-    cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2
-  }
-  #topbar #fb-admin-btn:hover{filter:brightness(1.08)}
-  #topbar .fb-user-avatar-circle{
-    width:32px;height:32px;border-radius:50%;background:#6366f1;display:flex;align-items:center;
-    justify-content:center;font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2);cursor:pointer
-  }
+  #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit,
+  #topbar .fb-user-badge{display:none!important}
+  #topbar #btn-pills-mode{margin-left:auto!important}
+  #topbar #btn-actions{margin-left:6px!important}
   #actions-panel.open{min-width:260px;max-width:min(320px,calc(100vw - 24px))}
 }
-.fb-user-badge{display:flex;align-items:center;gap:8px;flex-shrink:0}
+#ap-user-header{position:relative;padding:14px 16px 12px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.ap-user-close{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(255,255,255,.1);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;line-height:1}
+.ap-user-close:hover{background:rgba(255,255,255,.15)}
+.ap-user-stack{display:flex;flex-direction:column;align-items:center;gap:6px;padding-top:2px}
+.ap-user-avatar-btn{cursor:pointer;border:none;background:none;padding:0;font-family:inherit}
+.ap-user-avatar-circle{width:40px;height:40px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.2)}
+.ap-admin-btn{padding:4px 10px;border-radius:6px;border:1px solid rgba(99,102,241,.4);background:rgba(99,102,241,.15);color:#a5b4fc;font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
+.ap-admin-btn:hover{filter:brightness(1.08)}
 #file-input{display:none}
 #tabs-bar{display:flex;align-items:flex-end;gap:2px;padding:6px 12px 0;background:var(--tabs-bg,#161d2e);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;min-height:42px}
 #tabs-bar::-webkit-scrollbar{height:3px}
@@ -1688,23 +1686,20 @@ html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
 <!-- ── PANEL DE ACCIONES (desktop + móvil) ── -->
 <div id="actions-panel-overlay" onclick="closeActionsPanel()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:799"></div>
 <div id="actions-panel">
-  <!-- Header con usuario y rol -->
-  <div id="ap-user-header" style="padding:16px 16px 12px;border-bottom:1px solid var(--border);margin-bottom:8px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:40px;height:40px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff" id="ap-user-avatar"></div>
-      <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:14px;color:var(--text);margin-bottom:2px" id="ap-user-name"></div>
-        <div style="font-size:12px;color:var(--text-muted)" id="ap-user-role"></div>
-      </div>
-      <button onclick="closeActionsPanel()" style="width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">×</button>
+  <!-- Usuario + Admin (encima de favoritos) -->
+  <div id="ap-user-header" style="display:none">
+    <button type="button" class="ap-user-close" onclick="closeActionsPanel()" aria-label="Cerrar menú">×</button>
+    <div class="ap-user-stack">
+      <button type="button" class="ap-user-avatar-btn" id="ap-user-avatar-btn" onclick="fbShowUserMenu(this)">
+        <div class="ap-user-avatar-circle" id="ap-user-avatar"></div>
+      </button>
+      <button type="button" class="ap-admin-btn" id="ap-admin-btn" style="display:none" onclick="fbOpenAdminPanel();closeActionsPanel()">👥 Admin</button>
     </div>
   </div>
-  <button class="ap-item" id="ap-pills-mode" onclick="togglePillsMode();closeActionsPanel()">⊞ Tabla / Pills</button>
+  <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
+  <div class="ap-sep"></div>
   <button class="ap-item" id="ap-docs" onclick="openDocsPanel();closeActionsPanel()">📂 Documentos</button>
   <button class="ap-item" id="ap-save-cloud" onclick="saveToCloud();closeActionsPanel()" style="display:none">☁️ Guardar en la nube</button>
-  <div class="ap-sep"></div>
-  <!-- PRIMERA OPCIÓN: Favoritos/Vistas guardadas -->
-  <button class="ap-item" id="ap-views" onclick="openViewsPanel();closeActionsPanel()" style="background:rgba(251,191,36,0.1);border-left:3px solid #fbbf24">⭐ Favoritos / Vistas</button>
   <div class="ap-sep"></div>
   <button class="ap-item" id="ap-graph"   onclick="openGraphPanel();closeActionsPanel()" disabled>📊 Gráfico</button>
   <button class="ap-item ap-warn" id="ap-cond" onclick="openCondModal();closeActionsPanel()" disabled style="color:#fcd34d">⬛ Colores condicionales</button>
@@ -6783,6 +6778,7 @@ _fbAuth.onAuthStateChanged(async user => {
     // Eliminar badge si existe
     document.getElementById('fb-user-badge')?.remove();
     document.getElementById('fb-admin-btn')?.remove();
+    _updateActionsPanelUserHeader();
   }
 });
 
@@ -6817,58 +6813,33 @@ function _fbShowLoginError(msg){
   e.textContent = msg; e.classList.add('show');
 }
 
-// ── UI: badge usuario + botón admin ──────────────────────────────────────
+// ── UI: avatar + admin en el menú hamburguesa ───────────────────────────
 function _fbUpdateUserUI(user){
-  const email    = user.email || '';
-  const initials = email.slice(0,2).toUpperCase();
-  const topbar   = document.getElementById('topbar');
-
-  let badge = document.getElementById('fb-user-badge');
-  if(!badge){
-    badge = document.createElement('div');
-    badge.id = 'fb-user-badge';
-    badge.className = 'fb-user-badge';
-    topbar?.appendChild(badge);
-  }
-  badge.className = 'fb-user-badge';
-
-  let avatarBtn = badge.querySelector('.fb-user-avatar-btn');
-  if(!avatarBtn){
-    badge.innerHTML = '';
-    avatarBtn = document.createElement('div');
-    avatarBtn.className = 'fb-user-avatar-btn';
-    avatarBtn.onclick = function(){ fbShowUserMenu(this); };
-    badge.appendChild(avatarBtn);
-  }
-  avatarBtn.title = email;
-  avatarBtn.innerHTML = `<div class="fb-user-avatar-circle">${eh(initials)}</div>`;
-
+  document.getElementById('fb-user-badge')?.remove();
   document.getElementById('fb-admin-btn')?.remove();
-  if(_fbUserRole === 'admin'){
-    const adminBtn = document.createElement('button');
-    adminBtn.id = 'fb-admin-btn';
-    adminBtn.type = 'button';
-    adminBtn.innerHTML = '👥 Admin';
-    adminBtn.onclick = fbOpenAdminPanel;
-    badge.appendChild(adminBtn);
-  }
+  _updateActionsPanelUserHeader();
 }
 
-// ── Actualizar header del panel de acciones con info del usuario ──
 function _updateActionsPanelUserHeader(){
-  if(!_fbUser) return;
-  const email = _fbUser.email || '';
-  const name = email.split('@')[0];
-  const initials = email.slice(0,2).toUpperCase();
-  const role = _fbUserRole === 'admin' ? 'Administrador' : 'Usuario';
-
+  const header = document.getElementById('ap-user-header');
+  const avatarBtn = document.getElementById('ap-user-avatar-btn');
   const avatarEl = document.getElementById('ap-user-avatar');
-  const nameEl = document.getElementById('ap-user-name');
-  const roleEl = document.getElementById('ap-user-role');
+  const adminBtn = document.getElementById('ap-admin-btn');
 
+  if(!_fbUser){
+    if(header) header.style.display = 'none';
+    return;
+  }
+
+  const email = _fbUser.email || '';
+  const initials = email.slice(0,2).toUpperCase();
+
+  if(header) header.style.display = '';
+  if(avatarBtn) avatarBtn.title = email;
   if(avatarEl) avatarEl.textContent = initials;
-  if(nameEl) nameEl.textContent = name;
-  if(roleEl) roleEl.textContent = role;
+  if(adminBtn){
+    adminBtn.style.display = _fbUserRole === 'admin' ? '' : 'none';
+  }
 }
 
 function fbShowUserMenu(el){

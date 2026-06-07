@@ -334,7 +334,7 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 .modal-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal-box{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:96vw;position:relative}
-.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.1);color:var(--text);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;z-index:10;line-height:1;padding:0;font-weight:400}
+.modal-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,0.15);color:var(--text);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.2s;z-index:100;line-height:1;padding:0;font-weight:300;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
 .modal-close:hover{background:rgba(255,255,255,0.15)}
 .modal-close:active{background:rgba(255,255,255,0.2)}
 /* ── DETAIL OVERLAY (centrado) ── */
@@ -1535,7 +1535,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 <div class="modal-overlay" id="fav-overlay" onclick="closeFavModal(event)">
   <div class="modal-box" id="fav-modal" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeFavModal()">×</button>
-    <h3>📌 Mis vistas guardadas</h3>
+    <h3 style="padding-right:40px">⭐ Mis vistas guardadas</h3>
     <div id="fav-save-row">
       <input type="text" id="fav-name-input" placeholder="Nombre de la vista..." maxlength="60" onkeydown="if(event.key==='Enter')saveFavorite()"/>
       <button class="btn primary" onclick="saveFavorite()">💾 Guardar vista</button>

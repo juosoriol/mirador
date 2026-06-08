@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-hdr-row-parse', k='mirador_build_v';
+  var BUILD='20260608-clear-search-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -3383,13 +3383,37 @@ function getRegexFlags(){
   if($('chk-regex-s')?.checked) f+='s';
   return f;
 }
+function _resetLiveSearchState(tab){
+  if(tab){ tab.searchText=''; tab.searchIndex=null; }
+  const si=$('search-input'); if(si) si.value='';
+  const pinp=$('pills-search-input');
+  if(pinp){ pinp.value=''; pinp.style.borderColor='var(--border)'; }
+  const pclr=$('pills-search-clear'); if(pclr) pclr.style.display='none';
+  clearTimeout(searchTimer);
+  clearTimeout(_pillsSearchTimer);
+}
+function _syncLiveSearchFields(_rawTxt){
+  const si=$('search-input'); if(si && si.value!==_rawTxt) si.value=_rawTxt;
+  if(_pillsOn){
+    const pinp=$('pills-search-input');
+    if(pinp){
+      if(pinp.value!==_rawTxt) pinp.value=_rawTxt;
+      pinp.style.borderColor=_rawTxt?'var(--acc)':'var(--border)';
+    }
+    const pclr=$('pills-search-clear');
+    if(pclr) pclr.style.display=_rawTxt?'block':'none';
+  }
+}
 function applyFilters(){
   const tab=T(); if(!tab||!tab.rawData.length) return;
-  const si=$('search-input');
-  let _rawTxt=(si?.value||'').trim();
-  if(!_rawTxt && _pillsOn) _rawTxt=($('pills-search-input')?.value||'').trim();
-  if(!_rawTxt && tab.searchText) _rawTxt=String(tab.searchText).trim();
-  if(si && _rawTxt && si.value!==_rawTxt) si.value=_rawTxt;
+  let _rawTxt;
+  if(tab.searchText!=null && tab.searchText!==undefined){
+    _rawTxt=String(tab.searchText).trim();
+  } else {
+    _rawTxt=($('search-input')?.value||'').trim();
+    if(!_rawTxt && _pillsOn) _rawTxt=($('pills-search-input')?.value||'').trim();
+  }
+  _syncLiveSearchFields(_rawTxt);
   const useRegex=$('chk-regex')?.checked;
   const useExcl =$('chk-excl')?.checked;
   const txt     = useRegex?_rawTxt:_rawTxt.toLowerCase();
@@ -3502,12 +3526,18 @@ function applyFilters(){
 
 function clearFilters(){
   const tab=T(); if(!tab) return;
-  tab.colFilters={}; tab.searchText=''; tab.searchIndex=null;
-  $('search-input').value=''; $('search-col').selectedIndex=0;
+  tab.colFilters={};
+  tab.searchCol='';
+  $('search-col').selectedIndex=0;
   $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
   const cr=$('chk-regex'); if(cr) cr.checked=false;
   const ce=$('chk-excl'); if(ce) ce.checked=false;
-  closeDropdown(); closeMobileFilterSheet(); updateChipStates(); applyFilters();
+  const fb=$('btn-regex-flags'); if(fb) fb.style.display='none';
+  const rp=$('regex-flags-panel'); if(rp) rp.style.display='none';
+  _resetLiveSearchState(tab);
+  closeDropdown(); closeMobileFilterSheet();
+  if(typeof _mfSyncOptionsUI==='function') _mfSyncOptionsUI();
+  updateChipStates(); applyFilters();
   if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
   _mobileUiRefresh();
   toast('Filtros limpiados');
@@ -6344,11 +6374,10 @@ function clearChipFiltersOnly(){
   closeDropdown();
   if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
   updateChipStates(); applyFilters();
+  _mobileUiRefresh();
 }
 function _clearLiveSearch(){
-  const tab=T();
-  if(tab){ tab.searchText=''; tab.searchIndex=null; }
-  $('search-input').value='';
+  _resetLiveSearchState(T());
   applyFilters();
   _updateSearchClearBtn();
   _updateMobileActiveBar();
@@ -7082,16 +7111,7 @@ function pillsOnSearch(val){
 }
 
 function pillsClearSearch(){
-  const tab=T();
-  if(tab){ tab.searchText=''; tab.searchIndex=null; }
-  const inp = $('pills-search-input');
-  if(inp){ inp.value=''; inp.style.borderColor='var(--border)'; }
-  const mainInput = $('search-input');
-  if(mainInput) mainInput.value = '';
-  const clr = $('pills-search-clear');
-  if(clr) clr.style.display = 'none';
-  clearTimeout(searchTimer);
-  clearTimeout(_pillsSearchTimer);
+  _resetLiveSearchState(T());
   applyFilters();
   _updateMobileActiveBar();
   _updateSearchClearBtn();

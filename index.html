@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-no-escape-btn', k='mirador_build_v';
+  var BUILD='20260608-hdr-picker-reopen', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -5514,20 +5514,47 @@ function cancelHdrPicker(){
   if(tab && !tab.rawData.length){ closeTab(tabId); }
 }
 
-function reopenHdrPicker(){
-  const tab = T();
-  if(!tab || !tab.activeSheet) return;
-  if(!tab.workbook){
-    toast('No se puede ajustar el encabezado sin el archivo original. Vuelve a abrir el .xlsx.', true);
-    return;
-  }
-  const ws = tab.workbook.Sheets[tab.activeSheet]; if(!ws) return;
+function _openHdrPickerForTab(tab){
+  const ws = tab.workbook?.Sheets[tab.activeSheet];
+  if(!ws){ toast('Hoja no encontrada en el archivo.', true); return; }
   const range = XLSX.utils.decode_range(ws['!ref']||'A1');
   const prevRow = tab._manualHdrRow;
   tab._manualHdrRow = null;
   _hdrPicker = null;
   openHdrPicker(tab.id, tab.activeSheet, ws, range, true, prevRow);
   if(_hdrPicker) _hdrPicker._cancelFallback = prevRow;
+}
+function _readWorkbookFromFile(tab, file, onDone){
+  const r = new FileReader();
+  r.onload = e => {
+    try{
+      tab._file = file;
+      tab.fileName = file.name;
+      tab.workbook = XLSX.read(e.target.result, {type:'array', cellDates:false});
+      const meta = (tab.workbook.Workbook?.Sheets)||[];
+      tab.sheets = tab.workbook.SheetNames.filter((_,i)=>{ const m=meta[i]; return !m||!m.Hidden; });
+      if(!tab.sheets.length) tab.sheets = tab.workbook.SheetNames;
+      if(!tab.sheets.includes(tab.activeSheet)) tab.activeSheet = tab.sheets[0];
+      onDone?.();
+    }catch(err){ toast('Error al leer el archivo: '+err.message, true); }
+  };
+  r.onerror = () => toast('No se pudo leer el archivo.', true);
+  r.readAsArrayBuffer(file);
+}
+function _promptTabXlsx(tab, onLoaded){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.xlsx,.xls';
+  inp.onchange = () => { if(inp.files?.[0]) _readWorkbookFromFile(tab, inp.files[0], onLoaded); };
+  toast('Selecciona el .xlsx para ajustar el encabezado');
+  inp.click();
+}
+function reopenHdrPicker(){
+  const tab = T();
+  if(!tab || !tab.activeSheet) return;
+  if(tab.workbook){ _openHdrPickerForTab(tab); return; }
+  if(tab._file){ _readWorkbookFromFile(tab, tab._file, ()=>_openHdrPickerForTab(tab)); return; }
+  _promptTabXlsx(tab, ()=>_openHdrPickerForTab(tab));
 }
 
 // ── RECARGA / AUTO-REFRESH ──────────────────────────────────────────────────

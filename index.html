@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260606-pills-clear', k='mirador_build_v';
+  var BUILD='20260608-no-escape-btn', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1126,7 +1126,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);align-items:center;gap:6px;touch-action:manipulation
 }
 #viewport-restore-btn.show{display:flex}
-#mobile-escape-btn{display:none}
 #btn-search-clear-mobile{display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0}
 /* Barra inferior móvil */
 #mobile-bnav{
@@ -1274,12 +1273,6 @@ html[data-modal-vp="mobile"] #docs-panel .docs-modal{
 html[data-modal-vp="mobile"] #pills-ficha-panel{
   width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;
   padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))!important
-}
-html[data-modal-vp="mobile"] #mobile-escape-btn.visible{
-  display:flex;align-items:center;justify-content:center;gap:6px;position:fixed;
-  bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:10000;
-  padding:10px 22px;border-radius:24px;border:1px solid var(--border2);background:var(--s1);color:var(--text);
-  font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);touch-action:manipulation
 }
 /* ── MODAL SELECTOR DE ENCABEZADOS ── */
 #hdr-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:900;align-items:center;justify-content:center;padding:16px}
@@ -7879,24 +7872,7 @@ openFileTab = function(input){
   }
 };
 
-// ── BOTÓN ESCAPE MÓVIL ─────────────────────────────────────────────────────────
-function closeAllOverlays(){
-  restoreMobileViewport();
-  closeMobileFilterSheet();
-  const overlays = [
-    'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
-    'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
-    'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay'
-  ];
-  overlays.forEach(id => document.getElementById(id)?.classList.remove('open'));
-  ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
-    document.getElementById(id)?.remove();
-  });
-  checkOverlaysOpen();
-}
-
 // Overlays: fijar modo móvil/desktop al abrir para que no salten al redimensionar
-let _escapeBtnVisible = null;
 let _modalVp = null;
 let _overlayCheckRaf = null;
 const _OVERLAY_IDS = [
@@ -7932,12 +7908,6 @@ function scheduleOverlayCheck(){
 }
 function checkOverlaysOpen(){
   _updateModalViewport();
-  const btn = document.getElementById('mobile-escape-btn');
-  if(!btn) return;
-  const shouldShow = _modalVp === 'mobile' && _anyOverlayOpen();
-  if(_escapeBtnVisible === shouldShow) return;
-  _escapeBtnVisible = shouldShow;
-  btn.classList.toggle('visible', shouldShow);
 }
 new MutationObserver(scheduleOverlayCheck).observe(document.body, {
   subtree: true,
@@ -8010,8 +7980,6 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
 <button id="mobile-focus-exit" type="button" onclick="exitFocusMode()" aria-label="Salir del modo enfoque">⊙ Salir enfoque</button>
 
 <button id="viewport-restore-btn" type="button" onclick="restoreMobileViewport()" aria-label="Restablecer vista">⌂ Restablecer vista</button>
-
-<button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 <script>if(typeof _mobileUiRefresh==='function')_mobileUiRefresh();</script>
 </body>
 </html>

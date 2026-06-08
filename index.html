@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-hdr-picker-reopen', k='mirador_build_v';
+  var BUILD='20260608-no-focus-modes', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -176,7 +176,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
   #topbar-breadcrumb{display:none!important}
   #topbar #btn-my-docs,#topbar #btn-save-cloud,#topbar #btn-export,
   #topbar #btn-open-file,#topbar #btn-mobile-menu,
-  #topbar #btn-session,#topbar #btn-focus,#topbar #btn-theme,#topbar #focus-exit,
+  #topbar #btn-session,#topbar #btn-theme,
   #topbar .fb-user-badge{display:none!important}
   #topbar #btn-pills-mode{display:inline-flex!important;margin:0!important;flex-shrink:0!important}
   #topbar #btn-actions{display:inline-flex!important}
@@ -657,90 +657,6 @@ html[data-theme="minimal"] #topbar .btn:hover{background:#fafafa}
 html[data-theme="minimal"] .app-title{color:#1a1a2e}
 html[data-theme="minimal"] .logo{background:#6c63ff}
 
-/* ══════════════════════════════════════════════════════
-   MODOS DE ENFOQUE
-   ══════════════════════════════════════════════════════ */
-
-/* Transiciones suaves para todos los elementos */
-#topbar,#tabs-bar,#stats-bar,#chips-bar,#searchbar,#sidebar,#statusbar{
-  transition:opacity .25s,height .25s,max-height .3s,padding .25s,transform .25s;
-}
-
-/* ── MODO A: Contracción progresiva ─────────────────── */
-body.focus-a #stats-bar{display:none!important}
-body.focus-a #sidebar{display:none!important}
-body.focus-a #statusbar{display:none!important}
-body.focus-a #topbar .app-title{display:none}
-body.focus-a #topbar-actions{display:none!important}
-body.focus-a #btn-theme{display:none!important}
-body.focus-a #topbar{padding:3px 12px;min-height:0;border-bottom:1px solid var(--border)}
-body.focus-a #focus-exit{display:flex!important}
-
-/* ── MODO B: Zen — solo búsqueda + datos ────────────── */
-body.focus-b #stats-bar{display:none!important}
-body.focus-b #sidebar{display:none!important}
-body.focus-b #statusbar{display:none!important}
-body.focus-b #topbar{display:none!important}
-body.focus-b #tabs-bar{display:none!important}
-/* focus-b: chips and searchbar stay, exit btn shown */
-/* focus-b uses existing chips+search bars */
-body.focus-b #focus-exit{display:flex!important}
-
-/* ── MODO C: Hover para revelar ─────────────────────── */
-body.focus-c #stats-bar{display:none!important}
-body.focus-c #sidebar{display:none!important}
-body.focus-c #statusbar{display:none!important}
-body.focus-c #topbar{height:0;min-height:0;padding:0;overflow:hidden;opacity:0;pointer-events:none}
-body.focus-c #tabs-bar{height:0;overflow:hidden;padding:0;opacity:0;pointer-events:none}
-body.focus-c #chips-bar{height:0;overflow:hidden;padding:0;opacity:0;pointer-events:none}
-body.focus-c #searchbar{height:0;overflow:hidden;padding:0;opacity:0;pointer-events:none}
-body.focus-c #focus-hover-strip{display:flex!important}
-body.focus-c #focus-exit{display:flex!important}
-/* Reveal on hover */
-body.focus-c.focus-c-revealed #topbar{height:auto;min-height:44px;padding:5px 14px;opacity:1;pointer-events:all}
-body.focus-c.focus-c-revealed #tabs-bar{height:auto;padding:0;opacity:1;pointer-events:all}
-body.focus-c.focus-c-revealed #chips-bar{height:auto;max-height:400px;padding:5px 14px;opacity:1;pointer-events:all}
-body.focus-c.focus-c-revealed #searchbar{height:auto;padding:5px 14px;opacity:1;pointer-events:all}
-body.focus-c.focus-c-revealed #focus-hover-strip{opacity:0}
-
-/* ── MODO D: Contracción lateral ─────────────────────── */
-body.focus-d #stats-bar{display:none!important}
-body.focus-d #statusbar{display:none!important}
-body.focus-d #topbar .app-title{display:none}
-body.focus-d #topbar-actions{display:none!important}
-body.focus-d #btn-theme{display:none!important}
-body.focus-d #topbar{padding:2px 10px;min-height:0}
-body.focus-d #sidebar{width:32px!important;overflow:hidden}
-body.focus-d #sidebar .sh{display:none}
-body.focus-d #sidebar-files-toggle{display:none!important}
-body.focus-d #sidebar-files{display:none!important}
-body.focus-d #sheet-list{padding:4px 0}
-body.focus-d #focus-exit{display:flex!important}
-
-/* ── BARRA ZEN ───────────────────────────────────────── */
-#focus-zen-bar{display:none;align-items:center;gap:8px;padding:5px 14px;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0}
-#focus-zen-bar input{flex:1;background:transparent;border:none;outline:none;font-size:12px;color:var(--text);font-family:var(--font)}
-#focus-zen-bar input::placeholder{color:var(--muted)}
-
-/* ── HOVER STRIP ─────────────────────────────────────── */
-#focus-hover-strip{display:none;height:6px;background:linear-gradient(to bottom,var(--acc-dim),transparent);flex-shrink:0;cursor:pointer;transition:opacity .2s}
-
-/* ── EXIT BUTTON ─────────────────────────────────────── */
-#focus-exit{display:none;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc);cursor:pointer;white-space:nowrap}
-#focus-exit:hover{background:var(--s2)}
-
-/* ── FOCUS MENU ──────────────────────────────────────── */
-#focus-menu{display:none;position:fixed;z-index:700;background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,.4);padding:4px 0;width:220px;font-size:11px}
-#focus-menu.open{display:block}
-.fm-mode-item{padding:8px 12px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;transition:background .08s}
-.fm-mode-item:hover{background:var(--s2)}
-.fm-mode-item.active{background:var(--acc-dim)}
-.fm-mode-icon{font-size:16px;flex-shrink:0;width:22px;text-align:center;margin-top:1px}
-.fm-mode-label{font-size:11px;font-weight:500;color:var(--text)}
-.fm-mode-sub{font-size:10px;color:var(--muted);margin-top:1px}
-.fm-mode-item.active .fm-mode-label{color:var(--acc-text)}
-.fm-mode-sep{border-top:0.5px solid var(--border);margin:3px 0}
-
 /* ── DASHBOARD STATS CARD STYLE ── */
 html[data-theme="dashboard"] #stats-bar,
 html[data-theme="dashboard-purple"] #stats-bar{gap:8px;padding:8px 12px;background:var(--bg)}
@@ -946,7 +862,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #topbar-right{display:flex!important;align-items:center!important;gap:6px!important;justify-self:end!important;flex-shrink:0}
   #topbar .logo{width:32px!important;height:32px!important;margin:0!important;flex-shrink:0}
   #topbar-breadcrumb{display:none!important}
-  #btn-session,#btn-focus,#btn-theme,#btn-export,
+  #btn-session,#btn-theme,#btn-export,
   #btn-mobile-menu,#fb-admin-btn,#fb-user-badge,#btn-save-cloud,
   #topbar #btn-open-file,#topbar #btn-my-docs{display:none!important}
   #topbar-center #btn-pills-mode{display:none!important}
@@ -1005,24 +921,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   #btn-search-clear-mobile.show{display:flex!important}
   #regex-toggle,#excl-toggle,#search-col,#btn-clear-inline,
   #recent-toggle,#btn-regex-flags,#search-recents{display:none!important}
-  #focus-exit-search{font-size:10px;padding:3px 8px}
-  body.focus-a #focus-exit,
-  body.focus-d #focus-exit{display:flex!important}
-  body.focus-b #focus-exit-search,
-  body.focus-c.focus-c-revealed #focus-exit-search{display:flex!important}
-  /* Botón flotante para salir de enfoque (topbar/search ocultos en móvil) */
-  #mobile-focus-exit{
-    display:none;position:fixed;bottom:calc(60px + env(safe-area-inset-bottom,0px));left:50%;
-    transform:translateX(-50%);z-index:845;padding:10px 18px;border-radius:22px;
-    border:1px solid var(--acc);background:var(--s1);color:var(--acc-text);font-size:12px;
-    font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.35);cursor:pointer;font-family:var(--font);
-    align-items:center;gap:6px;white-space:nowrap;touch-action:manipulation
-  }
-  body.focus-a #mobile-focus-exit,
-  body.focus-b #mobile-focus-exit,
-  body.focus-c #mobile-focus-exit,
-  body.focus-d #mobile-focus-exit{display:flex}
-  body.focus-c #focus-hover-strip{height:28px;touch-action:manipulation}
   /* Sidebar: ocultar por defecto en móvil */
   #sidebar{display:none}
   /* Modal hojas centrado (móvil) */
@@ -1538,8 +1436,6 @@ html[data-modal-vp="mobile"] #pills-ficha-panel{
   <!-- Menú móvil ⋯ (solo ≤500px, para acciones secundarias) -->
   <button id="btn-mobile-menu" onclick="toggleMobileMenu()" title="Menú" style="display:none;align-items:center;justify-content:center;padding:6px 10px;border-radius:var(--r);border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.1);color:var(--topbar-text,var(--text));cursor:pointer;font-size:18px;line-height:1;flex-shrink:0">⋯</button>
   <button class="btn" id="btn-session" onclick="openSessionPanel()" title="Sesión guardada" style="padding:5px 9px;font-size:13px">⏱</button>
-  <button class="btn" id="btn-focus" onclick="openFocusMenu()" title="Modo enfocado" style="padding:5px 9px;font-size:13px">⊙</button>
-  <span id="focus-exit" onclick="exitFocusMode()" style="margin-left:4px">⊙ Salir</span>
   <button class="btn" id="btn-theme" onclick="openThemeModal()" title="Cambiar tema" style="padding:5px 9px;font-size:15px">🎨</button>
   <!-- Botones ocultos conservados para compatibilidad con el código existente -->
   <div id="topbar-actions" style="display:none">
@@ -1568,16 +1464,6 @@ html[data-modal-vp="mobile"] #pills-ficha-panel{
   <div id="tab-add" onclick="document.getElementById('file-input').click()" title="Abrir otro archivo" style="display:none">+</div>
 </div>
 
-<!-- Focus mode elements -->
-<div id="focus-hover-strip" onmouseenter="_focusCReveal(true)"></div>
-<!-- zen-bar removed: mode B uses existing search bar -->
-<div id="focus-zen-bar" style="display:none">
-  <span id="zen-filter-pills"></span><span id="zen-count"></span><input id="zen-search" style="display:none"/>
-</div>
-<!-- Focus exit button (for modes A, C, D) -->
-<div id="focus-exit-topbar" style="display:none"></div>
-<!-- Focus menu -->
-<div id="focus-menu"></div>
 <div id="stats-bar"></div>
 <div id="chips-bar">
   <div id="chip-search-wrap" style="display:none;flex-shrink:0;align-items:center;gap:5px">
@@ -1623,7 +1509,6 @@ html[data-modal-vp="mobile"] #pills-ficha-panel{
   <select id="date-col" style="display:none" onchange="applyFilters()"><option value=""></option></select>
   <button id="btn-date-cols" style="display:none"></button>
   <button class="btn" id="btn-clear-inline" onclick="clearFilters()" disabled title="Limpiar filtros" style="padding:5px 8px;font-size:12px;margin-left:auto">✕ Limpiar</button>
-  <button id="focus-exit-search" onclick="exitFocusMode()" style="display:none;padding:4px 10px;border-radius:4px;font-size:10px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc);cursor:pointer;margin-left:4px">⊙ Salir enfoque</button>
 </div>
 
 <!-- Barra filtros activos móvil -->
@@ -1969,7 +1854,6 @@ html[data-modal-vp="mobile"] #pills-ficha-panel{
   <div class="ap-sep"></div>
   <button class="ap-item" onclick="openThemeModal();closeActionsPanel()">🎨 Cambiar tema</button>
   <button class="ap-item" onclick="openSessionPanel();closeActionsPanel()">⏱ Sesión guardada</button>
-  <button class="ap-item" onclick="openFocusMenu();closeActionsPanel()">⊙ Modo enfoque</button>
 </div>
 
 <!-- ── MENÚ MÓVIL (solo ≤500px) ── -->
@@ -2193,7 +2077,7 @@ window.addEventListener('DOMContentLoaded', function(){
   // Cerrar todos los overlays/modales/menús al cargar
   const overlaysToClose = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
-    'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
+    'pills-ficha-overlay', 'mobile-sheets-overlay',
     'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'mobile-filter-overlay'
   ];
   overlaysToClose.forEach(id => {
@@ -4318,8 +4202,6 @@ function updateStats(){
   </div>`;
 
   $('stats-bar').innerHTML=html;
-  // Update zen bar if active
-  if(_focusMode==='focus-b'){ _updateZenPills(); _updateZenCount(); }
 }
 
 // ── Clic en pill → filtro directo ────────────────────────────────────────────
@@ -5994,159 +5876,6 @@ function fmDeleteFolder(fi){
 function _fmCloseCtx(){ const m=$('fm-ctx-menu'); if(m) m.remove(); }
 function _fmCloseCtxHandler(e){ const m=$('fm-ctx-menu'); if(m&&!m.contains(e.target)) _fmCloseCtx(); else if(m) setTimeout(()=>document.addEventListener('mousedown',_fmCloseCtxHandler,{once:true}),10); }
 
-// ── MODOS DE ENFOQUE ─────────────────────────────────────────────────────────
-const FOCUS_KEY='mirador_focus_v1';
-const FOCUS_MODES=[
-  {id:'none',    icon:'⊙', label:'Normal',                sub:'Vista completa'},
-  {id:'focus-a', icon:'⚡', label:'Contracción progresiva', sub:'Oculta stats, sidebar y barra de estado'},
-  {id:'focus-b', icon:'◯', label:'Modo Zen',               sub:'Solo búsqueda y datos'},
-  {id:'focus-c', icon:'👁', label:'Hover para revelar',     sub:'Todo oculto, hover activa las barras'},
-];
-let _focusMode=localStorage.getItem(FOCUS_KEY)||'none';
-
-function applyFocusMode(id){
-  const body=document.body;
-  FOCUS_MODES.forEach(m=>body.classList.remove(m.id));
-  body.classList.remove('focus-c-revealed');
-  _focusMode=id;
-  localStorage.setItem(FOCUS_KEY,id);
-  if(id!=='none') body.classList.add(id);
-  // Show/hide exit button in searchbar
-  const fseb=$('focus-exit-search');
-  if(fseb) fseb.style.display=id!=='none'?'':'none';
-  if(id==='focus-b'){
-    const zs=$('zen-search'), si=$('search-input');
-    if(zs&&si) zs.value=si.value||'';
-    _updateZenPills(); _updateZenCount();
-  }
-  if(id==='focus-d') _renderSidebarMiniSheets();
-  const btn=$('btn-focus');
-  if(btn){
-    const m=FOCUS_MODES.find(m=>m.id===id);
-    btn.textContent=m?.icon||'⊙';
-    btn.title=m?.label||'Modo enfocado';
-    btn.style.color=id!=='none'?'var(--acc-text)':'';
-  }
-  _mobileUiRefresh?.();
-}
-
-function openFocusMenu(){
-  const menu=$('focus-menu');
-  if(!menu) return;
-  if(menu.classList.contains('open')){ menu.classList.remove('open'); return; }
-  menu.innerHTML=`
-    <div style="padding:6px 12px;font-size:10px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.04em">Modo de enfoque</div>
-    <div style="border-top:0.5px solid var(--border);margin:3px 0"></div>
-    ${FOCUS_MODES.map(m=>`
-      <div class="fm-mode-item${_focusMode===m.id?' active':''}" onclick="applyFocusMode('${m.id}');closeFocusMenu()">
-        <span class="fm-mode-icon">${m.icon}</span>
-        <div><div class="fm-mode-label">${m.label}</div><div class="fm-mode-sub">${m.sub}</div></div>
-        ${_focusMode===m.id?'<span style="margin-left:auto;color:var(--acc-text);font-size:12px">✓</span>':''}
-      </div>`).join('')}`;
-  const btn=$('btn-focus');
-  const r=btn.getBoundingClientRect();
-  menu.style.right=(window.innerWidth-r.right)+'px';
-  menu.style.top=(r.bottom+4)+'px';
-  menu.classList.add('open');
-  setTimeout(()=>document.addEventListener('mousedown',_focusMenuOutside,{once:true}),10);
-}
-
-function closeFocusMenu(){ $('focus-menu')?.classList.remove('open'); }
-
-function _focusMenuOutside(e){
-  const m=$('focus-menu');
-  if(m&&!m.contains(e.target)&&e.target.id!=='btn-focus') closeFocusMenu();
-  else if(m?.classList.contains('open')) setTimeout(()=>document.addEventListener('mousedown',_focusMenuOutside,{once:true}),10);
-}
-
-function exitFocusMode(){ applyFocusMode('none'); }
-
-// Modo C: hover strip revela barras
-let _focusCTimer=null;
-function _focusCReveal(show){
-  clearTimeout(_focusCTimer);
-  if(show){ document.body.classList.add('focus-c-revealed'); }
-  else { _focusCTimer=setTimeout(()=>document.body.classList.remove('focus-c-revealed'),400); }
-}
-
-function _initFocusCHover(){
-  const vt=$('vt-scroll');
-  if(vt){
-    vt.addEventListener('mouseenter',()=>{ if(_focusMode==='focus-c'&&!_focusCSearchFocused) _focusCReveal(false); });
-    vt.addEventListener('mouseleave',()=>{ if(_focusMode==='focus-c') _focusCReveal(true); });
-  }
-  // Keep revealed while search input is focused
-  const si=$('search-input');
-  if(si){
-    si.addEventListener('focus',()=>{ if(_focusMode==='focus-c'){_focusCSearchFocused=true; _focusCReveal(true);} });
-    si.addEventListener('blur',()=>{ _focusCSearchFocused=false; });
-  }
-  const strip=$('focus-hover-strip');
-  if(strip){
-    strip.addEventListener('click',()=>{ if(_focusMode==='focus-c') _focusCReveal(true); });
-    strip.addEventListener('touchend',e=>{
-      if(_focusMode!=='focus-c') return;
-      e.preventDefault();
-      _focusCReveal(true);
-    },{passive:false});
-  }
-}
-let _focusCSearchFocused=false;
-
-// Modo B: sincronizar zen search con el input real
-function _initZenSearch(){
-  const zs=$('zen-search'); if(!zs) return;
-  zs.addEventListener('input',()=>{
-    const si=$('search-input');
-    if(si){ si.value=zs.value; si.dispatchEvent(new Event('input')); }
-  });
-  zs.addEventListener('keydown',e=>{ if(e.key==='Escape') exitFocusMode(); });
-}
-
-function _updateZenPills(){
-  const tab=T(); if(!tab) return;
-  const pills=$('zen-filter-pills'); if(!pills) return;
-  const active=Object.entries(tab.colFilters||{});
-  pills.innerHTML=active.slice(0,3).map(([col,val])=>{
-    const label=Array.isArray(val)?`${col}: ${val.length}`:col.length>10?col.slice(0,10)+'…':col;
-    return `<span style="padding:1px 6px;border-radius:8px;font-size:9px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc);white-space:nowrap">${label}</span>`;
-  }).join('')+(active.length>3?`<span style="font-size:9px;color:var(--muted)">+${active.length-3}</span>`:'');
-}
-
-function _updateZenCount(){
-  const tab=T(); if(!tab) return;
-  const el=$('zen-count'); if(!el) return;
-  el.textContent=tab.filtered.length!==tab.rawData.length
-    ?`${tab.filtered.length.toLocaleString()} / ${tab.rawData.length.toLocaleString()}`
-    :`${tab.rawData.length.toLocaleString()}`;
-}
-
-// Modo D: lista compacta de hojas como iniciales
-function _renderSidebarMiniSheets(){
-  const tab=T(); if(!tab) return;
-  const sl=$('sheet-list'); if(!sl) return;
-  if(_focusMode!=='focus-d'){ renderSheetsSidebar(); return; }
-  sl.innerHTML=tab.sheets.map(n=>{
-    const active=tab.activeSheet===n;
-    const initials=n.replace(/[^a-zA-Z0-9]/g,'').slice(0,2).toUpperCase()||'H';
-    return `<div title="${eh(n)}" onclick="loadSheet('${ejs(n)}',null,false)" style="width:22px;height:22px;border-radius:5px;margin:2px auto;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:7px;font-weight:700;background:${active?'var(--acc-dim)':'var(--s2)'};color:${active?'var(--acc-text)':'var(--muted)'};border:0.5px solid ${active?'var(--acc)':'transparent'}">${initials}</div>`;
-  }).join('');
-}
-
-function initFocusModes(){
-  _initFocusCHover();
-  _initZenSearch();
-  applyFocusMode(_focusMode);
-  // F11 toggle
-  document.addEventListener('keydown',e=>{
-    if(e.key==='F11'&&!e.target.matches('input,textarea,select')){
-      e.preventDefault();
-      _focusMode==='none'?openFocusMenu():exitFocusMode();
-      return;
-    }
-  });
-}
-
 // ── BÚSQUEDAS RECIENTES ───────────────────────────────────────────────────────
 const RECENT_SEARCH_KEY = 'mirador_recent_searches_v1';
 const RECENT_COLORS = [
@@ -6721,7 +6450,8 @@ if(!promptSessionRestore()) restoreSession();
 if(tabs.size===0) showDropzone(true);
 else _syncDataAreaView();
 initChipSearch();
-initFocusModes();
+document.body.classList.remove('focus-a','focus-b','focus-c','focus-d','focus-c-revealed');
+try{ localStorage.removeItem('mirador_focus_v1'); }catch(_){}
 _sidebarInit();
 _renderRecentSearches();
 _mobileUiRefresh();
@@ -7904,7 +7634,7 @@ let _modalVp = null;
 let _overlayCheckRaf = null;
 const _OVERLAY_IDS = [
   'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
-  'pills-ficha-overlay', 'mobile-sheets-overlay', 'focus-menu',
+  'pills-ficha-overlay', 'mobile-sheets-overlay',
   'detail-overlay', 'cond-overlay', 'fav-overlay', 'col-menu', 'hdr-overlay',
   'mobile-filter-overlay', 'fb-admin-overlay', 'fb-user-menu'
 ];
@@ -8003,8 +7733,6 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
     </div>
   </div>
 </div>
-
-<button id="mobile-focus-exit" type="button" onclick="exitFocusMode()" aria-label="Salir del modo enfoque">⊙ Salir enfoque</button>
 
 <button id="viewport-restore-btn" type="button" onclick="restoreMobileViewport()" aria-label="Restablecer vista">⌂ Restablecer vista</button>
 <script>if(typeof _mobileUiRefresh==='function')_mobileUiRefresh();</script>

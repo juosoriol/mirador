@@ -441,9 +441,9 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 .modal-close:hover{background:rgba(255,255,255,0.15)}
 .modal-close:active{background:rgba(255,255,255,0.2)}
 /* ── DETAIL OVERLAY (centrado) ── */
-#detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;align-items:center;justify-content:center;padding:20px}
+#detail-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:870;align-items:center;justify-content:center;padding:max(20px,env(safe-area-inset-top,0px)) 20px max(20px,env(safe-area-inset-bottom,0px))}
 #detail-overlay.open{display:flex}
-#detail-panel{width:600px;max-width:96vw;max-height:90vh;background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+#detail-panel{width:600px;max-width:96vw;max-height:min(90dvh,90vh);background:var(--s1);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;position:relative;min-height:0}
 
 /* ── SELECTOR DE ESTILO ── */
 #detail-style-bar{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--s2);border-bottom:1px solid var(--border);flex-shrink:0}
@@ -452,7 +452,7 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 .ds-btn.on{background:var(--acc-dim);border-color:var(--acc-text);color:var(--acc-text);font-weight:500}
 #detail-close{position:absolute;top:10px;right:12px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;z-index:10}
 #detail-close:hover{color:var(--text)}
-#detail-body{flex:1;overflow-y:auto}
+#detail-body{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
 /* ── DISEÑO 1: TABS ── */
 #d1-head{padding:16px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
@@ -862,6 +862,18 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
   border:1px solid var(--border);border-bottom:none}
 #pills-ficha-overlay.open #pills-ficha-panel{transform:translateY(0)}
+/* Escritorio: ficha centrada (no bottom-sheet cortado) */
+@media (min-width:501px){
+  #pills-ficha-overlay{align-items:center!important;padding:max(24px,env(safe-area-inset-top,0px)) 24px max(24px,env(safe-area-inset-bottom,0px))!important;overflow-y:auto!important}
+  #pills-ficha-panel{
+    border-radius:16px!important;border:1px solid var(--border2)!important;border-bottom:1px solid var(--border2)!important;
+    max-height:min(85dvh,85vh)!important;width:min(600px,calc(100vw - 48px))!important;
+    transform:translateY(12px) scale(.98)!important;opacity:0;
+    transition:transform .28s cubic-bezier(.4,0,.2,1),opacity .22s
+  }
+  #pills-ficha-overlay.open #pills-ficha-panel{transform:translateY(0) scale(1)!important;opacity:1}
+  .pf-handle-wrap{display:none!important}
+}
 .pf-handle-wrap{display:flex;justify-content:center;padding:10px 0 4px;cursor:grab;flex-shrink:0}
 .pf-handle{width:40px;height:4px;background:var(--s2);border-radius:2px}
 .pf-header{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;flex-shrink:0}
@@ -1074,11 +1086,11 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   input,textarea,.vt-cell{user-select:text!important;-webkit-user-select:text!important}
   /* Barra filtros activos + desfiltrado rápido */
   #mobile-active-bar{
-    display:none;align-items:center;gap:8px;padding:7px 10px 7px 12px;
+    display:none!important;align-items:center;gap:8px;padding:7px 10px 7px 12px;
     background:linear-gradient(90deg,var(--acc-dim),transparent);
     border-bottom:1px solid rgba(59,130,246,.25);flex-shrink:0;min-height:40px
   }
-  #mobile-active-bar.show{display:flex}
+  #mobile-active-bar.show{display:flex!important}
   #mobile-active-pills{
     flex:1;min-width:0;display:flex;align-items:center;gap:6px;
     overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none
@@ -1105,6 +1117,15 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   html,body{overflow-anchor:none}
   #main,#data-area,#table-wrap{overflow-anchor:none}
 }
+/* Barra filtros activos: solo móvil (evita botón blanco en escritorio) */
+#mobile-active-bar{display:none!important}
+#viewport-restore-btn{
+  display:none;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0px));right:12px;z-index:855;
+  padding:8px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--s1);
+  color:var(--acc-text);font-size:11px;font-weight:600;cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);font-family:var(--font);align-items:center;gap:5px;touch-action:manipulation
+}
+#viewport-restore-btn.show{display:flex}
 #mobile-escape-btn{display:none}
 #btn-search-clear-mobile{display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;border:none;background:var(--s2);color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0}
 /* Barra inferior móvil */
@@ -3943,12 +3964,13 @@ function setDetailStyle(n){
 
 function openDetail(idx){
   const tab=T(); if(!tab) return;
+  _blurActiveInput();
   _detailIdx=idx;
   document.querySelectorAll('.ds-btn').forEach(b=>b.classList.toggle('on',+b.dataset.ds===_detailStyle));
   renderDetailBody(idx);
-  window._lockModalViewport?.();
+  _lockModalViewport();
   $('detail-overlay').classList.add('open');
-  window.scheduleOverlayCheck?.();
+  scheduleOverlayCheck();
 }
 
 function renderDetailBody(idx){
@@ -6450,6 +6472,26 @@ function _blurActiveInput(){
   const tag=el.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') el.blur();
 }
+function restoreMobileViewport(){
+  _blurActiveInput();
+  window.scrollTo(0,0);
+  document.documentElement.style.removeProperty('height');
+  document.body.style.removeProperty('height');
+  $('viewport-restore-btn')?.classList.remove('show');
+}
+function _checkMobileViewportShift(){
+  const btn=$('viewport-restore-btn');
+  if(!btn||!_isMobileUi()){ btn?.classList.remove('show'); return; }
+  const vv=window.visualViewport;
+  const keyboardOpen=!!vv && (window.innerHeight-vv.height)>120;
+  const shifted=window.scrollY>8 || (vv && vv.offsetTop>8);
+  btn.classList.toggle('show', keyboardOpen||shifted);
+}
+if(window.visualViewport){
+  window.visualViewport.addEventListener('resize', _checkMobileViewportShift);
+  window.visualViewport.addEventListener('scroll', _checkMobileViewportShift);
+}
+window.addEventListener('scroll', _checkMobileViewportShift, {passive:true});
 function _colFilterLabel(col, val){
   if(Array.isArray(val)) return val.length===1?val[0]:val.length+' valores';
   if(val==='__NULL__') return 'sin cédula';
@@ -6944,10 +6986,13 @@ function renderPillsView(){
 
 // ── FICHA ─────────────────────────────────────────────────────────────────────
 function pillsOpenFicha(i){
+  _blurActiveInput();
   _pillsFichaIdx = i; _pillsFichaOpen = true;
   _pillsRenderFicha();
+  _lockModalViewport();
   $('pills-ficha-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  scheduleOverlayCheck();
 }
 
 function _pillsRenderFicha(){
@@ -6993,6 +7038,7 @@ function pillsCloseFicha(){
   _pillsFichaOpen = false;
   $('pills-ficha-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  scheduleOverlayCheck();
 }
 function pillsFichaOverlayClick(e){ if(e.target===$('pills-ficha-overlay')) pillsCloseFicha(); }
 
@@ -7775,6 +7821,7 @@ openFileTab = function(input){
 
 // ── BOTÓN ESCAPE MÓVIL ─────────────────────────────────────────────────────────
 function closeAllOverlays(){
+  restoreMobileViewport();
   closeMobileFilterSheet();
   const overlays = [
     'mobile-menu', 'actions-panel', 'admin-panel', 'docs-panel',
@@ -7901,6 +7948,8 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
 </div>
 
 <button id="mobile-focus-exit" type="button" onclick="exitFocusMode()" aria-label="Salir del modo enfoque">⊙ Salir enfoque</button>
+
+<button id="viewport-restore-btn" type="button" onclick="restoreMobileViewport()" aria-label="Restaurar vista">⌂ Vista</button>
 
 <button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 <script>if(typeof _mobileUiRefresh==='function')_mobileUiRefresh();</script>

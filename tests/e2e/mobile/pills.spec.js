@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
-  login, loadFixture, enterPillsMode, closeAllTabs, expectEmptyState,
+  login, loadFixture, enterPillsMode, closeAllTabs, expectEmptyState, getRowCount,
 } from '../../helpers/mirador.js';
 
 test.describe('Móvil — modo Pills', () => {
@@ -18,6 +18,14 @@ test.describe('Móvil — modo Pills', () => {
     await expect(page.locator('#btn-pills-mode-bnav')).toBeVisible();
     await expect(page.locator('#pills-view')).toHaveClass(/open/);
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
+  });
+
+  test('búsqueda en vivo filtra pills en móvil', async ({ page }) => {
+    const total = await getRowCount(page);
+    await page.fill('#search-input', 'zzz_inexistente_xyz');
+    await page.waitForTimeout(400);
+    expect(await getRowCount(page)).toBeLessThan(total);
+    await expect(page.locator('#pills-grid [class*="mpill"]')).toHaveCount(0);
   });
 
   test('barra inferior abre panel de filtros', async ({ page }) => {

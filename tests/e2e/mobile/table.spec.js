@@ -1,6 +1,15 @@
 import { test, expect } from '@playwright/test';
 import { login, loadFixture, getRowCount, closeAllTabs } from '../../helpers/mirador.js';
 
+test.describe('Móvil — sesión', () => {
+  test('barra inferior visible tras login sin documento', async ({ page }) => {
+    await login(page);
+    await expect(page.locator('#mobile-bnav')).toBeVisible();
+    await expect(page.locator('#mbnav-menu')).toBeVisible();
+    await expect(page.locator('#dropzone')).toBeVisible();
+  });
+});
+
 test.describe('Móvil — modo Tabla', () => {
   test.beforeEach(async ({ page }) => {
     await login(page);

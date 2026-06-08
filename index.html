@@ -1121,9 +1121,9 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 #mobile-active-bar{display:none!important}
 #viewport-restore-btn{
   display:none;position:fixed;bottom:calc(64px + env(safe-area-inset-bottom,0px));right:12px;z-index:855;
-  padding:8px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--s1);
-  color:var(--acc-text);font-size:11px;font-weight:600;cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.4);font-family:var(--font);align-items:center;gap:5px;touch-action:manipulation
+  padding:9px 16px;border-radius:22px;border:1px solid var(--acc);background:var(--acc-dim);
+  color:var(--acc-text);font-size:12px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);font-family:var(--font);align-items:center;gap:6px;touch-action:manipulation
 }
 #viewport-restore-btn.show{display:flex}
 #mobile-escape-btn{display:none}
@@ -1141,6 +1141,7 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   font-family:var(--font);padding:4px;border-radius:8px;transition:color .12s,background .12s
 }
 .mbnav-btn.on{color:var(--acc-text);background:var(--acc-dim)}
+.mbnav-btn.mbnav-no-data{opacity:.45}
 .mbnav-ico{font-size:20px;line-height:1;position:relative}
 .mbnav-badge{
   position:absolute;top:-5px;right:-10px;min-width:16px;height:16px;border-radius:8px;
@@ -3417,9 +3418,24 @@ function _syncSearchInputFromTab(tab){
 }
 function onSearch(){
   const tab=T();
-  if(tab) tab.searchText=$('search-input')?.value??'';
+  const val=$('search-input')?.value??'';
+  if(tab) tab.searchText=val;
+  if(_pillsOn){
+    const pinp=$('pills-search-input');
+    if(pinp && pinp.value!==val){
+      pinp.value=val;
+      pinp.style.borderColor=val?'var(--acc)':'var(--border)';
+    }
+    const clr=$('pills-search-clear');
+    if(clr) clr.style.display=val?'block':'none';
+  }
   clearTimeout(searchTimer);
-  searchTimer=setTimeout(applyFilters, SEARCH_DELAY);
+  clearTimeout(_pillsSearchTimer);
+  searchTimer=setTimeout(()=>{
+    applyFilters();
+    _updateMobileActiveBar();
+    _updateSearchClearBtn();
+  }, SEARCH_DELAY);
 }
 
 // ── FILTROS ───────────────────────────────────────────────────────────────────
@@ -3451,6 +3467,7 @@ function applyFilters(){
   const tab=T(); if(!tab||!tab.rawData.length) return;
   const si=$('search-input');
   let _rawTxt=(si?.value||'').trim();
+  if(!_rawTxt && _pillsOn) _rawTxt=($('pills-search-input')?.value||'').trim();
   if(!_rawTxt && tab.searchText) _rawTxt=String(tab.searchText).trim();
   if(si && _rawTxt && si.value!==_rawTxt) si.value=_rawTxt;
   const useRegex=$('chk-regex')?.checked;
@@ -6472,12 +6489,26 @@ function _blurActiveInput(){
   const tag=el.tagName;
   if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') el.blur();
 }
+let _vpRestoreHideTimer=null;
 function restoreMobileViewport(){
   _blurActiveInput();
-  window.scrollTo(0,0);
-  document.documentElement.style.removeProperty('height');
-  document.body.style.removeProperty('height');
+  window.scrollTo({top:0,left:0,behavior:'instant'});
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  ['height','position','top','overflow','width'].forEach(p=>{
+    document.documentElement.style.removeProperty(p);
+    document.body.style.removeProperty(p);
+  });
   $('viewport-restore-btn')?.classList.remove('show');
+  _mobileUiRefresh();
+}
+function _showViewportRestoreBtn(){
+  if(!_isMobileUi()) return;
+  $('viewport-restore-btn')?.classList.add('show');
+}
+function _scheduleHideViewportRestoreBtn(){
+  clearTimeout(_vpRestoreHideTimer);
+  _vpRestoreHideTimer=setTimeout(_checkMobileViewportShift, 450);
 }
 function _checkMobileViewportShift(){
   const btn=$('viewport-restore-btn');
@@ -6485,13 +6516,24 @@ function _checkMobileViewportShift(){
   const vv=window.visualViewport;
   const keyboardOpen=!!vv && (window.innerHeight-vv.height)>120;
   const shifted=window.scrollY>8 || (vv && vv.offsetTop>8);
-  btn.classList.toggle('show', keyboardOpen||shifted);
+  if(keyboardOpen||shifted) btn.classList.add('show');
+  else btn.classList.remove('show');
 }
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize', _checkMobileViewportShift);
   window.visualViewport.addEventListener('scroll', _checkMobileViewportShift);
 }
 window.addEventListener('scroll', _checkMobileViewportShift, {passive:true});
+document.addEventListener('focusin', e=>{
+  if(!_isMobileUi()) return;
+  if(e.target.closest('#login-screen')) return;
+  if(e.target.matches('input:not([type=hidden]),textarea,select')) _showViewportRestoreBtn();
+}, true);
+document.addEventListener('focusout', _scheduleHideViewportRestoreBtn, true);
+function _isLoggedIn(){
+  const ls=$('login-screen');
+  return !ls || ls.classList.contains('hidden');
+}
 function _colFilterLabel(col, val){
   if(Array.isArray(val)) return val.length===1?val[0]:val.length+' valores';
   if(val==='__NULL__') return 'sin cédula';
@@ -6526,10 +6568,12 @@ function _updateSearchClearBtn(){
 function _updateMobileBnav(){
   const bnav=$('mobile-bnav'); if(!bnav) return;
   const tab=T();
-  const show=_isMobileUi()&&tab?.rawData?.length>0;
+  const show=_isMobileUi()&&_isLoggedIn();
   bnav.style.display=show?'flex':'none';
   if(!show) return;
-  const n=Object.keys(tab.colFilters||{}).length;
+  const hasData=!!(tab?.rawData?.length>0);
+  $('mbnav-filters')?.classList.toggle('mbnav-no-data',!hasData);
+  const n=Object.keys(tab?.colFilters||{}).length;
   const badge=$('mbnav-filter-badge');
   if(badge){
     badge.textContent=n>0?String(n):'';
@@ -6701,7 +6745,8 @@ function _exitPillsMode(){
   const cb = $('chips-bar');
   pv?.classList.remove('open');
   if(da) da.style.display = '';
-  $('searchbar').style.display = '';
+  $('searchbar').style.display='';
+  const psb=$('pills-search-bar'); if(psb) psb.style.display='';
   if(_pillsCbParent && cb){
     cb.classList.remove('pills-mode','chips-collapsed');
     cb.style.display = '';
@@ -6724,7 +6769,14 @@ function togglePillsMode(){
 
   pv.classList.add('open');
     da.style.display = 'none';
-    $('searchbar').style.display = 'none';
+    const psb=$('pills-search-bar');
+    if(isMobile){
+      $('searchbar').style.display='';
+      if(psb) psb.style.display='none';
+    } else {
+      $('searchbar').style.display='none';
+      if(psb) psb.style.display='flex';
+    }
 
     if(cb){
       // Mover chips-bar dentro de pills-view (reutiliza toda la lógica de filtros)
@@ -7213,34 +7265,40 @@ function _closeMobileMenuOutside(e){ if(!$('mobile-menu')?.contains(e.target)) c
 let _pillsSearchTimer = null;
 
 function pillsOnSearch(val){
-  // Sincronizar con el search principal para que applyFilters lea el valor correcto
+  clearTimeout(searchTimer);
   const mainInput = $('search-input');
   if(mainInput) mainInput.value = val;
-  const tab=T(); if(tab) tab.searchText=val;
+  const tab=T();
+  if(tab){ tab.searchText=val; if(!val) tab.searchIndex=null; }
 
-  // Mostrar/ocultar botón limpiar
   const clr = $('pills-search-clear');
   if(clr) clr.style.display = val ? 'block' : 'none';
 
-  // Estilo del input
   const inp = $('pills-search-input');
   if(inp) inp.style.borderColor = val ? 'var(--acc)' : 'var(--border)';
 
-  // Debounce → applyFilters → renderPillsView (via override)
   clearTimeout(_pillsSearchTimer);
-  _pillsSearchTimer = setTimeout(applyFilters, 80);
+  _pillsSearchTimer = setTimeout(()=>{
+    applyFilters();
+    _updateMobileActiveBar();
+    _updateSearchClearBtn();
+  }, SEARCH_DELAY);
 }
 
 function pillsClearSearch(){
+  const tab=T();
+  if(tab){ tab.searchText=''; tab.searchIndex=null; }
   const inp = $('pills-search-input');
-  if(inp) inp.value='';
+  if(inp){ inp.value=''; inp.style.borderColor='var(--border)'; }
   const mainInput = $('search-input');
   if(mainInput) mainInput.value = '';
   const clr = $('pills-search-clear');
   if(clr) clr.style.display = 'none';
-  if(inp) inp.style.borderColor = 'var(--border)';
+  clearTimeout(searchTimer);
   clearTimeout(_pillsSearchTimer);
   applyFilters();
+  _updateMobileActiveBar();
+  _updateSearchClearBtn();
 }
 
 // Sincronizar el pills-search-input cuando se activa el modo pills
@@ -7374,6 +7432,7 @@ _fbAuth.onAuthStateChanged(user => {
     document.getElementById('login-main-content').style.display = '';
     _fbUpdateUserUI(user);
     _fbInitUserProfile(user);
+    if(typeof _mobileUiRefresh==='function') _mobileUiRefresh();
   } else {
     _fbUserRole = null;
     document.getElementById('login-loading').classList.remove('show');
@@ -7383,6 +7442,7 @@ _fbAuth.onAuthStateChanged(user => {
     document.getElementById('fb-user-badge')?.remove();
     document.getElementById('fb-admin-btn')?.remove();
     _updateActionsPanelUserHeader();
+    if(typeof _mobileUiRefresh==='function') _mobileUiRefresh();
   }
 });
 
@@ -7949,7 +8009,7 @@ window.scheduleOverlayCheck = scheduleOverlayCheck;
 
 <button id="mobile-focus-exit" type="button" onclick="exitFocusMode()" aria-label="Salir del modo enfoque">⊙ Salir enfoque</button>
 
-<button id="viewport-restore-btn" type="button" onclick="restoreMobileViewport()" aria-label="Restaurar vista">⌂ Vista</button>
+<button id="viewport-restore-btn" type="button" onclick="restoreMobileViewport()" aria-label="Restablecer vista">⌂ Restablecer vista</button>
 
 <button id="mobile-escape-btn" type="button" onclick="closeAllOverlays()" aria-label="Cerrar panel">✕ Cerrar</button>
 <script>if(typeof _mobileUiRefresh==='function')_mobileUiRefresh();</script>

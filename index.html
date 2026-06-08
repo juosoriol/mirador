@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-no-focus-modes', k='mirador_build_v';
+  var BUILD='20260608-hdr-row-parse', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -2432,20 +2432,62 @@ function loadSheet(name, tabId, preserveFilters){
 }
 
 /**
+ * Lee la hoja usando la fila hRow como encabezados de columna.
+ * Las filas anteriores se ignoran; los datos empiezan en hRow + 1.
+ */
+function _extractSheetDataFromHeaderRow(ws, range, hRow){
+  const r0 = range.s.r, r1 = range.e.r, c0 = range.s.c, c1 = range.e.c;
+  const hdrRow = Math.max(r0, Math.min(hRow, r1));
+  const colCount = c1 - c0 + 1;
+  let emptyIdx = 0;
+  const seen = {};
+  const columns = [];
+  for(let ci = 0; ci < colCount; ci++){
+    const cell = ws[XLSX.utils.encode_cell({r: hdrRow, c: c0 + ci})];
+    let name = cell != null && cell.v != null ? String(cell.v).trim() : '';
+    if(!name){
+      name = emptyIdx === 0 ? '__EMPTY' : `__EMPTY_${emptyIdx}`;
+      emptyIdx++;
+    }
+    if(seen[name] != null){
+      seen[name]++;
+      name = `${name}_${seen[name]}`;
+    } else {
+      seen[name] = 0;
+    }
+    columns.push(name);
+  }
+  const raw = [];
+  for(let r = hdrRow + 1; r <= r1; r++){
+    const row = {};
+    let hasData = false;
+    for(let ci = 0; ci < colCount; ci++){
+      const cell = ws[XLSX.utils.encode_cell({r, c: c0 + ci})];
+      const v = cell != null && cell.v != null ? cell.v : '';
+      if(v !== '' && v != null) hasData = true;
+      row[columns[ci]] = v;
+    }
+    if(hasData) raw.push(row);
+  }
+  return {columns, raw, hdrRow};
+}
+
+/**
  * Procesa los datos de una hoja a partir de la fila de encabezado indicada.
  * Extraído de loadSheet para permitir llamarlo tras la confirmación del picker.
  */
 function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   const tab = tabs.get(tabId); if(!tab) return;
+  const extracted = _extractSheetDataFromHeaderRow(ws, range, hRow);
+  hRow = extracted.hdrRow;
   // Guardar la elección de fila para esta pestaña (persistida en sesión)
   tab._manualHdrRow = hRow;
   tab._hdrRangeStart = range.s.r; // para mostrar número de fila relativo en sidebar
 
-  // raw:true evita que SheetJS formatee fechas con locale del navegador
-  const raw=XLSX.utils.sheet_to_json(ws,{range:hRow,defval:'',raw:true});
+  const raw = extracted.raw;
   if(!raw.length){toast('La hoja no tiene datos');$('loading').style.display='none';return}
 
-  tab.columns=Object.keys(raw[0]).filter(k=>k?.trim());
+  tab.columns = extracted.columns;
 
   // Columnas de fecha detectadas por NOMBRE
   const dateColNames=new Set(tab.columns.filter(c=>/fecha|date|nacimiento|ingreso|reintegro|retiro|posesi|^f_/i.test(c)));
@@ -2526,6 +2568,7 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   const skippedNote = rowsSkipped > 0 ? ` · ${rowsSkipped} fila${rowsSkipped>1?'s':''} ignorada${rowsSkipped>1?'s':''}` : '';
   setStatus(`"${name}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas${skippedNote}`);
   updateBreadcrumb();
+  renderSheetsSidebar();
   fmRegisterFile(tab.fileName, tab.sheets?.length||0, tab.rawData.length);
   saveSessionDebounced();
 }
@@ -5502,8 +5545,11 @@ function _doReload(tabId){
         // Necesitamos parsear la hoja para tener rawData actualizado
         const ws=tab.workbook.Sheets[targetSheet];
         if(ws){
-          const hRow=tab._manualHdrRow??0;
-          const raw=XLSX.utils.sheet_to_json(ws,{range:hRow,defval:'',raw:true});
+          const range=XLSX.utils.decode_range(ws['!ref']||'A1');
+          const hRow=tab._manualHdrRow??range.s.r;
+          const extracted=_extractSheetDataFromHeaderRow(ws, range, hRow);
+          tab.columns=extracted.columns;
+          const raw=extracted.raw;
           if(raw.length){
             // Re-usar la lógica de parseado ya aplicada (dateColsDetected guardado)
             tab.rawData=raw.map(row=>{

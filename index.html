@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-pills-tab-refresh', k='mirador_build_v';
+  var BUILD='20260610-pills-fix2', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -696,8 +696,8 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 #btn-pills-mode:not(.pills-on) .pills-toggle-seg.seg-table{color:var(--topbar-text,#e2e8f0);background:rgba(255,255,255,.15)}
 #btn-pills-mode.pills-on .pills-toggle-seg.seg-pills{color:#fff;background:var(--acc)}
 #btn-pills-mode:not(.pills-on) .pills-toggle-seg.seg-pills{color:rgba(255,255,255,.35);background:transparent}
-#pills-view{display:none;position:absolute;inset:0;overflow-y:auto;padding:12px;background:var(--bg);z-index:5}
-#pills-view.open{display:block}
+#pills-view{display:none;position:absolute;inset:0;overflow-y:auto;padding:12px;background:var(--bg);z-index:5;flex-direction:column}
+#pills-view.open{display:flex}
 .pills-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
 .pills-toolbar-count{font-size:11px;color:var(--muted);flex:1}
 .pills-cfg-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 11px;border-radius:20px;font-size:11px;border:1px solid var(--border);background:var(--s1);color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .12s;white-space:nowrap}
@@ -2614,14 +2614,16 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   tab.searchIndex=null; // siempre invalidar al recargar columnas
   tab.colUniques=null; tab.colNulls=null;
   if(preserveFilters) _syncSearchInputFromTab(tab);
-  buildChips(); buildSearchCombo(); buildDateColCombo(); applyFilters();
+  buildChips(); buildSearchCombo(); buildDateColCombo();
   enableControls(true);
   $('loading').style.display='none'; $('dropzone').style.display='none';
   if(_pillsOn){
     $('table-wrap').style.display='none';
     $('data-area').style.display='none';
     $('pills-view')?.classList.add('open');
+    _refreshPillsTabView({reason:'data', minMs:0});
   } else {
+    applyFilters();
     $('table-wrap').style.display='flex';
   }
   renderTabs();
@@ -3577,8 +3579,8 @@ function applyFilters(){
 
   tab.filtered=result;
   tab.selected.clear();
-  renderTable();
-  updateChipStates();
+  if(_pillsOn) updateChipStates();
+  else renderTable();
   updateStats();
   updateStatusBar();
   updateBreadcrumb();
@@ -6606,6 +6608,7 @@ let _pillsFichaIdx = 0;
 let _pillsFichaOpen = false;
 let _pillsFilteredCache = [];
 let _pillsRefreshToken = 0;
+let _pillsRefreshing = false;
 
 function _pillsShowLoading(show, label){
   const el=$('pills-loading');
@@ -6624,44 +6627,55 @@ function _pillsShowLoading(show, label){
   }
 }
 
+function _reloadPillsCore(){
+  const tab=T();
+  if(!_pillsOn || !tab?.rawData?.length) return false;
+  if(_pillsFichaOpen) pillsCloseFicha();
+  tab.searchIndex=null;
+  tab.colUniques=null;
+  tab.colNulls=null;
+  _pillsPopulateSelectors();
+  _pillsRefreshing=true;
+  try{
+    applyFilters();
+  }finally{
+    _pillsRefreshing=false;
+  }
+  return true;
+}
+
 function _refreshPillsTabView(opts={}){
   const token=++_pillsRefreshToken;
   const tab=T();
   if(!_pillsOn || !tab?.rawData?.length){
     _pillsShowLoading(false);
-    return Promise.resolve();
+    return;
   }
-  if(_pillsFichaOpen) pillsCloseFicha();
-
   const label=opts.reason==='tab'
     ? `Cargando "${tab.fileName||'datos'}"…`
     : 'Cargando registros…';
   _pillsShowLoading(true, label);
-
-  tab.searchIndex=null;
-  tab.colUniques=null;
-  tab.colNulls=null;
-  tab.filtered=[];
-
-  const minMs=opts.minMs ?? 500;
-  const t0=Date.now();
-
-  const paint=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-
-  return paint().then(()=>{
+  const minMs=opts.minMs ?? 250;
+  requestAnimationFrame(()=>{
     if(token!==_pillsRefreshToken) return;
-    _pillsPopulateSelectors();
-    applyFilters();
-  }).then(()=>{
-    if(token!==_pillsRefreshToken) return;
-    const wait=Math.max(0, minMs-(Date.now()-t0));
-    if(!wait) return;
-    return new Promise(r=>setTimeout(r, wait));
-  }).then(()=>{
-    if(token!==_pillsRefreshToken) return;
-    _pillsShowLoading(false);
-    _pillsUpdateFilterBtn();
-    _mobileUiRefresh();
+    try{
+      if(!_reloadPillsCore()){
+        _pillsShowLoading(false);
+        return;
+      }
+    }catch(e){
+      console.error('Pills refresh failed', e);
+      const grid=$('pills-grid');
+      if(grid) grid.innerHTML='<div style="padding:24px;color:var(--muted);text-align:center">No se pudieron cargar los registros</div>';
+      _pillsShowLoading(false);
+      return;
+    }
+    setTimeout(()=>{
+      if(token!==_pillsRefreshToken) return;
+      _pillsShowLoading(false);
+      _pillsUpdateFilterBtn();
+      _mobileUiRefresh();
+    }, minMs);
   });
 }
 // Posición original del chips-bar para restaurar al salir de pills mode
@@ -6742,8 +6756,10 @@ function togglePillsMode(){
       pv.insertBefore(cb, $('pills-search-bar'));
     }
 
+    buildChips();
     _syncPillsSearchUI(T());
     if(T()?.rawData?.length) _refreshPillsTabView({reason:'enter'});
+    else _pillsShowLoading(false);
   _mobileUiRefresh();
 }
 
@@ -7259,8 +7275,7 @@ applyFilters = function(){
   if(_pillsOn){
     renderPillsView();
     _pillsUpdateFilterBtn();
-    // renderTabs() para actualizar badge de pestaña (updateActiveTabCount usa selector roto)
-    if(typeof renderTabs === 'function') renderTabs();
+    if(!_pillsRefreshing && typeof renderTabs === 'function') renderTabs();
   }
 };
 </script>

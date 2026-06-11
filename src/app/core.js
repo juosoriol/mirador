@@ -162,6 +162,19 @@ import {
   getFilterLikeRowFields,
   isFilterLikePreselected,
 } from '../engine/detail-engine.js';
+import {
+  RE_ISO_DATE,
+  formatIsoDate,
+  formatCellValue,
+  colFilterLabel,
+} from '../engine/format-engine.js';
+import {
+  THEMES,
+  THEME_KEY,
+  readTheme,
+  writeTheme,
+  buildThemeGridHtml,
+} from '../engine/theme-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -1014,23 +1027,8 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
 // ── FORMATO DE FECHA ──────────────────────────────────────────────────────────
 // Internamente: yyyy-mm-dd (para ordenar/filtrar correctamente)
 // En pantalla:  dd/mm/yyyy (formato Colombia)
-const RE_ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
-function fmtDate(v){
-  if(!v) return v;
-  const s=String(v);
-  const m=s.match(RE_ISO_DATE);
-  if(m) return `${m[3]}/${m[2]}/${m[1]}`; // yyyy-mm-dd → dd/mm/yyyy ✅
-  // Fallback: si aún llega mm/dd/yyyy (legacy) → convertir
-  const mUs=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if(mUs&&parseInt(mUs[2])>12) return `${mUs[2].padStart(2,'0')}/${mUs[1].padStart(2,'0')}/${mUs[3]}`;
-  return s;
-}
-// Aplicar formato a un valor según si la columna es de fecha
-function fmtCell(col, v, tab){
-  if(v==null||v===''||!tab) return v??'';
-  if((tab.dateColsDetected||[]).includes(col)) return fmtDate(v);
-  return v;
-}
+const fmtDate = formatIsoDate;
+const fmtCell = formatCellValue;
 
 // ── CHIPS ─────────────────────────────────────────────────────────────────────
 // Precalcula colUniques y colNulls en UNA pasada sobre rawData (O(N))
@@ -2861,23 +2859,12 @@ document.addEventListener('keydown',e=>{
 
 
 // ── TEMAS ──────────────────────────────────────────────────────────────────────
-const THEMES=[
-  {id:'dark',   label:'Oscuro',             sub:'Slate azul oscuro',    p:['#1e293b','#334155','#3b82f6','#e2e8f0']},
-  {id:'dashboard',label:'Dashboard',        sub:'Verde esmeralda oscuro',p:['#11152a','#1a1f38','#10b981','#e2e8f0']},
-  {id:'dashboard-purple',label:'Dashboard violeta',sub:'Púrpura profundo',p:['#130f28','#1c1640','#8b5cf6','#e2e8f0']},
-  {id:'azul',   label:'Institucional azul', sub:'Azul gubernamental',   p:['#1d3461','#e8f0fb','#4a90d9','#1d3461']},
-  {id:'grafito',label:'Slate grafito',      sub:'Gris carbón claro',    p:['#2c3444','#eef0f3','#3d8c5a','#1e2535']},
-  {id:'minimal',label:'Blanco minimal',     sub:'Violeta sobre blanco', p:['#ffffff','#fafafa','#6c63ff','#1a1a2e']},
-  {id:'verde',  label:'Verde esmeralda',    sub:'Verde institucional',  p:['#064e3b','#ecfdf5','#10b981','#064e3b']},
-  {id:'amber',  label:'Cálido arena ámbar',  sub:'Ámbar cálido',         p:['#78350f','#fef3c7','#f59e0b','#78350f']},
-];
-const THEME_KEY='mirador_theme';
-let currentTheme=localStorage.getItem(THEME_KEY)||'dark';
+let currentTheme=readTheme();
 
 function applyTheme(id){
   currentTheme=id;
   document.documentElement.dataset.theme=id;
-  localStorage.setItem(THEME_KEY,id);
+  writeTheme(id);
   if($('theme-grid')) renderThemeGrid();
 }
 
@@ -2890,30 +2877,7 @@ function closeThemeModal(e){
   $('theme-overlay').classList.remove('open');
 }
 function renderThemeGrid(){
-  $('theme-grid').innerHTML=THEMES.map(t=>{
-    const active=t.id===currentTheme;
-    const [top,body,acc,txt]=t.p;
-    const lightTop=top==='#ffffff'||top.startsWith('#e')||top.startsWith('#f');
-    return`<div onclick="applyTheme('${t.id}')" style="border-radius:8px;border:${active?'2px solid '+acc:'1px solid var(--border)'};overflow:hidden;cursor:pointer;${active?'box-shadow:0 0 0 3px '+acc+'33':''}">
-      <div style="background:${top};padding:7px 10px;display:flex;align-items:center;gap:6px">
-        <div style="width:12px;height:12px;border-radius:3px;background:${acc}"></div>
-        <span style="font-size:10px;font-weight:500;color:${lightTop?txt:'#fff'};opacity:.9">Mirador</span>
-        ${active?`<span style="margin-left:auto;font-size:9px;background:${acc};color:#fff;padding:1px 5px;border-radius:8px">activo</span>`:''}
-      </div>
-      <div style="background:${body};padding:7px 10px;border-top:1px solid rgba(0,0,0,.08)">
-        <div style="display:flex;gap:4px;margin-bottom:5px">
-          <div style="padding:2px 7px;border-radius:8px;background:${acc};color:#fff;font-size:9px">${t.label.split(' ')[0]}</div>
-          <div style="padding:2px 7px;border-radius:8px;background:rgba(0,0,0,.06);color:${txt};font-size:9px;border:1px solid rgba(0,0,0,.1)">Filtro</div>
-        </div>
-        <div style="height:2px;border-radius:1px;background:rgba(0,0,0,.07);margin-bottom:3px"></div>
-        <div style="height:2px;border-radius:1px;background:rgba(0,0,0,.04)"></div>
-      </div>
-      <div style="padding:7px 10px;background:${body};border-top:1px solid rgba(0,0,0,.06)">
-        <div style="font-size:12px;font-weight:500;color:${txt}">${t.label}</div>
-        <div style="font-size:10px;color:${txt};opacity:.55;margin-top:2px">${t.sub}</div>
-      </div>
-    </div>`;
-  }).join('');
+  $('theme-grid').innerHTML=buildThemeGridHtml(currentTheme);
 }
 
 
@@ -3894,12 +3858,7 @@ function _isLoggedIn(){
   return !ls || ls.classList.contains('hidden');
 }
 function _colFilterLabel(col, val){
-  if(Array.isArray(val)) return val.length===1?val[0]:val.length+' valores';
-  if(val==='__NULL__') return 'sin cédula';
-  if(val==='__WITH__') return 'con cédula';
-  if(typeof val==='string'&&val.startsWith('__CONTAINS__:')) return 'contiene "'+val.slice(13)+'"';
-  if(typeof val==='string'&&val.startsWith('__DATE_RANGE__:')) return val.slice(14).split('__TO__:').join(' → ');
-  return String(val);
+  return colFilterLabel(val);
 }
 function clearChipFiltersOnly(){
   const tab=T(); if(!tab) return;
@@ -4596,8 +4555,6 @@ const __miradorGlobals = {
   MAX_SESSION,
   NOTES_KEY,
   PILLS_KEY,
-  RECENT_COLORS,
-  RECENT_SEARCH_KEY,
   RE_ISO_DATE,
   SEARCH_DELAY,
   SESSION_IDB,

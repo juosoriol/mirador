@@ -2065,7 +2065,7 @@ function renderTable(){
 
   // Registrar scroll handler
   const scroll=$('vt-scroll');
-  scroll.onscroll=_vtOnScroll;
+  if(scroll) scroll.onscroll=_vtOnScroll;
 
   // Info bar
   const totalRows=tab.filtered.length;

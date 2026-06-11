@@ -42,6 +42,14 @@ test.describe('Escritorio — modo Pills', () => {
     expect(restoredMain).toBe(firstMain);
   });
 
+  test('recargar archivo muestra pills de nuevo', async ({ page }) => {
+    const count = await getRowCount(page);
+    await page.evaluate(() => reloadTab());
+    await page.waitForTimeout(1500);
+    expect(await getRowCount(page)).toBe(count);
+    await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
+  });
+
   test('volver a tabla oculta pills', async ({ page }) => {
     await exitPillsMode(page);
     await expect(page.locator('#table-wrap')).toBeVisible();

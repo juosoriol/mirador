@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-search-filters-decouple', k='mirador_build_v';
+  var BUILD='20260610-reload-display-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -2443,20 +2443,45 @@ function renderSheetsSidebar(){
   _updateSheetsBtn();
 }
 
+function _syncDataViewAfterLoad(tabId){
+  const tab=tabs.get(tabId);
+  if(!tab||tabId!==activeTabId) return;
+  $('loading').style.display='none';
+  $('dropzone').style.display='none';
+  if(_pillsOn){
+    $('table-wrap').style.display='none';
+    $('data-area').style.display='none';
+    $('pills-view')?.classList.add('open');
+    _syncPillsSearchUI(tab);
+    _pillsShowLoading(false);
+    _reloadPillsCore();
+  }else{
+    $('pills-view')?.classList.remove('open');
+    $('data-area').style.display='';
+    applyFilters();
+    $('table-wrap').style.display='flex';
+    _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+  }
+  updateStatusBar();
+  _mobileUiRefresh();
+}
+
 function loadSheet(name, tabId, preserveFilters){
   const tid = tabId||activeTabId;
   const tab = tabs.get(tid); if(!tab) return;
   if(tid!==activeTabId){activeTabId=tid;renderTabs()}
-  tab.activeSheet=name; tab.selected=new Set(); tab.sortCol=null; tab.activeChipCol=null;
-  if(!preserveFilters){ tab.colFilters={}; tab.condRules=[]; }
+  const prevSort=preserveFilters?{col:tab.sortCol,dir:tab.sortDir}:null;
+  tab.activeSheet=name; tab.selected=new Set(); tab.activeChipCol=null;
+  if(!preserveFilters){ tab.colFilters={}; tab.condRules=[]; tab.sortCol=null; }
+  else if(prevSort){ tab.sortCol=prevSort.col; tab.sortDir=prevSort.dir; }
   closeDropdown(); renderSheetsSidebar();
 
   // Sin workbook → datos ya en memoria (sesión/favorito)
   if(!tab.workbook){
     _syncSearchInputFromTab(tab);
-    buildChips(); buildSearchCombo(); buildDateColCombo(); applyFilters();
+    buildChips(); buildSearchCombo(); buildDateColCombo();
     enableControls(true);
-    $('loading').style.display='none'; $('dropzone').style.display='none'; $('table-wrap').style.display='flex';
+    _syncDataViewAfterLoad(tid);
     return;
   }
 
@@ -2617,16 +2642,7 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   if(preserveFilters) _syncSearchInputFromTab(tab);
   buildChips(); buildSearchCombo(); buildDateColCombo();
   enableControls(true);
-  $('loading').style.display='none'; $('dropzone').style.display='none';
-  if(_pillsOn){
-    $('table-wrap').style.display='none';
-    $('data-area').style.display='none';
-    $('pills-view')?.classList.add('open');
-    _refreshPillsTabView({reason:'data', spinner:false});
-  } else {
-    applyFilters();
-    $('table-wrap').style.display='flex';
-  }
+  _syncDataViewAfterLoad(tabId);
   renderTabs();
   const rowsSkipped = hRow - range.s.r;
   const skippedNote = rowsSkipped > 0 ? ` · ${rowsSkipped} fila${rowsSkipped>1?'s':''} ignorada${rowsSkipped>1?'s':''}` : '';
@@ -5618,6 +5634,7 @@ function _doReload(tabId){
   const prevSort={col:tab.sortCol,dir:tab.sortDir};
   const prevColFilters=JSON.parse(JSON.stringify(tab.colFilters||{}));
   const prevSearchText=tab.searchText||'';
+  const prevPillsSearch=tab.pillsSearchText||'';
   const prevScrollTop=$('vt-scroll')?.scrollTop||0;
 
   if(tabId===activeTabId) toast('↻ Recargando '+tab.fileName+'…');
@@ -5637,10 +5654,15 @@ function _doReload(tabId){
       if(tabId===activeTabId){
         // Recarga activa: refrescar UI completa preservando filtros y scroll
         _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+        tab.searchText=prevSearchText;
+        tab.pillsSearchText=prevPillsSearch;
         loadSheet(targetSheet, tabId, true);
-        $('search-input').value=prevSearchText;
-        // Restaurar posición de scroll tras el render
-        requestAnimationFrame(()=>{ const s=$('vt-scroll'); if(s) s.scrollTop=prevScrollTop; });
+        if(_pillsOn){
+          _syncPillsSearchUI(tab);
+        }else{
+          $('search-input').value=prevSearchText;
+          requestAnimationFrame(()=>{ const s=$('vt-scroll'); if(s) s.scrollTop=prevScrollTop; });
+        }
       } else {
         // Recarga en segundo plano: actualizar datos sin tocar la UI activa
         // Necesitamos parsear la hoja para tener rawData actualizado

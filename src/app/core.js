@@ -20,13 +20,82 @@ import {
   invalidateVirtualTableCache,
   createVirtualTableController,
 } from '../engine/virtual-table.js';
+import {
+  SESSION_IDB,
+  SESSION_IDB_STORE,
+  WORKBOOK_IDB_PREFIX,
+  openSessionDb,
+  DEFAULT_MAX_SESSION_ROWS,
+  workbookIdbKey,
+  compactTabForSession,
+  compactSheetCacheForSession,
+  writeWorkbookBuffer,
+  readWorkbookBuffer,
+  clearWorkbookBuffers,
+  readSessionLocal,
+  writeSessionJson,
+  readSessionJson,
+  clearSessionJson,
+  readSessionEmergency,
+  writeSessionEmergency,
+  readBestSession,
+} from '../engine/session-engine.js';
+import {
+  getExportColumns,
+  buildExportDataRows,
+  buildSingleTabExportFileName,
+  uniqueWorksheetName,
+  appendStyledExportSheet,
+  exportFallbackXlsx,
+  downloadExcelBuffer,
+  safeExportName,
+  columnWidthsForExport,
+  styleHeaderRow,
+  styleDataRow,
+  appendTotalRow,
+  applyWorksheetPrintSetup,
+} from '../engine/export-engine.js';
+import {
+  pillsFindColumn,
+  pillsInitials,
+  pillsAvatarColor,
+  buildPillsColorMap,
+  buildPillsToolbarCount,
+  getPillsDisplayRows,
+  resolvePillsSelectors,
+} from '../engine/pills-engine.js';
+import {
+  DEFAULT_CHIP_LIMIT,
+  findCedulaColumn,
+  precalcColStats as enginePrecalcColStats,
+  buildCandidateRowIndices,
+  countColumnValueMap,
+  countNullRows,
+  countNonNullRows,
+  sortColumnValues,
+  selectionSetFromFilter,
+  getChipFilterDisplayLabel,
+  parseDateChipFilter,
+  buildDateRangeFilter,
+  computeFilteredNonEmptyCounts,
+  toggleChipSelection,
+  invertChipSelection,
+} from '../engine/chip-filter-engine.js';
+import {
+  STATS_PILL_COLORS,
+  detectDefaultStatsPanels,
+  computeStatsPanelCounts,
+  topStatsEntries,
+  shortStatsPillLabel,
+  toggleStatsPillFilter,
+} from '../engine/stats-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
 const FAV_KEY      = 'mirador_favorites_v1';
 const TAB_COLORS   = ['#16a34a','#2563eb','#d97706','#9333ea','#dc2626','#0891b2','#65a30d','#c026d3'];
-const MAX_SESSION  = 8000;   // filas máximas guardadas en sesión por pestaña
-const CHIP_LIMIT   = 500;    // máximo únicos para mostrar como chip
+const MAX_SESSION  = DEFAULT_MAX_SESSION_ROWS;
+const CHIP_LIMIT   = DEFAULT_CHIP_LIMIT;    // máximo únicos para mostrar como chip
 const SEARCH_DELAY = 80;     // debounce en ms — rápido para feedback en tiempo real
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
@@ -69,60 +138,21 @@ const debounce = (fn,ms) => {
 };
 
 // ── SESIÓN ────────────────────────────────────────────────────────────────────
-const SESSION_IDB = 'mirador_session_db';
-const SESSION_IDB_STORE = 'session';
-const WORKBOOK_IDB_PREFIX = 'workbook:';
-
-function _workbookIdbKey(tabId){ return WORKBOOK_IDB_PREFIX + tabId; }
-
-function _sessionWriteWorkbook(tabId, arrayBuffer){
-  if(!arrayBuffer) return Promise.resolve(false);
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
-    tx.objectStore(SESSION_IDB_STORE).put(arrayBuffer, _workbookIdbKey(tabId));
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  })).catch(() => false);
-}
-
-function _sessionReadWorkbook(tabId){
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readonly');
-    const req = tx.objectStore(SESSION_IDB_STORE).get(_workbookIdbKey(tabId));
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  })).catch(() => null);
-}
-
-function _sessionClearWorkbooks(tabIds){
-  const ids = tabIds || [...tabs.keys()];
-  if(!ids.length) return Promise.resolve();
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
-    const store = tx.objectStore(SESSION_IDB_STORE);
-    ids.forEach(id => store.delete(_workbookIdbKey(id)));
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  })).catch(() => {});
-}
-
-function _sessionCompactSheetCache(cache){
-  if(!cache || typeof cache !== 'object') return {};
-  const out = {};
-  for(const [name, entry] of Object.entries(cache)){
-    if(!entry?.rawData?.length) continue;
-    const fakeTab = { rawData: entry.rawData, columns: entry.columns || [] };
-    const compact = _sessionCompactTab(fakeTab);
-    out[name] = {
-      columns: compact.columns,
-      rawData: compact.rawData,
-      _manualHdrRow: entry._manualHdrRow ?? null,
-      _hdrRangeStart: entry._hdrRangeStart ?? null,
-      dateColsDetected: entry.dateColsDetected || [],
-    };
-  }
-  return out;
-}
+function _workbookIdbKey(tabId){ return workbookIdbKey(tabId); }
+function _sessionWriteWorkbook(tabId, arrayBuffer){ return writeWorkbookBuffer(tabId, arrayBuffer); }
+function _sessionReadWorkbook(tabId){ return readWorkbookBuffer(tabId); }
+function _sessionClearWorkbooks(tabIds){ return clearWorkbookBuffers(tabIds || [...tabs.keys()]); }
+function _sessionCompactSheetCache(cache){ return compactSheetCacheForSession(cache, MAX_SESSION); }
+function _sessionCompactTab(t){ return compactTabForSession(t, MAX_SESSION); }
+function _sessionReadLocal(){ return readSessionLocal(SESSION_KEY); }
+function _sessionWriteIdb(json){ return writeSessionJson(SESSION_KEY, json); }
+function _sessionReadIdb(){ return readSessionJson(SESSION_KEY); }
+function _sessionClearIdb(){ return clearSessionJson(SESSION_KEY); }
+function _sessionReadEmergency(){ return readSessionEmergency(SESSION_KEY); }
+async function _sessionReadAll(){ return readBestSession(SESSION_KEY); }
+function _sessionWriteEmergency(data){ writeSessionEmergency(SESSION_KEY, data); }
+function _sessionOpenIdb(){ return openSessionDb(); }
+function _pillsFindCol(cols, patterns){ return pillsFindColumn(cols, patterns); }
 
 function _cacheSheetData(tab, sheetName){
   if(!tab || !sheetName || !tab.rawData?.length) return;
@@ -194,26 +224,6 @@ function _loadSheetFromCache(tabId, sheetName, preserveFilters){
   return true;
 }
 
-function _sessionCompactTab(t){
-  const raw = t.rawData || [];
-  const cols = t.columns || [];
-  let keep = cols;
-  if(cols.length && raw.length){
-    keep = cols.filter(c => raw.some(r => r[c] !== '' && r[c] != null));
-    if(!keep.length) keep = cols;
-  }
-  let compactRaw = raw;
-  if(keep.length < cols.length){
-    compactRaw = raw.map(r => {
-      const o = {};
-      for(const c of keep) o[c] = r[c] ?? '';
-      return o;
-    });
-  }
-  if(compactRaw.length > MAX_SESSION) compactRaw = compactRaw.slice(0, MAX_SESSION);
-  return { columns: keep, rawData: compactRaw };
-}
-
 function _sessionBuildData(){
   const cur = T();
   if(cur){
@@ -259,65 +269,6 @@ function _sessionBuildData(){
   };
 }
 
-function _sessionReadLocal(){
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(_) { return null; }
-}
-
-function _sessionOpenIdb(){
-  return new Promise((resolve, reject) => {
-    if(typeof indexedDB === 'undefined'){ reject(new Error('indexedDB unavailable')); return; }
-    const req = indexedDB.open(SESSION_IDB, 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(SESSION_IDB_STORE);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function _sessionWriteIdb(json){
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
-    tx.objectStore(SESSION_IDB_STORE).put(json, SESSION_KEY);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  }));
-}
-
-function _sessionReadIdb(){
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readonly');
-    const req = tx.objectStore(SESSION_IDB_STORE).get(SESSION_KEY);
-    req.onsuccess = () => {
-      if(!req.result){ resolve(null); return; }
-      try { resolve(JSON.parse(req.result)); } catch(_) { resolve(null); }
-    };
-    req.onerror = () => reject(req.error);
-  }));
-}
-
-function _sessionClearIdb(){
-  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
-    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
-    tx.objectStore(SESSION_IDB_STORE).delete(SESSION_KEY);
-    tx.oncomplete = () => resolve(true);
-    tx.onerror = () => reject(tx.error);
-  })).catch(()=>{});
-}
-
-function _sessionReadEmergency(){
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY + '_emergency') || 'null'); } catch(_) { return null; }
-}
-
-async function _sessionReadAll(){
-  const local = _sessionReadLocal();
-  if(local && !local._store && local.tabs?.length) return local;
-  const idb = await _sessionReadIdb().catch(() => null);
-  if(idb?.tabs?.some(t => t.rawData?.length)) return idb;
-  const emerg = _sessionReadEmergency();
-  if(emerg?.tabs?.some(t => t.rawData?.length)) return emerg;
-  if(local && !local._store) return local;
-  return null;
-}
-
 function clearStoredSession(){
   try {
     localStorage.removeItem(SESSION_KEY);
@@ -325,20 +276,6 @@ function clearStoredSession(){
   } catch(_) {}
   _sessionClearWorkbooks([...tabs.keys()]);
   _sessionClearIdb();
-}
-
-function _sessionWriteEmergency(data){
-  const lite = {
-    activeTabId: data.activeTabId,
-    activeName: data.activeName,
-    ts: data.ts,
-    tabs: data.tabs.map(t => ({
-      ...t,
-      rawData: (t.rawData || []).slice(0, 1500),
-    })),
-    pillsCfg: data.pillsCfg,
-  };
-  try { localStorage.setItem(SESSION_KEY + '_emergency', JSON.stringify(lite)); } catch(_) {}
 }
 
 function saveSession(){
@@ -568,11 +505,17 @@ function renderTabs(){
       <span class="tab-star${isFav?' on':''}" data-star="${tab.id}" title="${isFav?'Quitar favorito':'Marcar favorito'}">&#9733;</span>
       <span class="tab-close" data-close="${tab.id}" title="Cerrar">×</span>`;
 
-    div.onclick=e=>{
-      if(e.target.dataset.close){closeTab(+e.target.dataset.close);return}
-      if(e.target.dataset.star){_tabToggleFav(tabs.get(+e.target.dataset.star));return}
-      switchTab(tab.id);
-    };
+    const starEl=div.querySelector('.tab-star');
+    const closeEl=div.querySelector('.tab-close');
+    starEl?.addEventListener('click',e=>{
+      e.stopPropagation();
+      _tabToggleFav(tab);
+    });
+    closeEl?.addEventListener('click',e=>{
+      e.stopPropagation();
+      closeTab(tab.id);
+    });
+    div.onclick=()=> switchTab(tab.id);
     div.oncontextmenu=e=>{e.preventDefault();_tabCtx(e,tab.id);};
     bar.insertBefore(div,addBtn);
   });
@@ -610,8 +553,8 @@ function _tabFileDot(ext){
 function _tabIsFav(fileName){
   return getFavs().some(f=>f.state?.fileName===fileName);
 }
-function _tabBuildViewState(tab){
-  return {
+function _tabBuildViewState(tab, { compact = false } = {}){
+  const state={
     colFilters:JSON.parse(JSON.stringify(tab.colFilters||{})),
     searchText:tab.searchText||$('search-input')?.value||'',
     searchCol:tab.searchCol||$('search-col')?.value||'',
@@ -619,39 +562,55 @@ function _tabBuildViewState(tab){
     dateTo:tab.dateTo||$('date-to')?.value||'',
     dateCol:tab.dateCol||$('date-col')?.value||'',
     fileName:tab.fileName, activeSheet:tab.activeSheet, sheets:tab.sheets,
-    columns:tab.columns, rawData:tab.rawData, dateColsDetected:tab.dateColsDetected, color:tab.color
+    dateColsDetected:tab.dateColsDetected, color:tab.color
   };
+  if(!compact){
+    state.columns=tab.columns;
+    state.rawData=tab.rawData;
+  }
+  return state;
+}
+function _safeSetFavs(favs){
+  try{
+    setFavs(favs);
+    return true;
+  }catch(e){
+    const quota=e?.name==='QuotaExceededError'||/quota/i.test(String(e?.message||''));
+    toast(quota?'Vista demasiado grande para guardar — quita filtros o usa un archivo más pequeño':'No se pudo guardar la vista',true);
+    return false;
+  }
 }
 function _tabSaveView(tab){
-  const state=_tabBuildViewState(tab);
+  const state=_tabBuildViewState(tab,{compact:true});
   const name=(tab.fileName||'Vista').replace(/\.[^.]+$/,'');
   const favs=getFavs();
   const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
   const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
   if(idx>=0) favs[idx]=fav; else favs.push(fav);
-  setFavs(favs);
+  if(!_safeSetFavs(favs)) return false;
   const fmList=_fmLoad();
   const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
   if(fmIdx>=0 && !fmList[fmIdx].fav){ fmList[fmIdx].fav=true; _fmSave(fmList); }
   toast(`⭐ Vista "${name}" guardada`);
+  return true;
 }
 function _tabRemoveView(tab){
   const favs=getFavs();
   const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
-  if(idx<0) return;
+  if(idx<0) return false;
   const name=favs[idx].name;
   favs.splice(idx,1);
-  setFavs(favs);
+  if(!_safeSetFavs(favs)) return false;
   const fmList=_fmLoad();
   const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
   if(fmIdx>=0){ fmList[fmIdx].fav=false; _fmSave(fmList); }
   toast(`"${name}" quitada de vistas`);
+  return true;
 }
 function _tabToggleFav(tab){
   if(!tab) return;
-  if(_tabIsFav(tab.fileName)) _tabRemoveView(tab);
-  else _tabSaveView(tab);
-  renderTabs();
+  const ok=_tabIsFav(tab.fileName) ? _tabRemoveView(tab) : _tabSaveView(tab);
+  if(ok) renderTabs();
 }
 
 // Context menu
@@ -698,9 +657,10 @@ function _tabCtxOutside(e){ const m=$('tab-ctx-menu'); if(m&&!m.contains(e.targe
 function switchTab(id){
   if(!tabs.has(id)) return;
   const cur=T();
+  const reopenPills=_pillsOn;
   if(cur){
     cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||'';
-    if(_pillsOn){
+    if(reopenPills){
       cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
       cur._pillsSel={
         main:$('pills-sel-main')?.value||'',
@@ -713,7 +673,18 @@ function switchTab(id){
       cur.searchText=$('search-input')?.value||'';
     }
   }
-  activeTabId=id; renderTabs(); restoreTabUI();
+  activeTabId=id; renderTabs();
+  if(reopenPills){
+    closeMobileFilterSheet();
+    _exitPillsMode();
+    restoreTabUI();
+    requestAnimationFrame(()=>{
+      if(activeTabId!==id||!tabs.has(id)) return;
+      togglePillsMode();
+    });
+  } else {
+    restoreTabUI();
+  }
 }
 
 
@@ -1006,22 +977,7 @@ function fmtCell(col, v, tab){
 // Precalcula colUniques y colNulls en UNA pasada sobre rawData (O(N))
 // y los guarda en el tab para no recalcular en cada updateChipStates
 function precalcColStats(tab){
-  tab.colUniques = {}; // col -> Set de valores únicos (rawData completo)
-  tab.colNulls   = {}; // col -> conteo de nulos (rawData completo)
-  const dc = new Set(tab.dateColsDetected);
-  const ced = tab.columns.find(c=>/^c[eé]dula$/i.test(c.trim()));
-  for(const row of tab.rawData){
-    if(!row) continue;
-    for(const col of tab.columns){
-      const v = row[col];
-      if(v===''||v==null){
-        tab.colNulls[col]=(tab.colNulls[col]||0)+1;
-      } else {
-        if(!tab.colUniques[col]) tab.colUniques[col]=new Set();
-        tab.colUniques[col].add(v);
-      }
-    }
-  }
+  enginePrecalcColStats(tab);
 }
 
 function buildChips(){
@@ -1053,7 +1009,7 @@ function buildChips(){
     return chip;
   };
 
-  const cedCol=tab.columns.find(c=>/^c[eé]dula$/i.test(c.trim()));
+  const cedCol=findCedulaColumn(tab.columns);
   const hid=tab.hiddenCols||new Set();
   if(cedCol) makeChip(cedCol,'null-filter'); // siempre visible, aunque la columna esté oculta
 
@@ -1079,16 +1035,7 @@ function updateChipStates(){
 
   // Obtener solo las columnas que tienen chip para limitar la pasada
   const chipCols=new Set([...chips].map(c=>c.dataset.col));
-
-  // Una pasada sobre filtered, solo para columnas con chip
-  const filtCnt={}; // col -> conteo de valores no-vacíos en filtered
-  for(const i of tab.filtered){
-    const row=tab.rawData[i]; if(!row) continue;
-    for(const col of chipCols){
-      const v=row[col];
-      if(v!=null&&v!=='') filtCnt[col]=(filtCnt[col]||0)+1;
-    }
-  }
+  const filtCnt=computeFilteredNonEmptyCounts(tab.rawData, tab.filtered, chipCols);
 
   chips.forEach(chip=>{
     const col=chip.dataset.col;
@@ -1098,12 +1045,7 @@ function updateChipStates(){
     chip.classList.toggle('active',active);
     const val=tab.colFilters[col];
     if(active){
-      let label;
-      if(Array.isArray(val)){
-        label = val.length===1 ? val[0] : `${val.length} seleccionados`;
-      } else {
-        label = val==='__NULL__'?'sin cédula':val==='__WITH__'?'con cédula':val?.startsWith('__CONTAINS__:')?`contiene "${val.slice(13)}"`:val?.startsWith('__DATE_RANGE__:')?`${val.slice(14).split('__TO__:')[0]||'*'} → ${val.split('__TO__:')[1]||'*'}`:String(val);
-      }
+      const label=getChipFilterDisplayLabel(val);
       chip.innerHTML=`${isSpec?'🪪 ':isDate?'📅 ':''}${eh(col)}: <strong class="chip-val">${eh(label)}</strong> <span class="chip-x">×</span>`;
     } else if(isSpec){
       const nulls=tab.colNulls[col]||0;
@@ -1325,8 +1267,7 @@ function openDateChipPanel(col, chipEl){
   dd.style.maxHeight='200px';
 
   const cur=tab.colFilters[col];
-  const curFrom=typeof cur==='string'&&cur.startsWith('__FROM__:')?cur.slice(9):'';
-  const curTo=typeof cur==='string'&&cur.includes('__TO__:')?cur.split('__TO__:')[1]:'';
+  const { from: curFrom, to: curTo } = parseDateChipFilter(cur);
 
   dd.innerHTML=`
     <div id="cdp-head">
@@ -1358,11 +1299,9 @@ function applyDateChipFilter(col){
   const tab=T(); if(!tab) return;
   const from=($('dcp-from')?.value||'').trim();
   const to=($('dcp-to')?.value||'').trim();
-  if(!from&&!to){ delete tab.colFilters[col]; }
-  else {
-    // Store as a special contains filter that applyFilters can handle
-    tab.colFilters[col]='__DATE_RANGE__:'+from+'__TO__:'+to;
-  }
+  const next=buildDateRangeFilter(from, to);
+  if(next===undefined) delete tab.colFilters[col];
+  else tab.colFilters[col]=next;
   applyFilters(); updateChipStates();
 }
 
@@ -1410,34 +1349,11 @@ function renderCdpContent(col){
 
   if(!tab.colUniques) precalcColStats(tab);
 
-  // Conteos sobre filas filtradas (sin el filtro de esta columna para mostrar candidatos reales)
-  const filtCountsAll={};
-  // Construir vista de filtered ignorando el filtro de esta columna
-  const otherFilters=Object.entries(tab.colFilters).filter(([c])=>c!==col);
-  const candidateRows = otherFilters.length>0
-    ? tab.rawData.reduce((acc,row,i)=>{
-        if(!row) return acc;
-        const pass=otherFilters.every(([fc,fv])=>{
-          const rv=row[fc];
-          if(Array.isArray(fv)) return fv.includes(rv);
-          if(fv==='__NULL__') return rv===''||rv==null;
-          if(fv==='__WITH__') return rv!==''&&rv!=null;
-          if(fv?.startsWith('__CONTAINS__:')) return (rv||'').toLowerCase().includes(fv.slice(13));
-          return rv===fv;
-        });
-        if(pass) acc.push(i);
-        return acc;
-      },[])
-    : tab.rawData.map((_,i)=>i);
-
-  candidateRows.forEach(i=>{
-    const r=tab.rawData[i]; if(!r) return;
-    const v=r[col]; if(v!=null&&v!=='') filtCountsAll[v]=(filtCountsAll[v]||0)+1;
-  });
-
-  const allVals = tab.colUniques[col] ? [...tab.colUniques[col]].sort(new Intl.Collator(undefined,{sensitivity:'base',numeric:true}).compare) : [];
-  const curFilter = tab.colFilters[col]; // undefined | string | string[]
-  const selSet = new Set(Array.isArray(curFilter)?curFilter:(curFilter&&curFilter!=='__NULL__'&&curFilter!=='__WITH__'?[curFilter]:[]));
+  const candidateRows=buildCandidateRowIndices(tab.rawData, tab.colFilters, col);
+  const filtCountsAll=countColumnValueMap(tab.rawData, candidateRows, col);
+  const allVals=tab.colUniques[col] ? sortColumnValues(tab.colUniques[col]) : [];
+  const curFilter = tab.colFilters[col];
+  const selSet = selectionSetFromFilter(curFilter);
 
   dd.innerHTML=`
     <div id="cdp-head">
@@ -1451,10 +1367,10 @@ function renderCdpContent(col){
           <input type="checkbox" ${curFilter===undefined?'checked':''}/><span class="cdp-item-label">(Todos)</span><span class="cdp-item-cnt">${candidateRows.length}</span>
         </div>
         <div class="cdp-item${curFilter==='__WITH__'?' cdp-sel':''}" onclick="cdpSetSpec('__WITH__')">
-          <input type="checkbox" ${curFilter==='__WITH__'?'checked':''}/><span class="cdp-item-label">Con cédula</span><span class="cdp-item-cnt">${candidateRows.filter(i=>{const r=tab.rawData[i];return r&&r[col]!==''&&r[col]!=null}).length}</span>
+          <input type="checkbox" ${curFilter==='__WITH__'?'checked':''}/><span class="cdp-item-label">Con cédula</span><span class="cdp-item-cnt">${countNonNullRows(tab.rawData, candidateRows, col)}</span>
         </div>
         <div class="cdp-item${curFilter==='__NULL__'?' cdp-sel':''}" onclick="cdpSetSpec('__NULL__')">
-          <input type="checkbox" ${curFilter==='__NULL__'?'checked':''}/><span class="cdp-item-label">Sin cédula</span><span class="cdp-item-cnt">${candidateRows.filter(i=>{const r=tab.rawData[i];return r&&(r[col]===''||r[col]==null)}).length}</span>
+          <input type="checkbox" ${curFilter==='__NULL__'?'checked':''}/><span class="cdp-item-label">Sin cédula</span><span class="cdp-item-cnt">${countNullRows(tab.rawData, candidateRows, col)}</span>
         </div>
       </div>
     `:`
@@ -1478,7 +1394,7 @@ function renderCdpContent(col){
     const specialFrag=document.createDocumentFragment();
 
     // Fila: (Nulos)
-    const nullCnt=candidateRows.filter(i=>{const r=tab.rawData[i];return r&&(r[col]===''||r[col]==null)}).length;
+    const nullCnt=countNullRows(tab.rawData, candidateRows, col);
     const isNullSel=curFilter==='__NULL__';
     const nullRow=document.createElement('div');
     nullRow.className='cdp-item cdp-special'+(isNullSel?' cdp-sel':'');
@@ -1593,15 +1509,14 @@ function cdpToggleVal(v){
   const prevSelEnd=si?.selectionEnd;
 
   const cur=tab.colFilters[_cdpCol];
-  let sel=new Set(Array.isArray(cur)?cur:(cur&&cur!=='__NULL__'&&cur!=='__WITH__'?[cur]:[]));
-  sel.has(v)?sel.delete(v):sel.add(v);
-  if(sel.size===0){ delete tab.colFilters[_cdpCol]; }
-  else { tab.colFilters[_cdpCol]=[...sel]; }
+  const next=toggleChipSelection(cur, v);
+  if(next===undefined) delete tab.colFilters[_cdpCol];
+  else tab.colFilters[_cdpCol]=next;
 
   applyFilters(); updateChipStates();
 
   // Update checkboxes and row states in-place — no full re-render
-  const newSel=new Set(Array.isArray(tab.colFilters[_cdpCol])?tab.colFilters[_cdpCol]:[]);
+  const newSel=selectionSetFromFilter(tab.colFilters[_cdpCol]);
   const dd=$('chip-dropdown');
   if(dd){
     dd.querySelectorAll('.cdp-item[data-val]').forEach(row=>{
@@ -1646,7 +1561,7 @@ function cdpClearAll(){
 function cdpSelectAll(){
   const tab=T(); if(!tab||!_cdpCol) return;
   if(!tab.colUniques) precalcColStats(tab);
-  const allVals=tab.colUniques[_cdpCol]?[...tab.colUniques[_cdpCol]]:[];
+  const allVals=tab.colUniques[_cdpCol]?sortColumnValues(tab.colUniques[_cdpCol]):[];
   if(!allVals.length) return;
   tab.colFilters[_cdpCol]=[...allVals];
   applyFilters(); updateChipStates();
@@ -1656,36 +1571,15 @@ function cdpSelectAll(){
 function cdpInvert(){
   const tab=T(); if(!tab||!_cdpCol) return;
   if(!tab.colUniques) precalcColStats(tab);
-  const allVals=tab.colUniques[_cdpCol]?[...tab.colUniques[_cdpCol]]:[];
-  if(!allVals.length) return;
-  const cur=tab.colFilters[_cdpCol];
-
-  // Determinar qué está actualmente seleccionado
-  let curSet;
-  if(cur===undefined){
-    // Sin filtro = todo visible → invertir = nada (limpiar todo y seleccionar ninguno no tiene sentido, así que no hacer nada)
-    toast('No hay selección para invertir. Selecciona algunos valores primero.');
-    return;
-  } else if(Array.isArray(cur)){
-    curSet=new Set(cur);
-  } else if(typeof cur==='string'&&cur!=='__NULL__'&&cur!=='__WITH__'&&!cur?.startsWith('__CONTAINS__:')){
-    curSet=new Set([cur]);
-  } else {
-    // Filtro especial (nulos, contiene) → no se puede invertir con checkboxes
-    toast('Usa Invertir solo con valores seleccionados por checkbox');
+  const allVals=tab.colUniques[_cdpCol]?sortColumnValues(tab.colUniques[_cdpCol]):[];
+  const result=invertChipSelection(allVals, tab.colFilters[_cdpCol]);
+  if(!result.ok){
+    toast(result.message||'No se pudo invertir la selección');
     return;
   }
-
-  // Si todo está seleccionado → limpiar filtro
-  if(curSet.size>=allVals.length||[...curSet].every(v=>allVals.includes(v)&&curSet.size===allVals.length)){
-    delete tab.colFilters[_cdpCol];
-    toast('Todo estaba seleccionado → filtro removido');
-  } else {
-    // Seleccionar lo opuesto
-    const inverted=allVals.filter(v=>!curSet.has(v));
-    tab.colFilters[_cdpCol]=inverted;
-    toast(`Invertido: ${inverted.length} de ${allVals.length} valores`);
-  }
+  if(result.action==='clear') delete tab.colFilters[_cdpCol];
+  else tab.colFilters[_cdpCol]=result.values;
+  if(result.message) toast(result.message);
   applyFilters(); updateChipStates();
   renderCdpContent(_cdpCol);
 }
@@ -2234,41 +2128,21 @@ function updateStats(){
 
   // Paneles configurables: auto-detectar si no hay config guardada
   if(!tab.statsPanels){
-    tab.statsPanels = [];
-    const vCol=tab.columns.find(c=>/vinculaci/i.test(c));
-    const eCol=tab.columns.find(c=>/^estado$/i.test(c.trim()));
-    const sCol=tab.columns.find(c=>/^sexo$/i.test(c.trim())||/^g[eé]nero$/i.test(c.trim()));
-    if(vCol) tab.statsPanels.push(vCol);
-    if(eCol) tab.statsPanels.push(eCol);
-    if(sCol) tab.statsPanels.push(sCol);
+    tab.statsPanels = detectDefaultStatsPanels(tab.columns);
   }
 
-  const PILL_COLORS=['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ef4444','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'];
+  const panelCounts=computeStatsPanelCounts(tab.rawData, tab.filtered, tab.statsPanels);
 
-  // Conteos por columna — una sola pasada (fix: continue, no return)
-  const panelCounts={};
-  tab.statsPanels.forEach(c=>panelCounts[c]={});
-  tab.filtered.forEach(i=>{
-    const r=tab.rawData[i]; if(!r) return;
-    for(const col of tab.statsPanels){
-      const v=r[col]; if(!v) continue;
-      const key = /^sexo$/i.test(col)||/^g[eé]nero$/i.test(col) ? v.toUpperCase() : v;
-      panelCounts[col][key]=(panelCounts[col][key]||0)+1;
-    }
-  });
-
-  // Pills clicables: clic → aplica filtro directo
   const makePills=(col,cnt,max=5)=>{
-    const entries=Object.entries(cnt).sort((a,b)=>b[1]-a[1]);
-    const shown=entries.slice(0,max);
+    const shown=topStatsEntries(cnt, max);
     const curFilter=tab.colFilters[col];
-    const curSet=new Set(Array.isArray(curFilter)?curFilter:[]);
+    const curSet=selectionSetFromFilter(curFilter);
 
     return shown.map(([k,v],i)=>{
       const isActive=curSet.has(k)||(typeof curFilter==='string'&&curFilter===k);
-      const bg=PILL_COLORS[i%PILL_COLORS.length];
+      const bg=STATS_PILL_COLORS[i%STATS_PILL_COLORS.length];
       const activeBorder=isActive?`box-shadow:0 0 0 2px ${bg};`:'';
-      return `<span class="spill" data-col="${eh(col)}" data-val="${eh(k)}" title="Clic: filtrar por ${eh(k)}&#10;Ctrl+clic: añadir al filtro" style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:10px;background:${bg}22;border:1px solid ${bg}44;color:${bg};font-weight:600;white-space:nowrap;cursor:pointer;transition:all .12s;${activeBorder}" onclick="onPillClick(event,'${ejs(col)}','${ejs(k)}')">${eh(k.split(' ').slice(0,2).join(' '))} <strong>${v}</strong>${isActive?'<span style="margin-left:2px;font-size:8px">✓</span>':''}</span>`;
+      return `<span class="spill" data-col="${eh(col)}" data-val="${eh(k)}" title="Clic: filtrar por ${eh(k)}&#10;Ctrl+clic: añadir al filtro" style="display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:10px;font-size:10px;background:${bg}22;border:1px solid ${bg}44;color:${bg};font-weight:600;white-space:nowrap;cursor:pointer;transition:all .12s;${activeBorder}" onclick="onPillClick(event,'${ejs(col)}','${ejs(k)}')">${eh(shortStatsPillLabel(k))} <strong>${v}</strong>${isActive?'<span style="margin-left:2px;font-size:8px">✓</span>':''}</span>`;
     }).join('');
   };
 
@@ -2312,24 +2186,9 @@ function updateStats(){
 function onPillClick(e,col,val){
   e.stopPropagation();
   const tab=T(); if(!tab) return;
-  const cur=tab.colFilters[col];
-
-  if(e.ctrlKey||e.metaKey){
-    // Multi-select: añadir/quitar del array
-    let sel=new Set(Array.isArray(cur)?cur:(cur&&cur!=='__NULL__'&&cur!=='__WITH__'&&!cur?.startsWith('__CONTAINS__:')?[cur]:[]));
-    sel.has(val)?sel.delete(val):sel.add(val);
-    if(sel.size===0) delete tab.colFilters[col];
-    else tab.colFilters[col]=[...sel];
-  } else {
-    // Single click: toggle exacto
-    if(typeof cur==='string'&&cur===val){
-      delete tab.colFilters[col];
-    } else if(Array.isArray(cur)&&cur.length===1&&cur[0]===val){
-      delete tab.colFilters[col];
-    } else {
-      tab.colFilters[col]=val;
-    }
-  }
+  const next=toggleStatsPillFilter(tab.colFilters[col], val, e.ctrlKey||e.metaKey);
+  if(next===undefined) delete tab.colFilters[col];
+  else tab.colFilters[col]=next;
   applyFilters(); updateChipStates();
 }
 
@@ -2536,67 +2395,22 @@ function exportExcel(){
   const tab=T();
   if(!tab||!tab.filtered.length){toast('Sin datos para exportar');return}
 
-  // ── 1. Columnas a exportar: mismas que el usuario ve (respeta ocultas y orden)
-  const hid=tab.hiddenCols||new Set();
-  const frz=tab.frozenCols||new Set();
-  const frozenOrder=tab.frozenOrder||[...frz];
-  const exportCols=[
-    ...frozenOrder.filter(c=>frz.has(c)&&!hid.has(c)),
-    ...tab.columns.filter(c=>!frz.has(c)&&!hid.has(c))
-  ];
+  const exportCols=getExportColumns(tab);
   if(!exportCols.length){toast('No hay columnas visibles');return}
 
-  const dc=new Set(tab.dateColsDetected||[]);
-
-  // ── 2. Detectar columnas numéricas (≥70% numéricos, excluye fechas e IDs)
-  const idRe=/^(c[eé]dula|nit|documento|cc|dni|id)$/i;
-  const numColSet=new Set();
-  exportCols.forEach(col=>{
-    if(dc.has(col)||idRe.test(col.trim())) return;
-    let total=0,numCount=0;
-    for(let k=0;k<Math.min(tab.rawData.length,150);k++){
-      const r=tab.rawData[k]; if(!r) continue;
-      const v=r[col];
-      if(v===''||v==null) continue;
-      total++;
-      const n=Number(v);
-      if(!isNaN(n)&&String(v).trim()!=='') numCount++;
-    }
-    if(total>=3&&numCount/total>=0.7) numColSet.add(col);
-  });
-
-  // ── 3. Convertir valor al tipo correcto para ExcelJS
-  const toVal=(col,v)=>{
-    if(v===''||v==null) return null; // null = celda vacía real en ExcelJS
-    if(dc.has(col)){
-      const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if(m) return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]));
-    }
-    if(numColSet.has(col)){
-      const n=Number(v);
-      if(!isNaN(n)) return n;
-    }
-    return String(v);
-  };
-
-  // ── 4. Construir array de filas (solo filas filtradas, solo columnas visibles)
-  const dataRows=tab.filtered
-    .filter(i=>tab.rawData[i])
-    .map(i=>exportCols.map(c=>toVal(c,tab.rawData[i][c])));
-
-  // ── 5. Nombre de archivo seguro
-  const safeName=s=>(s||'').replace(/[\\/:*?"<>|]/g,'_').replace(/\s+/g,' ').trim().slice(0,50);
-  const baseName=safeName((tab.fileName||'export').replace(/\.xlsx?$/i,''));
-  const sheetName=safeName(tab.activeSheet||'Datos');
+  const {dataRows,numColSet}=buildExportDataRows(tab,exportCols);
+  const fileName=buildSingleTabExportFileName(tab);
+  const baseName=safeExportName((tab.fileName||'export').replace(/\.xlsx?$/i,''));
+  const sheetName=safeExportName(tab.activeSheet||'Datos');
   const date=new Date().toISOString().slice(0,10);
-  const fileName=`${baseName}_${sheetName}_${date}.xlsx`.replace(/\s/g,'_');
 
-  // ── 6. Exportar con ExcelJS
   if(typeof ExcelJS==='undefined'){
-    toast('⚠ ExcelJS no cargó — exportando sin estilos'); _exportFallback(exportCols,dataRows,fileName); return;
+    toast('⚠ ExcelJS no cargó — exportando sin estilos');
+    exportFallbackXlsx(XLSX,exportCols,dataRows,fileName);
+    toast(`✓ ${dataRows.length.toLocaleString()} filas exportadas (sin estilos)`);
+    return;
   }
 
-  // Feedback visual inmediato
   const btn=$('btn-export');
   const origText=btn?.innerHTML||'';
   if(btn){btn.disabled=true;btn.innerHTML='⏳ Generando...';}
@@ -2604,35 +2418,13 @@ function exportExcel(){
   try{
     const wb=new ExcelJS.Workbook();
     wb.creator='Mirador';
-    const wsName=sheetName.slice(0,31); // Excel limita a 31 chars
+    const wsName=sheetName.slice(0,31);
     const ws=wb.addWorksheet(wsName);
+    ws.columns=columnWidthsForExport(exportCols,dataRows);
 
-    const BORDER={style:'thin',color:{argb:'FF000000'}};
-    const FULL_BORDER={top:BORDER,bottom:BORDER,left:BORDER,right:BORDER};
-
-    // Definir anchos de columna (sin header — evita fila vacía)
-    ws.columns=exportCols.map((col,ci)=>{
-      let max=Math.max(col.length,8);
-      dataRows.slice(0,300).forEach(r=>{
-        const v=r[ci]; if(v==null) return;
-        const len=v instanceof Date?10:String(v).length;
-        if(len>max) max=len;
-      });
-      return {width:Math.min(max+3,50)};
-    });
-
-    // Fila de encabezados
     const hdrRow=ws.addRow(exportCols);
-    hdrRow.height=20;
-    exportCols.forEach((_,ci)=>{
-      const cell=hdrRow.getCell(ci+1);
-      cell.font={bold:true,name:'Arial',size:11,color:{argb:'FF000000'}};
-      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFBFBFBF'}};
-      cell.alignment={horizontal:'center',vertical:'middle',wrapText:false};
-      cell.border=FULL_BORDER;
-    });
+    styleHeaderRow(hdrRow,exportCols);
 
-    // Filas de datos — procesadas por lote para no bloquear el hilo
     const BATCH=500;
     let di=0;
     const addBatch=()=>{
@@ -2640,77 +2432,16 @@ function exportExcel(){
       for(;di<end;di++){
         const rowArr=dataRows[di];
         const r=ws.addRow(rowArr);
-        r.height=14;
-        // Filas alternas: par → blanco, impar → gris muy claro
-        const rowBg=di%2===0?'FFFFFFFF':'FFF5F5F5';
-        exportCols.forEach((col,ci)=>{
-          const cell=r.getCell(ci+1);
-          const val=rowArr[ci];
-          cell.font={name:'Arial',size:10,color:{argb:'FF000000'}};
-          cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:rowBg}};
-          cell.border=FULL_BORDER;
-          if(val instanceof Date){
-            cell.numFmt='DD/MM/YYYY';
-            cell.alignment={vertical:'middle',horizontal:'center'};
-          } else if(typeof val==='number'){
-            cell.numFmt=Number.isInteger(val)?'#,##0':'#,##0.00';
-            cell.alignment={vertical:'middle',horizontal:'right'};
-          } else {
-            cell.alignment={vertical:'middle',wrapText:false};
-          }
-        });
+        styleDataRow(r,rowArr,exportCols,numColSet,di);
       }
       if(di<dataRows.length){
         setTimeout(addBatch,0);
       } else {
-        // ── Fila de totales para columnas numéricas ──────────────────
-        const totalRow=exportCols.map((col,ci)=>{
-          if(!numColSet.has(col)) return ci===0?`Total: ${dataRows.length.toLocaleString()} filas`:null;
-          const sum=dataRows.reduce((acc,r)=>{ const v=r[ci]; return typeof v==='number'?acc+v:acc; },0);
-          return sum;
-        });
-        const tRow=ws.addRow(totalRow);
-        tRow.height=16;
-        exportCols.forEach((col,ci)=>{
-          const cell=tRow.getCell(ci+1);
-          const val=totalRow[ci];
-          cell.font={name:'Arial',size:10,bold:true,color:{argb:'FF000000'}};
-          cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD9D9D9'}};
-          cell.border=FULL_BORDER;
-          if(typeof val==='number'){
-            cell.numFmt=Number.isInteger(val)?'#,##0':'#,##0.00';
-            cell.alignment={vertical:'middle',horizontal:'right'};
-          } else if(val){
-            cell.alignment={vertical:'middle'};
-          }
-        });
-
-        // ── Freeze + autofilter + configuración de impresión ─────────
-        ws.views=[{state:'frozen',ySplit:1,activeCell:'A2'}];
-        ws.autoFilter={from:{row:1,column:1},to:{row:dataRows.length+1,column:exportCols.length}};
-
-        // Configuración de página para impresión: A4, horizontal, márgenes, encabezado
-        ws.pageSetup={
-          paperSize:9,          // A4
-          orientation:'landscape',
-          fitToPage:true,
-          fitToWidth:1,
-          fitToHeight:0,
-          margins:{left:0.5,right:0.5,top:0.75,bottom:0.75,header:0.3,footer:0.3},
-          printTitlesRow:'1:1', // repetir fila de encabezados en cada página impresa
-        };
-        ws.headerFooter={
-          oddHeader:`&L&"Arial,Bold"&10${baseName} — ${sheetName}&R&"Arial,Regular"&9Generado: ${date}`,
-          oddFooter:'&C&"Arial,Regular"&9Página &P de &N'
-        };
-
+        appendTotalRow(ws,exportCols,dataRows,numColSet);
+        applyWorksheetPrintSetup(ws,exportCols,dataRows,baseName,sheetName,date);
         wb.xlsx.writeBuffer()
           .then(buf=>{
-            const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-            const url=URL.createObjectURL(blob);
-            const a=document.createElement('a'); a.href=url; a.download=fileName;
-            document.body.appendChild(a); a.click();
-            setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},200);
+            downloadExcelBuffer(buf,fileName);
             toast(`✓ ${dataRows.length.toLocaleString()} filas · ${exportCols.length} columnas exportadas`);
           })
           .catch(err=>{
@@ -2723,7 +2454,6 @@ function exportExcel(){
       }
     };
     addBatch();
-
   } catch(err){
     console.error('exportExcel error:',err);
     toast('Error al exportar: '+err.message);
@@ -2734,7 +2464,7 @@ function exportExcel(){
 // ── EXPORTAR TODAS LAS PESTAÑAS ABIERTAS ─────────────────────────────────────
 function exportAllTabs(){
   if(tabs.size===0){toast('Sin pestañas abiertas');return}
-  if(tabs.size===1){exportExcel();return} // una sola → export normal
+  if(tabs.size===1){exportExcel();return}
 
   if(typeof ExcelJS==='undefined'){toast('⚠ ExcelJS no disponible');return}
 
@@ -2744,26 +2474,14 @@ function exportAllTabs(){
 
   const wb=new ExcelJS.Workbook();
   wb.creator='Mirador';
-
-  const BORDER={style:'thin',color:{argb:'FF000000'}};
-  const FULL_BORDER={top:BORDER,bottom:BORDER,left:BORDER,right:BORDER};
-  const idRe=/^(c[eé]dula|nit|documento|cc|dni|id)$/i;
-  const dc_global=new Set();
-
-  // Construir una hoja por pestaña
   const tabList=[...tabs.values()];
+  const date=new Date().toISOString().slice(0,10);
   let ti=0;
 
   const processTab=()=>{
     if(ti>=tabList.length){
-      // Todas las hojas listas — serializar
       wb.xlsx.writeBuffer().then(buf=>{
-        const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a'); a.href=url;
-        a.download=`Mirador_Export_${new Date().toISOString().slice(0,10)}.xlsx`;
-        document.body.appendChild(a); a.click();
-        setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},200);
+        downloadExcelBuffer(buf,`Mirador_Export_${date}.xlsx`);
         toast(`✓ ${tabList.length} hojas exportadas`);
       }).catch(err=>{
         toast('Error al generar: '+err.message,true);
@@ -2776,99 +2494,17 @@ function exportAllTabs(){
     const tab=tabList[ti++];
     if(!tab.filtered?.length||!tab.columns?.length){processTab();return;}
 
-    const hid=tab.hiddenCols||new Set();
-    const frz=tab.frozenCols||new Set();
-    const frozenOrder=tab.frozenOrder||[...frz];
-    const exportCols=[...frozenOrder.filter(c=>frz.has(c)&&!hid.has(c)),...tab.columns.filter(c=>!frz.has(c)&&!hid.has(c))];
-    if(!exportCols.length){processTab();return;}
-
-    const dc=new Set(tab.dateColsDetected||[]);
-    const numColSet=new Set();
-    exportCols.forEach(col=>{
-      if(dc.has(col)||idRe.test(col.trim())) return;
-      let total=0,num=0;
-      for(let k=0;k<Math.min(tab.rawData.length,150);k++){
-        const r=tab.rawData[k];if(!r)continue;
-        const v=r[col];if(v===''||v==null)continue;
-        total++;if(!isNaN(Number(v)))num++;
-      }
-      if(total>=3&&num/total>=0.7)numColSet.add(col);
-    });
-
-    const toVal=(col,v)=>{
-      if(v===''||v==null)return null;
-      if(dc.has(col)){const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);}
-      if(numColSet.has(col)){const n=Number(v);if(!isNaN(n))return n;}
-      return String(v);
-    };
-
-    const dataRows=tab.filtered.filter(i=>tab.rawData[i]).map(i=>exportCols.map(c=>toVal(c,tab.rawData[i][c])));
-
-    // Nombre de hoja: usar sheetName del tab, truncar a 31 chars, evitar duplicados
-    let wsName=(tab.activeSheet||tab.fileName||`Hoja${ti}`).replace(/[\/:*?"<>|]/g,'_').slice(0,28);
-    let attempt=0;
-    while(wb.worksheets.find(s=>s.name===wsName)){wsName=wsName.slice(0,25)+'_'+(++attempt);}
-
-    const ws=wb.addWorksheet(wsName);
-    ws.columns=exportCols.map((col,ci)=>{
-      let max=Math.max(col.length,8);
-      dataRows.slice(0,200).forEach(r=>{const v=r[ci];if(v!=null){const l=v instanceof Date?10:String(v).length;if(l>max)max=l;}});
-      return{width:Math.min(max+3,50)};
-    });
-
-    const hdrRow=ws.addRow(exportCols);
-    hdrRow.height=20;
-    exportCols.forEach((_,ci)=>{
-      const cell=hdrRow.getCell(ci+1);
-      cell.font={bold:true,name:'Arial',size:11,color:{argb:'FF000000'}};
-      cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFBFBFBF'}};
-      cell.alignment={horizontal:'center',vertical:'middle'};
-      cell.border=FULL_BORDER;
-    });
-
-    dataRows.forEach((rowArr,di)=>{
-      const r=ws.addRow(rowArr); r.height=14;
-      const rowBg=di%2===0?'FFFFFFFF':'FFF5F5F5';
-      exportCols.forEach((col,ci)=>{
-        const cell=r.getCell(ci+1); const val=rowArr[ci];
-        cell.font={name:'Arial',size:10,color:{argb:'FF000000'}};
-        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:rowBg}};
-        cell.border=FULL_BORDER;
-        if(val instanceof Date){cell.numFmt='DD/MM/YYYY';cell.alignment={vertical:'middle',horizontal:'center'};}
-        else if(typeof val==='number'){cell.numFmt=Number.isInteger(val)?'#,##0':'#,##0.00';cell.alignment={vertical:'middle',horizontal:'right'};}
-        else{cell.alignment={vertical:'middle',wrapText:false};}
-      });
-    });
-
-    ws.views=[{state:'frozen',ySplit:1,activeCell:'A2'}];
-    ws.autoFilter={from:{row:1,column:1},to:{row:dataRows.length+1,column:exportCols.length}};
-    ws.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,
-      margins:{left:0.5,right:0.5,top:0.75,bottom:0.75,header:0.3,footer:0.3},printTitlesRow:'1:1'};
-
-    setTimeout(processTab,0); // ceder hilo entre pestañas
+    const baseName=safeExportName((tab.fileName||'export').replace(/\.xlsx?$/i,''));
+    const sheetName=safeExportName(tab.activeSheet||'Datos');
+    const rawName=(tab.activeSheet||tab.fileName||`Hoja${ti}`).replace(/[\\/:*?"<>|]/g,'_').slice(0,28);
+    const wsName=uniqueWorksheetName(wb,rawName,0);
+    appendStyledExportSheet(ExcelJS,wb,tab,{wsName,baseName,sheetName,date});
+    setTimeout(processTab,0);
   };
 
   processTab();
 }
 
-function _exportFallback(exportCols,dataRows,fileName){
-  try{
-    const ws=XLSX.utils.aoa_to_sheet([exportCols,...dataRows.map(r=>r.map(v=>v==null?'':v))]);
-    ws['!cols']=exportCols.map((c,ci)=>{
-      let max=c.length+2;
-      dataRows.slice(0,200).forEach(r=>{const len=String(r[ci]??'').length;if(len>max)max=len;});
-      return{wch:Math.min(max+2,45)};
-    });
-    ws['!rows']=[{hpt:20},...dataRows.map(()=>({hpt:14}))];
-    ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
-    const lc=XLSX.utils.encode_col(exportCols.length-1);
-    ws['!autofilter']={ref:`A1:${lc}${dataRows.length+1}`};
-    const wb2=XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb2,ws,fileName.split('_')[1]||'Datos');
-    XLSX.writeFile(wb2,fileName);
-    toast(`✓ ${dataRows.length.toLocaleString()} filas exportadas (sin estilos)`);
-  }catch(e){toast('Error en fallback: '+e.message);}
-}
 function copySelection(){
   const tab=T(); if(!tab||!tab.selected.size){toast('Sin selección');return}
   copyText([tab.columns.join('\t'),...[...tab.selected].sort((a,b)=>a-b).filter(i=>tab.rawData[i]).map(i=>tab.columns.map(c=>tab.rawData[i][c]??'').join('\t'))].join('\n'),`✓ ${tab.selected.size} fila(s)`);
@@ -3021,7 +2657,7 @@ function saveFavorite(){
   const favs=getFavs(), idx=favs.findIndex(f=>f.name===name);
   const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
   if(idx>=0){favs[idx]=fav;toast(`"${name}" actualizada`)} else{favs.push(fav);toast(`"${name}" guardada`)}
-  setFavs(favs); $('fav-name-input').value=''; renderFavList();
+  if(!_safeSetFavs(favs)) return; $('fav-name-input').value=''; renderFavList();
 }
 
 function loadFavorite(idx){
@@ -3062,7 +2698,9 @@ function openFileForFav(idx){
 }
 
 function deleteFavorite(idx){
-  const favs=getFavs(), name=favs[idx]?.name||''; favs.splice(idx,1); setFavs(favs); renderFavList(); toast(`"${name}" eliminado`);
+  const favs=getFavs(), name=favs[idx]?.name||''; favs.splice(idx,1);
+  if(!_safeSetFavs(favs)) return;
+  renderFavList(); toast(`"${name}" eliminado`);
 }
 function renderViewsList(){ renderFavList(); }
 function renderFavList(){
@@ -4696,16 +4334,6 @@ function _pillsUpdateFilterBtn(){
 }
 
 // ── POBLAR SELECTORES CON COLUMNAS REALES ────────────────────────────────────
-// Busca la primera columna que coincida con alguno de los patrones (case-insensitive)
-function _pillsFindCol(cols, patterns){
-  for(const p of patterns){
-    const r = new RegExp(p,'i');
-    const found = cols.find(c=>r.test(c));
-    if(found) return found;
-  }
-  return null;
-}
-
 function _pillsPopulateSelectors(){
   const tab = T(); if(!tab||!tab.columns) return;
   const cols = tab.columns;
@@ -4719,42 +4347,27 @@ function _pillsPopulateSelectors(){
   selMain.innerHTML = opts;
   selSec.innerHTML  = opts;
 
-  // Defaults inteligentes si no hay configuración guardada
-  const smartMain = _pillsFindCol(cols,['c[eé]dula','id','rut','codigo','code','dni','nit']);
-  const smartSec  = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
+  const resolved = resolvePillsSelectors(cols, saved, tab._pillsSel || {});
 
-  const tabSel = tab._pillsSel;
-  const savedMain = tabSel?.main || saved?.main;
-  const savedSec  = tabSel?.sec  || saved?.sec;
+  selMain.value = resolved.main;
+  selSec.value  = resolved.sec;
 
-  selMain.value = (savedMain && cols.includes(savedMain)) ? savedMain : (smartMain || cols[0]);
-  selSec.value  = (savedSec  && cols.includes(savedSec))  ? savedSec  : (smartSec  || (cols[1]||cols[0]));
-
-  // Color por: columnas con pocos únicos (≤20) o primera columna
   const colorSel = $('pills-sel-color');
   colorSel.innerHTML = '<option value="none">Sin color</option>';
   cols.forEach(c=>{
     const uniq = new Set((tab.rawData||[]).slice(0,300).map(r=>r[c]||'')).size;
     if(uniq<=20) colorSel.innerHTML += `<option value="${eh(c)}">${eh(c)}</option>`;
   });
-  const savedColor = tabSel?.color || saved?.color;
-  if(savedColor && (savedColor==='none' || cols.includes(savedColor))) colorSel.value = savedColor;
+  if(resolved.color && (resolved.color==='none' || cols.includes(resolved.color))) colorSel.value = resolved.color;
 
-  // Avatar: mismas opciones que main/sec, default = campo de nombre
   const avatarSel = $('pills-sel-avatar');
   if(avatarSel){
     avatarSel.innerHTML = opts;
-    const smartAvatar = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
-    const savedAvatar = tabSel?.avatar || saved?.avatar;
-    avatarSel.value = (savedAvatar && cols.includes(savedAvatar)) ? savedAvatar : (smartAvatar || selSec.value || cols[0]);
+    avatarSel.value = resolved.avatar;
   }
 
-  // Diseño: restaurar o default d7
   const designSel = $('pills-sel-design');
-  if(designSel){
-    const savedDesign = tabSel?.design || saved?.design;
-    designSel.value = (savedDesign && savedDesign !== 'd7') ? savedDesign : 'd1';
-  }
+  if(designSel) designSel.value = resolved.design;
 
   tab._pillsSel={
     main:selMain.value, sec:selSec.value, color:colorSel.value,
@@ -4762,7 +4375,14 @@ function _pillsPopulateSelectors(){
   };
 }
 
-function _pillsLoadCfg(){ try{ return JSON.parse(localStorage.getItem(PILLS_KEY)||'null'); }catch(_){return null;} }
+function _pillsLoadCfg(){
+  try{
+    const raw = localStorage.getItem(PILLS_KEY);
+    if(!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  }catch(_){ return {}; }
+}
 function _pillsSaveCfg(){
   try{ localStorage.setItem(PILLS_KEY, JSON.stringify({
     main:$('pills-sel-main')?.value,
@@ -4801,29 +4421,17 @@ function renderPillsView(){
   if(!mk || !cols.includes(mk)) mk = cols[0] || '';
   if(!sk || !cols.includes(sk)) sk = cols[1] || cols[0] || '';
 
-  const rows = (tab.filtered||[]).map(i=>tab.rawData[i]).filter(Boolean);
+  const rows = getPillsDisplayRows(tab);
   _pillsFilteredCache = rows;
 
   const activeFilters = Object.keys(tab.colFilters||{}).length;
   const total = tab.rawData?.length || 0;
-  const countTxt = rows.length.toLocaleString() + ' registros' +
-    (activeFilters ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
-  $('pills-toolbar-count').innerHTML = countTxt;
+  $('pills-toolbar-count').innerHTML = buildPillsToolbarCount(rows.length, total, activeFilters);
 
-  const palette=['#22c55e','#f59e0b','#f87171','#60a5fa','#c084fc','#34d399','#fb923c','#a78bfa'];
-  let colorMap = {};
-  if(ck && ck!=='none'){
-    const uniqVals=[...new Set(rows.map(r=>r[ck]||''))];
-    uniqVals.forEach((v,i)=>{ colorMap[v]=palette[i%palette.length]; });
-  }
-
-  // Iniciales de avatar (2 letras del campo principal)
-  function initials(str){ const w=String(str||'').trim().split(/\s+/); return w.length>=2?(w[0][0]+w[w.length-1][0]).toUpperCase():(str||'?')[0].toUpperCase(); }
-  // Color de avatar determinista por valor
-  const avPalette=['#7c3aed','#2563eb','#059669','#b45309','#be123c','#0e7490','#7c3aed','#6d28d9'];
-  function avColor(str){ let h=0; for(let c of String(str||'')) h=(h*31+c.charCodeAt(0))&0xffff; return avPalette[h%avPalette.length]; }
+  const colorMap = buildPillsColorMap(rows, ck && ck !== 'none' ? ck : null);
 
   const grid = $('pills-grid');
+  if(!grid) return;
   // Clases de layout por diseño
   grid.className = '';
   if(design==='d3'){ grid.classList.add('pg-wrap'); }
@@ -4837,8 +4445,8 @@ function renderPillsView(){
     const dotColor = (ck&&ck!=='none') ? (colorMap[r[ck]||'']||'#475569') : null;
 
     if(design==='d7'){
-      const av = avColor(avSrc);
-      const init = initials(avSrc);
+      const av = pillsAvatarColor(avSrc);
+      const init = pillsInitials(avSrc);
       const badgeVal = dotColor ? eh(String(r[ck]||'')) : '';
       return `<div class="mpill-d7" onclick="pillsOpenFicha(${i})">
         <div class="pg-glyph" style="background:${av}">${init}</div>
@@ -4850,8 +4458,8 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d1'){
-      const av = avColor(avSrc);
-      const init = initials(avSrc);
+      const av = pillsAvatarColor(avSrc);
+      const init = pillsInitials(avSrc);
       const accentColor = dotColor || av;
       const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${eh(String(r[ck]||''))}</div>` : '';
       return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})" style="background:linear-gradient(to right,${accentColor}18 0%,var(--s1) 45%);border-color:${accentColor}33">
@@ -4878,8 +4486,8 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d3'){
-      const av = avColor(avSrc);
-      const init = initials(avSrc);
+      const av = pillsAvatarColor(avSrc);
+      const init = pillsInitials(avSrc);
       const borderColor = dotColor ? `border-color:${dotColor}44` : '';
       return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})" style="${borderColor}">
         <div class="pc-av" style="background:${av}">${init}</div>
@@ -4890,8 +4498,8 @@ function renderPillsView(){
       </div>`;
     }
     if(design==='d5'){
-      const av = avColor(avSrc);
-      const init = initials(avSrc);
+      const av = pillsAvatarColor(avSrc);
+      const init = pillsInitials(avSrc);
       const tagVal = dotColor ? eh(String(r[ck]||'')) : '';
       const tags = tagVal ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${tagVal}</span>` : '';
       const trackColor = dotColor || av;
@@ -5275,7 +4883,6 @@ const __miradorGlobals = {
   _doReload,
   _excelSheetIcon,
   _exitPillsMode,
-  _exportFallback,
   _fileLoadFailed,
   _flrRefreshLabel,
   _flushSessionSave,

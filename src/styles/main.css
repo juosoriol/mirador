@@ -329,7 +329,7 @@ select{max-width:175px}
 input[type=date]{width:130px}
 #main{display:flex;flex:1;overflow:hidden;position:relative}
 /* React mount roots: passthrough so flex/scroll targets (#data-area, #pills-view) layout unchanged */
-#topbar-root,#tabs-bar-root,#stats-bar-root,#chips-bar-root,#searchbar-root,
+#topbar-root,#tabs-bar-root,#stats-bar-root,#chips-bar-root,#chip-dropdown-root,#searchbar-root,
 #mobile-active-bar-root,#statusbar-root,#sidebar-root,#docs-panel-root,#overlays-root,
 #mobile-filter-root,#data-area-root,#pills-view-root{display:contents}
 #sidebar{display:none!important}

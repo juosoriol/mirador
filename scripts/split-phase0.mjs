@@ -133,7 +133,7 @@ function stripLegacyReactShell(bodyHtml) {
     .replace(/<div id="topbar">[\s\S]*?<input type="file" id="file-input"[\s\S]*?<\/div>\s*\n?/, '')
     .replace(/<div id="tabs-bar">[\s\S]*?<\/div>\s*\n?/, '')
     .replace(/<div id="stats-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="stats-bar-root"></div>\n')
-    .replace(/<div id="chips-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="chips-bar-root"></div>\n')
+    .replace(/<div id="chips-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="chips-bar-root"></div>\n<div id="chip-dropdown-root"></div>\n')
     .replace(/<div id="searchbar">[\s\S]*?<\/div>\s*\n?/, '<div id="searchbar-root"></div>\n')
     .replace(/<!-- Barra filtros activos móvil -->[\s\S]*?<div id="mobile-active-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="mobile-active-bar-root"></div>\n')
     .replace(/<!-- Panel Mis Documentos -->[\s\S]*?<div id="docs-panel">[\s\S]*?<\/div>\s*\n?/, '<div id="docs-panel-root"></div>\n')

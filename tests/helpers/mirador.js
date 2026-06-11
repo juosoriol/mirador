@@ -300,7 +300,7 @@ export async function saveToCloudAndConfirm(page, { isMobile } = {}) {
 
 export async function deleteCloudTestDocs(page) {
   await page.evaluate(async () => {
-    if (!_fbDb || !_fbUser) return;
+    if (typeof _fbDb === 'undefined' || typeof _fbUser === 'undefined' || !_fbDb || !_fbUser) return;
     const snap = await _fbDb.collection('documents')
       .where('userId', '==', _fbUser.uid)
       .get();

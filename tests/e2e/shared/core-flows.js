@@ -131,12 +131,12 @@ export function registerCoreFlows(test, expect, { isMobile }) {
       await enterPillsMode(page);
       const firstMain = await page.locator('#pills-grid [class*="mpill"]').first().textContent();
       await openSecondTab(page);
-      await enterPillsMode(page);
       await clickTabByIndex(page, 0);
-      await page.waitForTimeout(800);
-      await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
+      await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible({ timeout: 30_000 });
       const restored = await page.locator('#pills-grid [class*="mpill"]').first().textContent();
       expect(restored).toBe(firstMain);
+      await clickTabByIndex(page, 1);
+      await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible({ timeout: 30_000 });
       await exitPillsMode(page);
       await expect(page.locator('#table-wrap')).toBeVisible();
     });

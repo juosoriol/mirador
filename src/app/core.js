@@ -63,6 +63,10 @@ import {
   buildPillsToolbarCount,
   getPillsDisplayRows,
   resolvePillsSelectors,
+  getPillsGridClassNames,
+  buildPillCardModel,
+  buildPillCardHtml,
+  buildPillsFichaBodyHtml,
 } from '../engine/pills-engine.js';
 import {
   DEFAULT_CHIP_LIMIT,
@@ -137,6 +141,27 @@ import {
   writeFileListToStorage,
   writeFoldersToStorage,
 } from '../engine/file-manager-engine.js';
+import {
+  RECENT_SEARCH_STORAGE_KEY,
+  readRecentSearchesFromStorage,
+  writeRecentSearchesToStorage,
+  isRecentSearchEnabled,
+  setRecentSearchEnabled,
+  addRecentSearchEntry,
+  deleteRecentSearchAt,
+  computeRecentSearchOpacity,
+  getRecentSearchChipStyle,
+} from '../engine/recent-search-engine.js';
+import {
+  resolveDetailColumns,
+  groupDetailFieldColumns,
+  extractDetailRowValues,
+  buildDetailBadgeItems,
+  buildDetailBadgesHtml,
+  buildDetailSideFields,
+  getFilterLikeRowFields,
+  isFilterLikePreselected,
+} from '../engine/detail-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -1891,36 +1916,16 @@ function openDetail(idx){
 function renderDetailBody(idx){
   const tab=T(); if(!tab) return;
   const row=tab.rawData[idx]; if(!row) return;
-  const nameCol=tab.columns.find(c=>/apellidos.nombre|nombre.apellidos/i.test(c))||tab.columns.find(c=>/primer.apellido/i.test(c))||tab.columns.find(c=>/nombre|apellido/i.test(c));
-  const cargoCol=tab.columns.find(c=>/cargo.actual/i.test(c))||tab.columns.find(c=>/cargo|encargo/i.test(c));
-  const dirCol=tab.columns.find(c=>/^direcci/i.test(c));
-  const estCol=tab.columns.find(c=>/^estado$/i.test(c));
-  const vinCol=tab.columns.find(c=>/vinculaci/i.test(c));
-  const nivCol=tab.columns.find(c=>/nivel.jer/i.test(c));
-  const cedCol=tab.columns.find(c=>/^c[eé]dula$/i.test(c.trim()));
-  const escalCol=tab.columns.find(c=>/escal/i.test(c));
-  const posCol=tab.columns.find(c=>/posici/i.test(c));
-  const evalCol=tab.columns.find(c=>/evaluaci/i.test(c));
-  const name=nameCol?row[nameCol]:'Registro #'+(idx+1);
-  const cargo=cargoCol?row[cargoCol]:'';
-  const dir=dirCol?row[dirCol]:'';
-  const estado=estCol?row[estCol]:'';
-  const vinc=vinCol?row[vinCol]:'';
-  const niv=nivCol?row[nivCol]:'';
-  const ced=cedCol?row[cedCol]:'';
-  const escal=escalCol?row[escalCol]:'';
-  const pos=posCol?row[posCol]:'';
-  const evalu=evalCol?row[evalCol]:'';
-  const initials=name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
-  const isActive=/activ/i.test(estado);
-  const allFields=tab.columns.filter(col=>row[col]!==''&&row[col]!=null);
-  const fmtRow=(col)=>fmtCell(col,row[col]||'',tab); // helper para detalle
-  const grpCargo=tab.columns.filter(c=>/cargo|encargo|nivel.jer|escalera|posici/i.test(c)).filter(c=>row[c]);
-  const grpDir=tab.columns.filter(c=>/direcci|dependencia|tipo.dep|^pais$|^departamento|^ciudad|correo|municipio/i.test(c)).filter(c=>row[c]);
-  const grpPers=tab.columns.filter(c=>/nombre|apellido|cedula|cédula|sexo|nacimiento/i.test(c)).filter(c=>row[c]);
-  const grpAcad=tab.columns.filter(c=>/titulo|título|escolaridad|especiali/i.test(c)).filter(c=>row[c]);
-  const grpVinc=tab.columns.filter(c=>/vinculaci|ingreso|estado|evaluaci|teletrab/i.test(c)).filter(c=>row[c]);
-  const badgesHtml=`${estado?`<span class="d-badge ${isActive?'db-green':'db-gray'}">${eh(estado)}</span>`:''}${niv?`<span class="d-badge db-blue">${eh(niv)}</span>`:''}${vinc?`<span class="d-badge db-warn">${eh(vinc.split(' ')[0])}</span>`:''}${evalu?`<span class="d-badge db-green">${eh(evalu)}</span>`:''}`;
+  const dCols=resolveDetailColumns(tab.columns);
+  const { name, cargo, dir, estado, vinc, niv, ced, escal, pos, evalu, initials } =
+    extractDetailRowValues(dCols, row, idx);
+  const { allFields, grpCargo, grpDir, grpPers, grpAcad, grpVinc } =
+    groupDetailFieldColumns(tab.columns, row);
+  const fmtRow=(col)=>fmtCell(col,row[col]||'',tab);
+  const badgesHtml=buildDetailBadgesHtml(
+    buildDetailBadgeItems({ estado, niv, vinc, evalu }),
+    eh
+  );
   const navBtns=`<button class="da-btn p" onclick="navigateDetail(-1)">← Anterior</button><button class="da-btn p" onclick="navigateDetail(1)">Siguiente →</button>`;
   const actionBtns=`<button class="da-btn" onclick="copyDetailRow(${idx})">⧉ Copiar</button><button class="da-btn" onclick="filterLikeRow(${idx})">⊜ Filtrar igual</button>`;
   if(_detailStyle===1){
@@ -1959,9 +1964,7 @@ function renderDetailBody(idx){
       </div>
       <div id="d2-actions">${actionBtns}${navBtns}</div>`;
   } else {
-    const correoCol=tab.columns.find(c=>/correo/i.test(c));
-  const ciudadCol=tab.columns.find(c=>/^ciudad$/i.test(c));
-  const sideFields=[[estCol,row[estCol]],[cedCol,row[cedCol]],[posCol,row[posCol]],[escalCol,row[escalCol]],[nivCol,row[nivCol]],[evalCol,row[evalCol]],[vinCol,row[vinCol]],[ciudadCol,row[ciudadCol]],[correoCol,row[correoCol]]].filter(([k,v])=>k&&v);
+    const sideFields=buildDetailSideFields(dCols, row);
     $('detail-body').innerHTML=`
       <div id="d3-wrap">
         <div id="d3-left">
@@ -2020,8 +2023,7 @@ function filterLikeRow(idx){
   ov.addEventListener('click',e=>{if(e.target===ov)ov.remove();});
 
   const skip=/^(identificador|id_|codigo_|_id$)/i;
-  const fields=tab.columns.filter(c=>row[c]!==''&&row[c]!=null&&!skip.test(c));
-  const preselectRe=/^(estado|direcci|nivel|sexo|g[eé]nero|cargo|vinculaci|dependencia|tipo|municipio|ciudad|grado)/i;
+  const fields=getFilterLikeRowFields(tab.columns, row, skip);
 
   const box=document.createElement('div');
   box.style.cssText='background:var(--s1);border:1px solid var(--border2);border-radius:12px;width:430px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.4)';
@@ -2056,7 +2058,7 @@ function filterLikeRow(idx){
   fields.forEach(col=>{
     const v=row[col];
     const disp=String(v).length>52?String(v).slice(0,49)+'…':String(v);
-    const checked=preselectRe.test(col);
+    const checked=isFilterLikePreselected(col);
 
     const lbl=document.createElement('label');
     lbl.style.cssText=`display:flex;align-items:center;gap:9px;padding:7px 10px;border-radius:6px;cursor:pointer;background:${checked?'var(--acc-dim)':'var(--bg)'};border:1px solid ${checked?'var(--acc)':'var(--border)'};transition:background .1s,border-color .1s`;
@@ -3633,42 +3635,32 @@ function _fmCloseCtx(){ const m=$('fm-ctx-menu'); if(m) m.remove(); }
 function _fmCloseCtxHandler(e){ const m=$('fm-ctx-menu'); if(m&&!m.contains(e.target)) _fmCloseCtx(); else if(m) setTimeout(()=>document.addEventListener('mousedown',_fmCloseCtxHandler,{once:true}),10); }
 
 // ── BÚSQUEDAS RECIENTES ───────────────────────────────────────────────────────
-const RECENT_SEARCH_KEY = 'mirador_recent_searches_v1';
-const RECENT_COLORS = [
-  {bg:'#3b82f611',border:'#3b82f633',text:'#60a5fa'},
-  {bg:'#10b98111',border:'#10b98133',text:'#34d399'},
-  {bg:'#8b5cf611',border:'#8b5cf633',text:'#a78bfa'},
-  {bg:'#f59e0b11',border:'#f59e0b33',text:'#fbbf24'},
-  {bg:'#ef444411',border:'#ef444433',text:'#f87171'},
-  {bg:'#ec489911',border:'#ec489933',text:'#f472b6'},
-];
 let _recentFadeTimers = {};
 
-function _getRecentSearches(){ try{return JSON.parse(localStorage.getItem(RECENT_SEARCH_KEY)||'[]')}catch{return[]} }
-function _saveRecentSearches(arr){ localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(arr)); }
+function _getRecentSearches(){
+  return readRecentSearchesFromStorage(RECENT_SEARCH_STORAGE_KEY);
+}
+function _saveRecentSearches(arr){
+  writeRecentSearchesToStorage(RECENT_SEARCH_STORAGE_KEY, arr);
+}
 
 function _addRecentSearch(q){
   if(!q||q.length<2) return;
   if(!_isRecentEnabled()) return;
-  let arr=_getRecentSearches();
-  arr=arr.filter(r=>r.q!==q); // dedup
-  arr.unshift({q, ts:Date.now(), color:arr.length%RECENT_COLORS.length});
-  arr=arr.slice(0,8); // max 8
+  const arr=addRecentSearchEntry(_getRecentSearches(), q);
   _saveRecentSearches(arr);
   _renderRecentSearches();
-// Restore recent-save toggle state
-setTimeout(()=>{ const chk=$('chk-recent'); if(chk) chk.checked=_isRecentEnabled(); },50);
+  setTimeout(()=>{ const chk=$('chk-recent'); if(chk) chk.checked=_isRecentEnabled(); },50);
 }
 
 function _toggleRecentSave(){
   const chk=$('chk-recent');
   if(!chk) return;
-  localStorage.setItem('mirador_recent_enabled', chk.checked?'1':'0');
+  setRecentSearchEnabled(chk.checked);
 }
 
 function _isRecentEnabled(){
-  // Default ON
-  return localStorage.getItem('mirador_recent_enabled')!=='0';
+  return isRecentSearchEnabled();
 }
 
 function _renderRecentSearches(){
@@ -3676,11 +3668,10 @@ function _renderRecentSearches(){
   const arr=_getRecentSearches();
   if(!arr.length){ wrap.classList.remove('has-items'); wrap.innerHTML=''; return; }
   wrap.classList.add('has-items');
+  const now=Date.now();
   wrap.innerHTML=arr.map((r,i)=>{
-    const col=RECENT_COLORS[r.color||0];
-    const age=Date.now()-r.ts;
-    // Fade based on age: fresh=1, 1hr=0.85, 6hr=0.65, 24hr=0.4, 48hr=0.2
-    const opacity=Math.max(0.15, 1 - age/172800000); // 48h to fully faded
+    const col=getRecentSearchChipStyle(r);
+    const opacity=computeRecentSearchOpacity(r.ts, now);
     return `<span class="search-recent" data-idx="${i}" 
       style="background:${col.bg};border-color:${col.border};color:${col.text};opacity:${opacity.toFixed(2)}"
       onclick="_applyRecentSearch(${i})"
@@ -3695,13 +3686,12 @@ function _applyRecentSearch(idx){
   const si=$('search-input'); if(!si) return;
   si.value=r.q;
   si.dispatchEvent(new Event('input'));
-  // Bump to top
   _addRecentSearch(r.q);
 }
 
 function _deleteRecentSearch(idx){
-  let arr=_getRecentSearches();
-  arr.splice(idx,1);
+  const arr=_getRecentSearches();
+  deleteRecentSearchAt(arr, idx);
   _saveRecentSearches(arr);
   _renderRecentSearches();
 }
@@ -3719,7 +3709,7 @@ function _onSearchKey(e){
 
 // Configurable: clear all recent searches
 function clearRecentSearches(){
-  localStorage.removeItem(RECENT_SEARCH_KEY);
+  localStorage.removeItem(RECENT_SEARCH_STORAGE_KEY);
   _renderRecentSearches();
   toast('Búsquedas recientes borradas');
 }
@@ -4091,14 +4081,9 @@ let _pillsCbParent = null;
 let _pillsCbNext   = null;
 let _pillsMfOpen   = false;
 
-// Colores para avatar
-function _pillsAvatarColor(s){
-  const c=['#1d4ed8','#7c3aed','#0f766e','#b45309','#0e7490','#be185d','#65a30d','#c2410c'];
-  let h=0; for(const ch of String(s)) h=(h*31+ch.charCodeAt(0))%c.length; return c[h];
-}
-function _pillsInitials(s){
-  return String(s||'').trim().split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase()||'?';
-}
+// Colores para avatar (aliases for globals)
+const _pillsAvatarColor = pillsAvatarColor;
+const _pillsInitials = pillsInitials;
 
 // ── TOGGLE PRINCIPAL ──────────────────────────────────────────────────────────
 function _resetPillsSurface(){
@@ -4288,90 +4273,15 @@ function renderPillsView(){
 
   const grid = $('pills-grid');
   if(!grid) return;
-  // Clases de layout por diseño
   grid.className = '';
-  if(design==='d3'){ grid.classList.add('pg-wrap'); }
-  else if(design==='d7'){ grid.classList.add('pg-col','pg-glass-bg'); }
-  else { grid.classList.add('pg-col'); }
+  getPillsGridClassNames(design).forEach((cls) => grid.classList.add(cls));
 
-  grid.innerHTML = rows.map((r,i)=>{
-    const main = (mk && r[mk]) ? r[mk] : (cols[0]?r[cols[0]]:'—');
-    const sec  = (sk && sk!==mk && r[sk]) ? String(r[sk]) : '';
-    const avSrc = (ak && r[ak]) ? String(r[ak]) : (sec || main);
-    const dotColor = (ck&&ck!=='none') ? (colorMap[r[ck]||'']||'#475569') : null;
-
-    if(design==='d7'){
-      const av = pillsAvatarColor(avSrc);
-      const init = pillsInitials(avSrc);
-      const badgeVal = dotColor ? eh(String(r[ck]||'')) : '';
-      return `<div class="mpill-d7" onclick="pillsOpenFicha(${i})">
-        <div class="pg-glyph" style="background:${av}">${init}</div>
-        <div class="pg-body">
-          <div class="pg-name">${eh(main)}</div>
-          ${sec?`<div class="pg-sub">${eh(sec)}</div>`:''}
-        </div>
-        ${badgeVal?`<div class="pg-right"><div class="pg-badge" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${badgeVal}</div></div>`:''}
-      </div>`;
-    }
-    if(design==='d1'){
-      const av = pillsAvatarColor(avSrc);
-      const init = pillsInitials(avSrc);
-      const accentColor = dotColor || av;
-      const badge = dotColor ? `<div class="pd-badge" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${eh(String(r[ck]||''))}</div>` : '';
-      return `<div class="mpill-d1" onclick="pillsOpenFicha(${i})" style="background:linear-gradient(to right,${accentColor}18 0%,var(--s1) 45%);border-color:${accentColor}33">
-        <div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:${accentColor};border-radius:14px 0 0 14px"></div>
-        <div class="pd-avatar" style="background:${av};box-shadow:0 0 0 3px ${av}44">${init}</div>
-        <div class="pd-body">
-          <div class="pd-id">${eh(mk)} · ${eh(main)}</div>
-          <div class="pd-name">${eh(sec||main)}</div>
-        </div>
-        ${badge}
-      </div>`;
-    }
-    if(design==='d2'){
-      const dot = `<div class="pl-dot" style="background:${dotColor||'var(--border)'}"></div>`;
-      const tagVal = dotColor ? eh(String(r[ck]||'')) : '';
-      const tagHtml = tagVal ? `<div class="pl-tag" style="background:${dotColor}22;color:${dotColor}">${tagVal}</div>` : '';
-      return `<div class="mpill-d2" onclick="pillsOpenFicha(${i})">
-        ${dot}
-        <div class="pl-body">
-          <div class="pl-name">${eh(sec||main)}</div>
-          <div class="pl-id">${eh(mk)}: ${eh(main)}</div>
-        </div>
-        ${tagHtml}
-      </div>`;
-    }
-    if(design==='d3'){
-      const av = pillsAvatarColor(avSrc);
-      const init = pillsInitials(avSrc);
-      const borderColor = dotColor ? `border-color:${dotColor}44` : '';
-      return `<div class="mpill-d3" onclick="pillsOpenFicha(${i})" style="${borderColor}">
-        <div class="pc-av" style="background:${av}">${init}</div>
-        <div class="pc-body">
-          <div class="pc-name">${eh(sec||main)}</div>
-          <div class="pc-id">${eh(main)}</div>
-        </div>
-      </div>`;
-    }
-    if(design==='d5'){
-      const av = pillsAvatarColor(avSrc);
-      const init = pillsInitials(avSrc);
-      const tagVal = dotColor ? eh(String(r[ck]||'')) : '';
-      const tags = tagVal ? `<span class="pt-tag" style="background:${dotColor}22;color:${dotColor};border:1px solid ${dotColor}44">${tagVal}</span>` : '';
-      const trackColor = dotColor || av;
-      return `<div class="mpill-d5" onclick="pillsOpenFicha(${i})">
-        <div class="pt-circle" style="background:${av};box-shadow:0 0 0 3px ${av}44,0 2px 8px ${av}33">${init}</div>
-        <div class="pt-body" style="border-left-color:${trackColor}44">
-          <div class="pt-name">${eh(sec||main)}</div>
-          <div class="pt-meta">${eh(mk)}: ${eh(main)}</div>
-          ${tags?`<div class="pt-tags">${tags}</div>`:''}
-        </div>
-      </div>`;
-    }
-    // fallback: chip original
-    const dotHtml = dotColor ? `<span class="mpill-dot" style="background:${dotColor}"></span>` : '';
-    return `<div class="mpill" onclick="pillsOpenFicha(${i})">${dotHtml}<span class="mpill-main">${eh(main)}</span>${sec?`<span class="mpill-sec">${eh(sec)}</span>`:''}</div>`;
-  }).join('');
+  grid.innerHTML = rows.map((r, i) =>
+    buildPillCardHtml(
+      buildPillCardModel(r, i, { mk, sk, ak, ck, cols, colorMap, design }),
+      eh
+    )
+  ).join('');
 }
 
 // ── FICHA ─────────────────────────────────────────────────────────────────────
@@ -4406,15 +4316,7 @@ function _pillsRenderFicha(){
   $('pf-btn-next').disabled    = _pillsFichaIdx===_pillsFilteredCache.length-1;
 
   // Body — todos los campos
-  $('pf-body').innerHTML = `
-    <div class="pf-section">Todos los campos</div>
-    ${cols.map(c=>{
-      const v = r[c]||'';
-      return `<div class="pf-field">
-        <span class="pf-key">${eh(c)}</span>
-        <span class="pf-val${!v?' empty':''}">${v ? eh(v) : 'Sin información'}</span>
-      </div>`;
-    }).join('')}`;
+  $('pf-body').innerHTML = buildPillsFichaBodyHtml(cols, r, eh);
   $('pf-body').scrollTop = 0;
 }
 

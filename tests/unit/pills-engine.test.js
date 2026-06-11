@@ -7,6 +7,10 @@ import {
   buildPillsToolbarCount,
   getPillsDisplayRows,
   resolvePillsSelectors,
+  getPillsGridClassNames,
+  buildPillCardModel,
+  buildPillCardHtml,
+  buildPillsFichaBodyHtml,
 } from '../../src/engine/pills-engine.js';
 
 describe('pillsFindColumn', () => {
@@ -85,5 +89,58 @@ describe('resolvePillsSelectors', () => {
     const resolved = resolvePillsSelectors(cols, null, null);
     expect(resolved.main).toBe('Cédula');
     expect(resolved.sec).toBe('Nombre');
+  });
+});
+
+describe('getPillsGridClassNames', () => {
+  it('returns layout classes per design', () => {
+    expect(getPillsGridClassNames('d3')).toEqual(['pg-wrap']);
+    expect(getPillsGridClassNames('d7')).toEqual(['pg-col', 'pg-glass-bg']);
+    expect(getPillsGridClassNames('d1')).toEqual(['pg-col']);
+  });
+});
+
+describe('buildPillCardHtml', () => {
+  const eh = (s) => String(s ?? '');
+
+  it('renders d7 card with badge', () => {
+    const model = buildPillCardModel(
+      { Cédula: '123', Nombre: 'Ana', Estado: 'Activo' },
+      0,
+      {
+        mk: 'Cédula',
+        sk: 'Nombre',
+        ak: 'Nombre',
+        ck: 'Estado',
+        cols: ['Cédula', 'Nombre', 'Estado'],
+        colorMap: { Activo: '#22c55e' },
+        design: 'd7',
+      }
+    );
+    const html = buildPillCardHtml(model, eh);
+    expect(html).toContain('mpill-d7');
+    expect(html).toContain('Ana');
+    expect(html).toContain('pg-badge');
+  });
+
+  it('renders fallback chip design', () => {
+    const model = buildPillCardModel({ A: '1' }, 2, {
+      mk: 'A',
+      sk: '',
+      ak: 'A',
+      ck: 'none',
+      cols: ['A'],
+      colorMap: {},
+      design: 'd0',
+    });
+    expect(buildPillCardHtml(model, eh)).toContain('mpill');
+  });
+});
+
+describe('buildPillsFichaBodyHtml', () => {
+  it('includes all columns', () => {
+    const html = buildPillsFichaBodyHtml(['A', 'B'], { A: '1', B: '' }, (s) => String(s));
+    expect(html).toContain('pf-section');
+    expect(html).toContain('Sin información');
   });
 });

@@ -11,9 +11,7 @@ function DocsPanelInner() {
             ×
           </button>
         </div>
-        <div className="docs-body" id="docs-body">
-          <div className="docs-empty">Cargando...</div>
-        </div>
+        <div className="docs-body" id="docs-body" />
       </div>
     </div>
   );

@@ -226,6 +226,67 @@ async function fbToggleActive(uid, currentlyActive){
 }
 
 // ── DOCUMENTOS EN LA NUBE ──────────────────────────────────────────────────
+let _docsUnsub = null;
+
+function _renderDocsList(body, snap, canListAll, users = {}) {
+  if (!body) return;
+
+  if (snap.empty) {
+    body.innerHTML =
+      '<div class="docs-empty">📂 No hay documentos guardados.<br><br><span style="font-size:12px;color:var(--muted)">Abre un archivo Excel y haz click en "Guardar" para subirlo a la nube.</span></div>';
+    return;
+  }
+
+  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const html = docs
+    .map((doc) => {
+      const date = doc.uploadedAt?.toDate?.();
+      const dateStr = date
+        ? date.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '—';
+      const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
+      const sheetCount = doc.sheets?.length || 0;
+      const userName =
+        canListAll && doc.userId !== fbUser.uid
+          ? `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${eh(users[doc.userId]?.email || 'Usuario')})</span>`
+          : '';
+
+      return `
+        <div class="doc-item">
+          <div class="doc-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div class="doc-info">
+            <div class="doc-name" title="${eh(doc.fileName || 'Sin nombre')}">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
+            <div class="doc-meta"><span>${dateStr} • ${sheetCount} hoja(s)</span><span class="doc-size">${sizeStr}</span></div>
+          </div>
+          <div class="doc-actions">
+            <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
+            ${
+              doc.userId === fbUser.uid || canListAll
+                ? `<button class="doc-btn danger" data-doc-delete="${eh(doc.id)}" data-doc-path="${eh(doc.storagePath || '')}">Eliminar</button>`
+                : ''
+            }
+          </div>
+        </div>`;
+    })
+    .join('');
+
+  body.innerHTML = `<div class="docs-list">${html}</div>`;
+}
+
+function _bindDocsListActions(body) {
+  body.querySelector('.docs-list')?.addEventListener('click', (e) => {
+    const openBtn = e.target.closest('[data-doc-open]');
+    const delBtn = e.target.closest('[data-doc-delete]');
+    if (openBtn) openCloudDoc(openBtn.dataset.docOpen);
+    if (delBtn) deleteCloudDoc(delBtn.dataset.docDelete, delBtn.dataset.docPath);
+  });
+}
+
 async function saveToCloud(){
   if(!fbUser){ alert('Debes iniciar sesión primero.'); return; }
   const tab = T();
@@ -248,14 +309,26 @@ async function saveToCloud(){
   btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Guardando...';
 
   try {
-    // Subir a Storage
     const storageRef = _fbStorage.ref(`users/${fbUser.uid}/${fileName}`);
     const uploadTask = storageRef.put(file);
 
-    await uploadTask;
-    const downloadURL = await storageRef.getDownloadURL();
+    await new Promise((resolve, reject) => {
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const pct = snapshot.totalBytes
+            ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+            : 0;
+          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Guardando… ${pct}%`;
+        },
+        reject,
+        resolve
+      );
+    });
 
-    // Guardar metadata en Firestore
+    const downloadURL = await storageRef.getDownloadURL();
+    const sheetNames = tab.workbook?.SheetNames || tab.sheets || [];
+
     await _fbDb.collection('documents').add({
       userId: fbUser.uid,
       fileName: fileName,
@@ -263,12 +336,25 @@ async function saveToCloud(){
       storagePath: `users/${fbUser.uid}/${fileName}`,
       downloadURL: downloadURL,
       uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      sheets: tab.wb?.SheetNames || []
+      sheets: sheetNames,
     });
 
     btn.innerHTML = originalText;
     btn.disabled = false;
-    alert('✅ Documento guardado correctamente.');
+
+    if (typeof toast === 'function') {
+      toast(`✅ "${fileName}" guardado en la nube`);
+    } else {
+      alert('✅ Documento guardado correctamente.');
+    }
+
+    const panel = document.getElementById('docs-panel');
+    if (panel?.classList.contains('open')) {
+      const body = document.getElementById('docs-body');
+      if (body) {
+        body.innerHTML = '<div class="docs-uploading">Actualizando lista…</div>';
+      }
+    }
   } catch(e){
     console.error('Error guardando documento:', e);
     btn.innerHTML = originalText;
@@ -289,7 +375,13 @@ async function openDocsPanel(){
   document.getElementById('docs-panel').classList.add('open');
   scheduleOverlayCheck();
   const body = document.getElementById('docs-body');
+  if (!body) return;
   body.innerHTML = '<div class="docs-uploading">Cargando documentos...</div>';
+
+  if (_docsUnsub) {
+    _docsUnsub();
+    _docsUnsub = null;
+  }
 
   try {
     const canListAll = await _fbEnsureAdminClaim();
@@ -299,16 +391,8 @@ async function openDocsPanel(){
       query = query.where('userId', '==', fbUser.uid);
     }
 
-    const snap = await query.orderBy('uploadedAt', 'desc').get();
+    query = query.orderBy('uploadedAt', 'desc');
 
-    if(snap.empty){
-      body.innerHTML = '<div class="docs-empty">📂 No hay documentos guardados.<br><br><span style="font-size:12px;color:var(--muted)">Abre un archivo Excel y haz click en "Guardar" para subirlo a la nube.</span></div>';
-      return;
-    }
-
-    const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-
-    // Solo listar usuarios si el token tiene claim admin (evita permission-denied)
     let users = {};
     if(canListAll){
       try {
@@ -319,48 +403,31 @@ async function openDocsPanel(){
       }
     }
 
-    const html = docs.map(doc => {
-      const date = doc.uploadedAt?.toDate();
-      const dateStr = date ? date.toLocaleDateString('es', {day:'numeric', month:'short', year:'numeric'}) : '—';
-      const sizeStr = doc.size ? (doc.size / 1024 / 1024).toFixed(2) + ' MB' : '—';
-      const userName = canListAll && doc.userId !== fbUser.uid ?
-                       `<span style="font-size:10px;color:var(--muted);margin-left:6px">(${eh(users[doc.userId]?.email || 'Usuario')})</span>` : '';
-
-      return `
-        <div class="doc-item">
-          <div class="doc-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-            </svg>
-          </div>
-          <div class="doc-info">
-            <div class="doc-name" title="${eh(doc.fileName || 'Sin nombre')}">${eh(doc.fileName || 'Sin nombre')}${userName}</div>
-            <div class="doc-meta"><span>${dateStr} • ${doc.sheets?.length || 0} hoja(s)</span><span class="doc-size">${sizeStr}</span></div>
-          </div>
-          <div class="doc-actions">
-            <button class="doc-btn primary" data-doc-open="${eh(doc.id)}">Abrir</button>
-            ${doc.userId === fbUser.uid || canListAll ?
-              `<button class="doc-btn danger" data-doc-delete="${eh(doc.id)}" data-doc-path="${eh(doc.storagePath||'')}">Eliminar</button>` : ''}
-          </div>
-        </div>`;
-    }).join('');
-
-    body.innerHTML = `<div class="docs-list">${html}</div>`;
-    body.querySelector('.docs-list')?.addEventListener('click', e => {
-      const openBtn = e.target.closest('[data-doc-open]');
-      const delBtn = e.target.closest('[data-doc-delete]');
-      if(openBtn) openCloudDoc(openBtn.dataset.docOpen);
-      if(delBtn) deleteCloudDoc(delBtn.dataset.docDelete, delBtn.dataset.docPath);
-    });
+    _docsUnsub = query.onSnapshot(
+      (snap) => {
+        _renderDocsList(body, snap, canListAll, users);
+        _bindDocsListActions(body);
+      },
+      (e) => {
+        console.error('Error cargando documentos:', e);
+        body.innerHTML =
+          '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' +
+          eh(e.message) +
+          '</div>';
+      }
+    );
   } catch(e){
     console.error('Error cargando documentos:', e);
-    body.innerHTML = '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' + e.message + '</div>';
+    body.innerHTML = '<div class="docs-empty" style="color:#f87171">Error al cargar documentos: ' + eh(e.message) + '</div>';
   }
 }
 
 function closeDocsPanel(){
-  document.getElementById('docs-panel').classList.remove('open');
+  document.getElementById('docs-panel')?.classList.remove('open');
+  if (_docsUnsub) {
+    _docsUnsub();
+    _docsUnsub = null;
+  }
   checkOverlaysOpen();
 }
 

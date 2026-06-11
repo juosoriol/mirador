@@ -26,7 +26,7 @@
 | `.\deploy.ps1` | Build + deploy to Firebase Hosting |
 | `npm test` | Full suite (setup + shared + desktop + mobile) |
 | `npm run test:core` | Core user flows (desktop + mobile) |
-| `npm run test:unit` | Filter engine unit tests (Vitest) |
+| `npm run test:unit` | Engine unit tests: filter + sheet loader (Vitest) |
 | `npm run test:desktop` | Desktop project only |
 | `npm run test:mobile` | Mobile project only |
 

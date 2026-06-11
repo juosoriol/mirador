@@ -1,6 +1,17 @@
 'use strict';
 
 import { filterRows } from '../engine/filter-engine.js';
+import {
+  DEFAULT_HDR_SCAN_ROWS,
+  detectBestHeaderRow,
+  getVisibleSheetNames,
+  parseWorksheet,
+} from '../engine/sheet-loader.js';
+import {
+  applyParsedSheetToTab,
+  createTabState,
+  resetTabFiltersForNewSheet,
+} from '../engine/tab-model.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -517,13 +528,7 @@ window.addEventListener('DOMContentLoaded', function(){
 // ── TABS ──────────────────────────────────────────────────────────────────────
 function createTab(fileName){
   const id=++tabCounter;
-  tabs.set(id,{ id, fileName, color:TAB_COLORS[(id-1)%TAB_COLORS.length],
-    workbook:null, sheets:[], activeSheet:null,
-    rawData:[], columns:[], filtered:[], selected:new Set(),
-    searchIndex:null, colUniques:null, colNulls:null,
-    hiddenCols:new Set(), frozenCols:new Set(),
-    colFilters:{}, condRules:[], sortCol:null, sortDir:1, activeChipCol:null,
-    dateColsDetected:[], searchText:'', pillsSearchText:'', searchCol:'', dateFrom:'', dateTo:'', dateCol:'' });
+  tabs.set(id, createTabState(id, fileName, TAB_COLORS[(id-1)%TAB_COLORS.length]));
   return id;
 }
 
@@ -831,9 +836,7 @@ function processFile(file){
       const buf=e.target.result;
       tab.workbook=XLSX.read(buf,{type:'array',cellDates:false});
       _sessionWriteWorkbook(tabId, buf);
-      const meta=(tab.workbook.Workbook?.Sheets)||[];
-      tab.sheets=tab.workbook.SheetNames.filter((_,i)=>{ const m=meta[i]; return !m||!m.Hidden; });
-      if(!tab.sheets.length) tab.sheets=tab.workbook.SheetNames;
+      tab.sheets=getVisibleSheetNames(tab.workbook);
       if(!tab.sheets.length) throw new Error('El archivo no tiene hojas visibles.');
       renderTabs();
       loadSheet(tab.sheets[0],tabId,false);
@@ -892,7 +895,7 @@ function loadSheet(name, tabId, preserveFilters){
   const prevSheet=tab.activeSheet;
   const prevSort=preserveFilters?{col:tab.sortCol,dir:tab.sortDir}:null;
   tab.activeSheet=name; tab.selected=new Set(); tab.activeChipCol=null;
-  if(!preserveFilters){ tab.colFilters={}; tab.condRules=[]; tab.sortCol=null; }
+  if(!preserveFilters){ resetTabFiltersForNewSheet(tab); }
   else if(prevSort){ tab.sortCol=prevSort.col; tab.sortDir=prevSort.dir; }
   closeDropdown(); renderSheetsSidebar();
 
@@ -939,135 +942,18 @@ function loadSheet(name, tabId, preserveFilters){
 }
 
 /**
- * Lee la hoja usando la fila hRow como encabezados de columna.
- * Las filas anteriores se ignoran; los datos empiezan en hRow + 1.
- */
-function _extractSheetDataFromHeaderRow(ws, range, hRow){
-  const r0 = range.s.r, r1 = range.e.r, c0 = range.s.c, c1 = range.e.c;
-  const hdrRow = Math.max(r0, Math.min(hRow, r1));
-  const colCount = c1 - c0 + 1;
-  let emptyIdx = 0;
-  const seen = {};
-  const columns = [];
-  for(let ci = 0; ci < colCount; ci++){
-    const cell = ws[XLSX.utils.encode_cell({r: hdrRow, c: c0 + ci})];
-    let name = cell != null && cell.v != null ? String(cell.v).trim() : '';
-    if(!name){
-      name = emptyIdx === 0 ? '__EMPTY' : `__EMPTY_${emptyIdx}`;
-      emptyIdx++;
-    }
-    if(seen[name] != null){
-      seen[name]++;
-      name = `${name}_${seen[name]}`;
-    } else {
-      seen[name] = 0;
-    }
-    columns.push(name);
-  }
-  const raw = [];
-  for(let r = hdrRow + 1; r <= r1; r++){
-    const row = {};
-    let hasData = false;
-    for(let ci = 0; ci < colCount; ci++){
-      const cell = ws[XLSX.utils.encode_cell({r, c: c0 + ci})];
-      const v = cell != null && cell.v != null ? cell.v : '';
-      if(v !== '' && v != null) hasData = true;
-      row[columns[ci]] = v;
-    }
-    if(hasData) raw.push(row);
-  }
-  return {columns, raw, hdrRow};
-}
-
-/**
  * Procesa los datos de una hoja a partir de la fila de encabezado indicada.
- * Extraído de loadSheet para permitir llamarlo tras la confirmación del picker.
  */
 function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   const tab = tabs.get(tabId); if(!tab) return;
-  const extracted = _extractSheetDataFromHeaderRow(ws, range, hRow);
-  hRow = extracted.hdrRow;
-  // Guardar la elección de fila para esta pestaña (persistida en sesión)
-  tab._manualHdrRow = hRow;
-  tab._hdrRangeStart = range.s.r; // para mostrar número de fila relativo en sidebar
-  if(!tab._hdrBySheet) tab._hdrBySheet={};
-  tab._hdrBySheet[name]={row:hRow, rangeStart:range.s.r};
-
-  const raw = extracted.raw;
-  if(!raw.length){toast('La hoja no tiene datos');$('loading').style.display='none';return}
-
-  tab.columns = extracted.columns;
-
-  // Columnas de fecha detectadas por NOMBRE
-  const dateColNames=new Set(tab.columns.filter(c=>/fecha|date|nacimiento|ingreso|reintegro|retiro|posesi|^f_/i.test(c)));
-  // Columnas de nacimiento requieren umbral más bajo (1930+)
-  const birthColNames=new Set(tab.columns.filter(c=>/nacimiento|birth|nac\b/i.test(c)));
-
-  function excelSerialToIso(n, isBirthCol){
-    try{
-      // Nacimiento: desde 10959 (01/01/1930) — personas de 95+ años
-      // Otras fechas: desde 29221 (01/01/1980) — fechas laborales
-      const minSerial = isBirthCol ? 10959 : 29221;
-      const minYear   = isBirthCol ? 1930  : 1980;
-      if(n<minSerial||n>73050) return null;
-      const d=XLSX.SSF?.parse_date_code?.(n);
-      if(!d||!d.y||d.y<minYear||d.y>2100) return null;
-      return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
-    }catch(e){return null}
-  }
-
-  tab.rawData=raw.map(row=>{
-    const o={};
-    for(const col of tab.columns){
-      const v=row[col];
-      if(v==null||v===undefined){o[col]='';continue}
-      if(typeof v==='number'){
-        if(dateColNames.has(col)){
-          const iso=excelSerialToIso(v, birthColNames.has(col));
-          if(iso){o[col]=iso;continue}
-        }
-        o[col]=Number.isInteger(v)?String(v):(Math.round(v*100)/100).toString();continue;
-      }
-      // String: detectar formatos de fecha comunes
-      const s=String(v).trim();
-      // ISO: 2024-03-15
-      const mIso=s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-      if(mIso&&parseInt(mIso[1])>=1930){o[col]=`${mIso[1]}-${mIso[2].padStart(2,'0')}-${mIso[3].padStart(2,'0')}`;continue}
-      // dd/mm/yyyy o dd-mm-yyyy (común en Colombia/España)
-      if(dateColNames.has(col)){
-        const mDmy=s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
-        if(mDmy){
-          const day=parseInt(mDmy[1]), month=parseInt(mDmy[2]), year=parseInt(mDmy[3]);
-          if(year>=1930&&year<=2100&&month>=1&&month<=12&&day>=1&&day<=31){
-            o[col]=`${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;continue;
-          }
-        }
-      }
-      o[col]=s;
-    }
-    return o;
+  const parsed = parseWorksheet(ws, range, hRow, {
+    parseDateCode: XLSX.SSF?.parse_date_code,
+    manualDateCols: tab._manualDateCols,
   });
+  if(parsed.isEmpty){toast('La hoja no tiene datos');$('loading').style.display='none';return}
 
-  // Detectar columnas de fecha por contenido (≥60% de muestras con formato ISO post-1930)
-  tab.dateColsDetected=tab.columns.filter(c=>{
-    const sample=tab.rawData.slice(0,50).map(r=>r[c]).filter(Boolean);
-    if(sample.length<3) return false;
-    const dateMatches=sample.filter(v=>{
-      const m=String(v).match(/^(\d{4})-\d{2}-\d{2}/);
-      return m && parseInt(m[1])>=1930 && parseInt(m[1])<=2099;
-    });
-    return dateMatches.length/sample.length>=0.6;
-  });
-  if(tab._manualDateCols){
-    tab.dateColsDetected=[...new Set([...tab.dateColsDetected,...tab._manualDateCols])];
-  }
+  const meta = applyParsedSheetToTab(tab, name, parsed, range.s.r, preserveFilters);
 
-  // Resetear sólo si no se preservan filtros
-  if(!preserveFilters){
-    tab.searchText=''; tab.searchCol=''; tab.dateFrom=''; tab.dateTo=''; tab.dateCol='';
-  }
-  tab.searchIndex=null; // siempre invalidar al recargar columnas
-  tab.colUniques=null; tab.colNulls=null;
   if(preserveFilters){
     _syncSearchInputFromTab(tab);
     if(_pillsOn) _syncPillsSearchUI(tab);
@@ -1076,9 +962,8 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   enableControls(true);
   _syncDataViewAfterLoad(tabId);
   renderTabs();
-  const rowsSkipped = hRow - range.s.r;
-  const skippedNote = rowsSkipped > 0 ? ` · ${rowsSkipped} fila${rowsSkipped>1?'s':''} ignorada${rowsSkipped>1?'s':''}` : '';
-  setStatus(`"${name}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas${skippedNote}`);
+  const skippedNote = meta.rowsSkipped > 0 ? ` · ${meta.rowsSkipped} fila${meta.rowsSkipped>1?'s':''} ignorada${meta.rowsSkipped>1?'s':''}` : '';
+  setStatus(`"${name}" — ${meta.rowCount.toLocaleString()} filas · ${meta.colCount} columnas${skippedNote}`);
   updateBreadcrumb();
   renderSheetsSidebar();
   fmRegisterFile(tab.fileName, tab.sheets?.length||0, tab.rawData.length);
@@ -3738,40 +3623,7 @@ let _hdrPicker = null;
 // {tabId, sheetName, ws, range, detectedRow, selectedRow, preserveFilters, maxPreviewRows}
 
 const HDR_PREVIEW_ROWS = 80; // filas a mostrar en la vista previa
-const HDR_SCAN_ROWS    = 50; // filas a escanear para autodetección
-
-/**
- * Autodetecta la fila de encabezado de mejor calidad en las primeras HDR_SCAN_ROWS filas.
- * Retorna el índice 0-based dentro del rango de la hoja.
- */
-function detectBestHeaderRow(ws, range){
-  const colCount = range.e.c - range.s.c + 1;
-  let bestRow = range.s.r, bestScore = -1;
-
-  for(let r = range.s.r; r < Math.min(range.s.r + HDR_SCAN_ROWS, range.e.r + 1); r++){
-    let filled = 0, textCells = 0, numCells = 0, uniqueVals = new Set();
-    for(let c = range.s.c; c <= range.e.c; c++){
-      const cell = ws[XLSX.utils.encode_cell({r, c})];
-      if(!cell || cell.v === undefined || String(cell.v).trim() === '') continue;
-      filled++;
-      uniqueVals.add(String(cell.v).trim().toLowerCase());
-      if(typeof cell.v === 'string') textCells++;
-      else numCells++;
-    }
-    if(filled === 0) continue;
-    const fillRatio  = filled / colCount;         // % de columnas llenas
-    const textRatio  = textCells / filled;         // % de texto (vs números)
-    const uniqueRatio= uniqueVals.size / filled;   // % de valores únicos
-    // Penalizar filas con muchos números (probablemente datos)
-    // Priorizar filas con texto único y buena cobertura
-    const score = fillRatio * 0.4 + textRatio * 0.35 + uniqueRatio * 0.25 - (numCells/filled)*0.3;
-    if(score > bestScore && fillRatio >= 0.3){
-      bestScore = score;
-      bestRow = r;
-    }
-  }
-  return bestRow;
-}
+const HDR_SCAN_ROWS = DEFAULT_HDR_SCAN_ROWS;
 
 /**
  * Abre el modal picker. Escanea el workbook y muestra preview interactiva.

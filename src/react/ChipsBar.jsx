@@ -7,7 +7,7 @@ function callLegacy(name, ...args) {
 
 function ChipsBarInner() {
   return (
-    <div id="chips-bar">
+    <div id="chips-bar" style={{ display: 'none' }}>
       <div id="chip-search-wrap" style={{ display: 'none', flexShrink: 0, alignItems: 'center', gap: 5 }}>
         <input type="text" id="chip-search" placeholder="🔍 Filtros..." autoComplete="off" />
         <button

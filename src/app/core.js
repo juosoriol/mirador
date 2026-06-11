@@ -591,15 +591,8 @@ function updateActiveTabCount(){ /* conteo de filas retirado de pestañas */ }
 
 function renderTabs(){
   const bar=$('tabs-bar'), addBtn=$('tab-add');
-  const emptyState=$('tabs-empty-state');
   bar.querySelectorAll('.tab').forEach(t=>t.remove());
-  if(tabs.size===0){
-    if(emptyState) emptyState.style.display='flex';
-    addBtn.style.display='none';
-  } else {
-    if(emptyState) emptyState.style.display='none';
-    addBtn.style.display='';
-  }
+  if(addBtn) addBtn.style.display = tabs.size > 0 ? '' : 'none';
   tabs.forEach(tab=>{
     const isActive=tab.id===activeTabId;
     const ext=_tabFileExt(tab.fileName);
@@ -631,6 +624,7 @@ function renderTabs(){
   });
   _updateSheetsBtn();
   _syncDataAreaView();
+  _syncToolbarVisibility();
 }
 
 function _syncDataAreaView(){
@@ -869,6 +863,7 @@ function showDropzone(full=true){
     $('sheet-list').innerHTML='<div style="padding:10px 12px;color:var(--muted);font-size:11px">Abre un .xlsx</div>';
   }
   updateStatusBar();
+  _syncToolbarVisibility();
   _mobileUiRefresh();
 }
 
@@ -2751,6 +2746,18 @@ function _syncPanelControls(on){
     if(p) p.disabled = b ? b.disabled : !on;
   });
 }
+function _syncToolbarVisibility(){
+  const hasData = !!(T()?.rawData?.length);
+  const tabsBar = $('tabs-bar');
+  if(tabsBar) tabsBar.style.display = tabs.size > 0 ? '' : 'none';
+  const chipsBar = $('chips-bar');
+  if(chipsBar && !_pillsOn) chipsBar.style.display = hasData ? '' : 'none';
+  const searchbar = $('searchbar');
+  if(searchbar){
+    if(!hasData) searchbar.style.display = 'none';
+    else if(!_pillsOn) searchbar.style.display = '';
+  }
+}
 function enableControls(on){
   const rt=$('recent-toggle'); if(rt) rt.style.display=on?'flex':'none';
   ['btn-export','btn-export-all','btn-cond','btn-copy','btn-copy-all','btn-fav','btn-clear','btn-cols','btn-date-cols',
@@ -2758,6 +2765,7 @@ function enableControls(on){
     .forEach(id=>{const e=$(id);if(e)e.disabled=!on});
   _syncPanelControls(on);
   if(on) _showFileActions();
+  _syncToolbarVisibility();
   updateBreadcrumb();
 }
 function updateStatusBar(){
@@ -4076,7 +4084,7 @@ function _resetPillsSurface(){
   const cnt=$('pills-toolbar-count'); if(cnt) cnt.textContent='';
   const pInp=$('pills-search-input'); if(pInp) pInp.value='';
   const da=$('data-area'); if(da) da.style.display='';
-  const sb=$('searchbar'); if(sb) sb.style.display='';
+  _syncToolbarVisibility();
 }
 function _exitPillsMode(){
   if(!_pillsOn) return;
@@ -4087,7 +4095,7 @@ function _exitPillsMode(){
   const cb = $('chips-bar');
   pv?.classList.remove('open');
   if(da) da.style.display = '';
-  $('searchbar').style.display='';
+  _syncToolbarVisibility();
   $('table-wrap').style.display='flex';
   const psb=$('pills-search-bar'); if(psb) psb.style.display='';
   if(_pillsCbParent && cb){
@@ -4524,7 +4532,7 @@ togglePillsMode = function(){
   } else {
     const inp = $('pills-search-input');
     if(inp) inp.value = '';
-    $('searchbar').style.display = '';
+    _syncToolbarVisibility();
   }
 };
 

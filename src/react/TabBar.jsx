@@ -6,16 +6,7 @@ function openFileInput() {
 
 function TabBarInner() {
   return (
-    <div id="tabs-bar">
-      <div id="tabs-empty-state">
-        <span id="tabs-empty-icon">📂</span>
-        <span id="tabs-empty-text">
-          Abre un archivo <kbd>.xlsx</kbd> para comenzar
-        </span>
-        <button type="button" id="tabs-empty-btn" onClick={openFileInput}>
-          📁 Abrir archivo
-        </button>
-      </div>
+    <div id="tabs-bar" style={{ display: 'none' }}>
       <div
         id="tab-add"
         role="button"
@@ -28,7 +19,6 @@ function TabBarInner() {
           }
         }}
         title="Abrir otro archivo"
-        style={{ display: 'none' }}
       >
         +
       </div>

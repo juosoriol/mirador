@@ -7,7 +7,7 @@ function callLegacy(name, ...args) {
 
 function SearchBarInner() {
   return (
-    <div id="searchbar">
+    <div id="searchbar" style={{ display: 'none' }}>
       <input
         type="text"
         id="search-input"

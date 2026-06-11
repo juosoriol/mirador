@@ -20,19 +20,11 @@
     "rules": "storage.rules"
   },
   "hosting": {
-    "public": ".",
+    "public": "dist",
     "ignore": [
       "firebase.json",
-      "firestore.rules",
-      "firestore.indexes.json",
-      "storage.rules",
-      "deploy.ps1",
-      "functions/**",
-      "**/*.md",
       "**/.*",
-      "**/node_modules/**",
-      ".git/**",
-      "demo-*.html"
+      "**/node_modules/**"
     ],
     "rewrites": [
       {

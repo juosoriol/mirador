@@ -19,6 +19,11 @@
 
 | Command | Scope |
 |---------|--------|
+| `npm run dev` | Vite dev server at http://127.0.0.1:8000 |
+| `npm run demos` | UI component gallery at `/demos/` |
+| `npm run build` | Production bundle → `dist/` (app + demos) |
+| `npm run preview` | Serve production build locally |
+| `.\deploy.ps1` | Build + deploy to Firebase Hosting |
 | `npm test` | Full suite (setup + shared + desktop + mobile) |
 | `npm run test:core` | Core user flows (desktop + mobile) |
 | `npm run test:desktop` | Desktop project only |

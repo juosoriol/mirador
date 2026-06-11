@@ -23,10 +23,10 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'python -m http.server 8000',
+    command: 'npm run dev -- --host 127.0.0.1',
     url: 'http://127.0.0.1:8000',
     reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    timeout: 120_000,
   },
   projects: [
     {

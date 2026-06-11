@@ -9,6 +9,10 @@ Write-Host "`nProyecto: $project" -ForegroundColor Yellow
 firebase use $project
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
+Write-Host "`nCompilando frontend (Vite → dist/)..." -ForegroundColor Yellow
+npm run build
+if ($LASTEXITCODE -ne 0) { exit 1 }
+
 Write-Host "`nIniciando deploy (hosting + firestore + storage + functions)..." -ForegroundColor Yellow
 firebase deploy --only hosting,firestore,storage,functions --project $project
 

@@ -3,7 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "python -m http.server 8000",
+    "dev": "vite",
+    "demos": "vite --open /demos/index.html",
+    "build": "vite build",
+    "preview": "vite preview",
+    "split:phase0": "node scripts/split-phase0.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
@@ -13,10 +17,16 @@
     "test:shared": "playwright test --project=shared",
     "setup:e2e": "node scripts/write-e2e.mjs",
     "test:all": "npm run setup:e2e && playwright test",
-    "serve": "python -m http.server 8000"
+    "serve": "vite preview --port 8000"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
-    "dotenv": "^16.5.0"
+    "@vitejs/plugin-react": "^4.7.0",
+    "dotenv": "^16.5.0",
+    "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

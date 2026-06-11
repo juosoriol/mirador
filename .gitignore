@@ -6,6 +6,7 @@ ui-debug.log
 
 # Node
 node_modules/
+dist/
 functions/node_modules/
 npm-debug.log
 yarn-error.log

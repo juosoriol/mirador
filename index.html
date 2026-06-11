@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-refresh-active-view', k='mirador_build_v';
+  var BUILD='20260610-table-reload-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -3618,9 +3618,10 @@ function refreshActiveView(tabId){
   }else{
     $('pills-view')?.classList.remove('open');
     $('data-area').style.display='';
-    applyFilters();
     $('table-wrap').style.display='flex';
+    applyFilters();
     _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+    requestAnimationFrame(()=>_vtRenderVisible());
   }
   updateStatusBar();
   _mobileUiRefresh();
@@ -5677,7 +5678,13 @@ function _doReload(tabId){
           _syncPillsSearchUI(tab);
         }else{
           $('search-input').value=prevSearchText;
-          requestAnimationFrame(()=>{ const s=$('vt-scroll'); if(s) s.scrollTop=prevScrollTop; });
+          requestAnimationFrame(()=>{
+            const s=$('vt-scroll');
+            if(!s) return;
+            s.scrollTop=prevScrollTop;
+            _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+            _vtRenderVisible();
+          });
         }
       } else {
         // Recarga en segundo plano: actualizar datos sin tocar la UI activa

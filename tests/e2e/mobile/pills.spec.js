@@ -20,9 +20,11 @@ test.describe('Móvil — modo Pills', () => {
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
   });
 
-  test('búsqueda en vivo filtra pills en móvil', async ({ page }) => {
+  test('búsqueda pills filtra; barra superior no filtra en modo pills', async ({ page }) => {
     const total = await getRowCount(page);
-    await page.fill('#search-input', 'zzz_inexistente_xyz');
+    await expect(page.locator('#searchbar')).toBeHidden();
+    await expect(page.locator('#pills-search-bar')).toBeVisible();
+    await page.fill('#pills-search-input', 'zzz_inexistente_xyz');
     await page.waitForTimeout(400);
     expect(await getRowCount(page)).toBeLessThan(total);
     await expect(page.locator('#pills-grid [class*="mpill"]')).toHaveCount(0);

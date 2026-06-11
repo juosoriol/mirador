@@ -26,11 +26,8 @@ test.describe('Escritorio — modo Tabla', () => {
     expect(await getRowCount(page)).toBeLessThanOrEqual(total);
   });
 
-  test('modal Hojas abre y cierra', async ({ page }) => {
-    await page.locator('#btn-mobile-sheets').click();
-    await expect(page.locator('#mobile-sheets-overlay')).toHaveClass(/open/);
-    await page.locator('#mobile-sheets-overlay .ms-close').click();
-    await expect(page.locator('#mobile-sheets-overlay')).not.toHaveClass(/open/);
+  test('sidebar Hojas lista hojas del archivo', async ({ page }) => {
+    await expect(page.locator('#sidebar-sheets .sheet-item, #sidebar-sheets button').first()).toBeVisible();
   });
 
   test('panel Acciones abre y cierra', async ({ page }) => {

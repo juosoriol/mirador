@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-update', k='mirador_build_v';
+  var BUILD='20260608-mobile-pills-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1940,7 +1940,11 @@ function saveSession(){
   if(!tabs.size) return;
   // Sincronizar searchText antes de serializar
   const cur=T();
-  if(cur){ cur.searchText=$('search-input').value||''; cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||''; }
+  if(cur){
+    cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||'';
+    if(_pillsOn) cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
+    else cur.searchText=$('search-input')?.value||'';
+  }
   const data={
     activeTabId,
     activeName:T()?.fileName||'',
@@ -1950,7 +1954,7 @@ function saveSession(){
       activeSheet:t.activeSheet, sheets:t.sheets,
       colFilters:t.colFilters, condRules:t.condRules,
       sortCol:t.sortCol, sortDir:t.sortDir,
-      searchText:t.searchText, searchCol:t.searchCol,
+      searchText:t.searchText, pillsSearchText:t.pillsSearchText||'', searchCol:t.searchCol,
       dateFrom:t.dateFrom, dateTo:t.dateTo, dateCol:t.dateCol,
       dateColsDetected:t.dateColsDetected,
       hiddenCols:[...t.hiddenCols||[]], frozenCols:[...t.frozenCols||[]], frozenOrder:t.frozenOrder||[],
@@ -2054,7 +2058,7 @@ function restoreSession(){
         _manualHdrRow: s._manualHdrRow ?? null,
         _hdrRangeStart: s._hdrRangeStart ?? null,
         statsPanels: s.statsPanels || null,
-        searchText:s.searchText||'', searchCol:s.searchCol||'',
+        searchText:s.searchText||'', pillsSearchText:s.pillsSearchText||'', searchCol:s.searchCol||'',
         dateFrom:s.dateFrom||'', dateTo:s.dateTo||'', dateCol:s.dateCol||'',
       });
     });
@@ -2101,7 +2105,7 @@ function createTab(fileName){
     searchIndex:null, colUniques:null, colNulls:null,
     hiddenCols:new Set(), frozenCols:new Set(),
     colFilters:{}, condRules:[], sortCol:null, sortDir:1, activeChipCol:null,
-    dateColsDetected:[], searchText:'', searchCol:'', dateFrom:'', dateTo:'', dateCol:'' });
+    dateColsDetected:[], searchText:'', pillsSearchText:'', searchCol:'', dateFrom:'', dateTo:'', dateCol:'' });
   return id;
 }
 
@@ -2149,7 +2153,12 @@ function _syncDataAreaView(){
   const tab=T();
   if(tabs.size>0&&activeTabId&&tab?.rawData?.length){
     $('dropzone').style.display='none';
-    if(!$('pills-view')?.classList.contains('open')) $('table-wrap').style.display='flex';
+    if(_pillsOn){
+      $('table-wrap').style.display='none';
+      $('data-area').style.display='none';
+    } else if(!$('pills-view')?.classList.contains('open')){
+      $('table-wrap').style.display='flex';
+    }
   }
 }
 
@@ -2258,12 +2267,23 @@ function _tabCtxOutside(e){ const m=$('tab-ctx-menu'); if(m&&!m.contains(e.targe
 function switchTab(id){
   if(!tabs.has(id)) return;
   const cur=T();
-  if(cur){ cur.searchText=$('search-input').value||''; cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||''; }
+  if(cur){
+    cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||'';
+    if(_pillsOn) cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
+    else cur.searchText=$('search-input')?.value||'';
+  }
   activeTabId=id; renderTabs(); restoreTabUI();
 }
 
 
 
+function _syncPillsSearchUI(tab){
+  const v=(tab?.pillsSearchText||'').trim();
+  const pinp=$('pills-search-input');
+  if(pinp){ pinp.value=v; pinp.style.borderColor=v?'var(--acc)':'var(--border)'; }
+  const clr=$('pills-search-clear');
+  if(clr) clr.style.display=v?'block':'none';
+}
 function restoreTabUI(){
   const tab=T();
   if(!tab){showDropzone(true);return}
@@ -2281,7 +2301,6 @@ function restoreTabUI(){
     setStatus('Sin datos.');
     return;
   }
-  $('search-input').value = tab.searchText||'';
   buildSearchCombo();
   setSelectValue('search-col', tab.searchCol);
   buildDateColCombo();
@@ -2289,9 +2308,23 @@ function restoreTabUI(){
   $('date-to').value   = tab.dateTo||'';
   setSelectValue('date-col', tab.dateCol);
   buildChips();
-  applyFilters();
   enableControls(true);
   $('dropzone').style.display='none';
+  if(_pillsOn){
+    $('search-input').value=tab.searchText||'';
+    _syncPillsSearchUI(tab);
+    $('table-wrap').style.display='none';
+    $('data-area').style.display='none';
+    $('pills-view')?.classList.add('open');
+    _pillsPopulateSelectors();
+    applyFilters();
+    updateBreadcrumb();
+    setStatus(`"${tab.activeSheet||'Datos'}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas`);
+    _mobileUiRefresh();
+    return;
+  }
+  $('search-input').value = tab.searchText||'';
+  applyFilters();
   $('table-wrap').style.display='flex';
   updateBreadcrumb();
   setStatus(`"${tab.activeSheet||'Datos'}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas`);
@@ -2562,7 +2595,14 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   if(preserveFilters) _syncSearchInputFromTab(tab);
   buildChips(); buildSearchCombo(); buildDateColCombo(); applyFilters();
   enableControls(true);
-  $('loading').style.display='none'; $('dropzone').style.display='none'; $('table-wrap').style.display='flex';
+  $('loading').style.display='none'; $('dropzone').style.display='none';
+  if(_pillsOn){
+    $('table-wrap').style.display='none';
+    $('data-area').style.display='none';
+    $('pills-view')?.classList.add('open');
+  } else {
+    $('table-wrap').style.display='flex';
+  }
   renderTabs();
   const rowsSkipped = hRow - range.s.r;
   const skippedNote = rowsSkipped > 0 ? ` · ${rowsSkipped} fila${rowsSkipped>1?'s':''} ignorada${rowsSkipped>1?'s':''}` : '';
@@ -3337,18 +3377,10 @@ function _syncSearchInputFromTab(tab){
   if(tab.searchCol) setSelectValue('search-col', tab.searchCol);
 }
 function onSearch(){
+  if(_pillsOn) return;
   const tab=T();
   const val=$('search-input')?.value??'';
   if(tab) tab.searchText=val;
-  if(_pillsOn){
-    const pinp=$('pills-search-input');
-    if(pinp && pinp.value!==val){
-      pinp.value=val;
-      pinp.style.borderColor=val?'var(--acc)':'var(--border)';
-    }
-    const clr=$('pills-search-clear');
-    if(clr) clr.style.display=val?'block':'none';
-  }
   clearTimeout(searchTimer);
   clearTimeout(_pillsSearchTimer);
   searchTimer=setTimeout(()=>{
@@ -3383,17 +3415,28 @@ function getRegexFlags(){
   if($('chk-regex-s')?.checked) f+='s';
   return f;
 }
+function _activeSearchText(tab){
+  if(_pillsOn){
+    if(tab.pillsSearchText!=null && tab.pillsSearchText!==undefined) return String(tab.pillsSearchText).trim();
+    return ($('pills-search-input')?.value||'').trim();
+  }
+  if(tab.searchText!=null && tab.searchText!==undefined) return String(tab.searchText).trim();
+  return ($('search-input')?.value||'').trim();
+}
 function _resetLiveSearchState(tab){
-  if(tab){ tab.searchText=''; tab.searchIndex=null; }
-  const si=$('search-input'); if(si) si.value='';
-  const pinp=$('pills-search-input');
-  if(pinp){ pinp.value=''; pinp.style.borderColor='var(--border)'; }
-  const pclr=$('pills-search-clear'); if(pclr) pclr.style.display='none';
+  tab=tab||T();
+  if(tab){ tab.searchIndex=null; if(_pillsOn) tab.pillsSearchText=''; else tab.searchText=''; }
+  if(_pillsOn){
+    const pinp=$('pills-search-input');
+    if(pinp){ pinp.value=''; pinp.style.borderColor='var(--border)'; }
+    $('pills-search-clear')?.style.setProperty('display','none');
+  } else {
+    const si=$('search-input'); if(si) si.value='';
+  }
   clearTimeout(searchTimer);
   clearTimeout(_pillsSearchTimer);
 }
 function _syncLiveSearchFields(_rawTxt){
-  const si=$('search-input'); if(si && si.value!==_rawTxt) si.value=_rawTxt;
   if(_pillsOn){
     const pinp=$('pills-search-input');
     if(pinp){
@@ -3402,17 +3445,13 @@ function _syncLiveSearchFields(_rawTxt){
     }
     const pclr=$('pills-search-clear');
     if(pclr) pclr.style.display=_rawTxt?'block':'none';
+    return;
   }
+  const si=$('search-input'); if(si && si.value!==_rawTxt) si.value=_rawTxt;
 }
 function applyFilters(){
   const tab=T(); if(!tab||!tab.rawData.length) return;
-  let _rawTxt;
-  if(tab.searchText!=null && tab.searchText!==undefined){
-    _rawTxt=String(tab.searchText).trim();
-  } else {
-    _rawTxt=($('search-input')?.value||'').trim();
-    if(!_rawTxt && _pillsOn) _rawTxt=($('pills-search-input')?.value||'').trim();
-  }
+  const _rawTxt=_activeSearchText(tab);
   _syncLiveSearchFields(_rawTxt);
   const useRegex=$('chk-regex')?.checked;
   const useExcl =$('chk-excl')?.checked;
@@ -3421,7 +3460,8 @@ function applyFilters(){
   const dfrom   = $('date-from').value;
   const dto     = $('date-to').value;
   const dcol    = $('date-col').value;
-  tab.searchText=_rawTxt;
+  if(_pillsOn) tab.pillsSearchText=_rawTxt;
+  else tab.searchText=_rawTxt;
 
   const hasColFilters = Object.keys(tab.colFilters).length>0;
   const effectiveDcol = dcol || (tab.dateColsDetected?.length===1 ? tab.dateColsDetected[0] : '');
@@ -3528,6 +3568,8 @@ function clearFilters(){
   const tab=T(); if(!tab) return;
   tab.colFilters={};
   tab.searchCol='';
+  tab.searchText='';
+  tab.pillsSearchText='';
   $('search-col').selectedIndex=0;
   $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
   const cr=$('chk-regex'); if(cr) cr.checked=false;
@@ -3535,6 +3577,8 @@ function clearFilters(){
   const fb=$('btn-regex-flags'); if(fb) fb.style.display='none';
   const rp=$('regex-flags-panel'); if(rp) rp.style.display='none';
   _resetLiveSearchState(tab);
+  $('search-input').value='';
+  _syncPillsSearchUI(tab);
   closeDropdown(); closeMobileFilterSheet();
   if(typeof _mfSyncOptionsUI==='function') _mfSyncOptionsUI();
   updateChipStates(); applyFilters();
@@ -6417,7 +6461,9 @@ function _updateMobileActiveBar(){
   if(!_isMobileUi()){ bar.classList.remove('show'); return; }
   const tab=T();
   const parts=[];
-  const q=($('search-input')?.value||'').trim();
+  const q=_pillsOn
+    ? ($('pills-search-input')?.value||tab?.pillsSearchText||'').trim()
+    : ($('search-input')?.value||'').trim();
   if(q) parts.push({rm:'search', html:'"'+eh(q)+'"'});
   if(tab){
     Object.entries(tab.colFilters||{}).forEach(([col,val])=>{
@@ -6571,6 +6617,7 @@ function _exitPillsMode(){
   pv?.classList.remove('open');
   if(da) da.style.display = '';
   $('searchbar').style.display='';
+  $('table-wrap').style.display='flex';
   const psb=$('pills-search-bar'); if(psb) psb.style.display='';
   if(_pillsCbParent && cb){
     cb.classList.remove('pills-mode','chips-collapsed');
@@ -6595,13 +6642,8 @@ function togglePillsMode(){
   pv.classList.add('open');
     da.style.display = 'none';
     const psb=$('pills-search-bar');
-    if(isMobile){
-      $('searchbar').style.display='';
-      if(psb) psb.style.display='none';
-    } else {
-      $('searchbar').style.display='none';
-      if(psb) psb.style.display='flex';
-    }
+    $('searchbar').style.display='none';
+    if(psb) psb.style.display='flex';
 
     if(cb){
       // Mover chips-bar dentro de pills-view (reutiliza toda la lógica de filtros)
@@ -6620,9 +6662,7 @@ function togglePillsMode(){
     }
 
     _pillsPopulateSelectors();
-    const curSearch = $('search-input')?.value || '';
-    const inp = $('pills-search-input');
-    if(inp && !inp.value) inp.value = curSearch;
+    _syncPillsSearchUI(T());
     // Asegurar que tab.filtered esté poblado (puede estar vacío en sesión restaurada)
     const tab0 = T();
     if(tab0 && tab0.rawData.length > 0 && tab0.filtered.length === 0){
@@ -6755,7 +6795,7 @@ function renderPillsView(){
   _pillsFilteredCache = rows;
 
   const activeFilters = Object.keys(tab.colFilters||{}).length;
-  const searchActive  = !!(tab.searchText || $('pills-search-input')?.value);
+  const searchActive  = !!(tab.pillsSearchText || $('pills-search-input')?.value);
   const total = tab.rawData?.length || 0;
   const countTxt = rows.length.toLocaleString() + ' registros' +
     (activeFilters||searchActive ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
@@ -7006,8 +7046,8 @@ function _updateSheetsBtn(){
   const lbl = $('btn-sheets-label');
   const badge = $('btn-sheets-badge');
   const count = tab?.sheets?.length || 0;
-  const show = tabs.size === 1 && count > 0;
-  if(sheetsBtn) sheetsBtn.style.display = show ? '' : 'none';
+  const show = _isMobileUi() && !!tab && count > 0 && tabs.size > 0;
+  if(sheetsBtn) sheetsBtn.style.display = show ? 'flex' : 'none';
   if(lbl) lbl.textContent = 'Hojas';
   if(badge){
     if(count > 1){
@@ -7091,10 +7131,8 @@ let _pillsSearchTimer = null;
 
 function pillsOnSearch(val){
   clearTimeout(searchTimer);
-  const mainInput = $('search-input');
-  if(mainInput) mainInput.value = val;
   const tab=T();
-  if(tab){ tab.searchText=val; if(!val) tab.searchIndex=null; }
+  if(tab){ tab.pillsSearchText=val; if(!val) tab.searchIndex=null; }
 
   const clr = $('pills-search-clear');
   if(clr) clr.style.display = val ? 'block' : 'none';
@@ -7122,17 +7160,13 @@ const _origTogglePillsMode = togglePillsMode;
 togglePillsMode = function(){
   _origTogglePillsMode.apply(this, arguments);
   if(_pillsOn){
-    // Copiar valor actual del search principal al pills search
-    const v = $('search-input')?.value || '';
-    const inp = $('pills-search-input');
-    if(inp){ inp.value = v; inp.style.borderColor = v ? 'var(--acc)' : 'var(--border)'; }
-    const clr = $('pills-search-clear');
-    if(clr) clr.style.display = v ? 'block' : 'none';
+    _syncPillsSearchUI(T());
     _blurActiveInput();
+    applyFilters();
   } else {
-    // Al salir de pills, limpiar pills search
     const inp = $('pills-search-input');
     if(inp) inp.value = '';
+    $('searchbar').style.display = '';
   }
 };
 

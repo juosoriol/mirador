@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, loadFixture, getRowCount, closeAllTabs } from '../../helpers/mirador.js';
+import { login, loadFixture, getRowCount, closeAllTabs, reloadAndExpectData } from '../../helpers/mirador.js';
 
 test.describe('Móvil — sesión', () => {
   test('barra inferior visible tras login sin documento', async ({ page }) => {
@@ -41,13 +41,7 @@ test.describe('Móvil — modo Tabla', () => {
 
   test('recarga página y restaura datos en móvil', async ({ page }) => {
     expect(await getRowCount(page)).toBeGreaterThan(0);
-    await page.evaluate(() => { if (typeof saveSession === 'function') saveSession(); });
-    await page.reload();
-    try {
-      await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });
-    } catch { /* auth ya restaurado */ }
-    await expect(page.locator('#dropzone')).toBeHidden({ timeout: 30_000 });
-    await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 30_000 });
+    await reloadAndExpectData(page);
     expect(await getRowCount(page)).toBeGreaterThan(0);
   });
 

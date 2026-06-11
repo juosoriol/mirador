@@ -6,6 +6,7 @@ import { expect } from '@playwright/test';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DEFAULT_FIXTURE = path.resolve(__dirname, '../fixtures/cuadro-concurso-2024.xlsx');
+const FALLBACK_FIXTURE = path.resolve(__dirname, '../fixtures/sample.csv');
 const ONEDRIVE_FIXTURE = 'c:\\Users\\juoso\\OneDrive\\Escritorio\\Cuadro Concurso 2024_CNSC 8-4-2024.xlsx';
 
 function resolveFixturePath() {
@@ -13,6 +14,7 @@ function resolveFixturePath() {
     return path.resolve(process.env.FIXTURE_XLSX);
   }
   if (fs.existsSync(DEFAULT_FIXTURE)) return DEFAULT_FIXTURE;
+  if (fs.existsSync(FALLBACK_FIXTURE)) return FALLBACK_FIXTURE;
   if (fs.existsSync(ONEDRIVE_FIXTURE)) return ONEDRIVE_FIXTURE;
   return DEFAULT_FIXTURE;
 }
@@ -28,6 +30,37 @@ export function requireCredentials() {
   return { email, password };
 }
 
+export async function waitForAppReady(page) {
+  await page.waitForFunction(() => {
+    if (window.__miradorBootDone === true) return true;
+    const loading = document.getElementById('loading');
+    const loadingHidden = !loading || getComputedStyle(loading).display === 'none';
+    return loadingHidden
+      && typeof window.openFilePicker === 'function'
+      && typeof window.showDropzone === 'function';
+  }, null, { timeout: 60_000 });
+}
+
+export async function resetToIdleState(page) {
+  await waitForAppReady(page);
+  await page.evaluate(() => {
+    if (typeof clearStoredSession === 'function') clearStoredSession();
+    if (typeof tabs !== 'undefined') {
+      while (tabs.size > 0) {
+        const id = [...tabs.keys()][0];
+        if (typeof closeTab !== 'function') break;
+        closeTab(id);
+      }
+    }
+    const pv = document.getElementById('pills-view');
+    if (pv?.classList.contains('open') && typeof togglePillsMode === 'function') {
+      togglePillsMode();
+    }
+    if (typeof showDropzone === 'function') showDropzone(true);
+  });
+  await expect(page.locator('#dropzone')).toBeVisible({ timeout: 20_000 });
+}
+
 export async function login(page) {
   const { email, password } = requireCredentials();
   await page.goto('/');
@@ -35,11 +68,15 @@ export async function login(page) {
   await loginScreen.waitFor({ state: 'visible', timeout: 20_000 });
 
   if (await loginScreen.evaluate((el) => el.classList.contains('hidden'))) {
+    await waitForAppReady(page);
+    await resetToIdleState(page);
     return;
   }
 
   try {
     await expect(loginScreen).toHaveClass(/hidden/, { timeout: 10_000 });
+    await waitForAppReady(page);
+    await resetToIdleState(page);
     return;
   } catch {
     // continuar con login manual
@@ -51,13 +88,29 @@ export async function login(page) {
 
   await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
   await expect(page.locator('#login-error')).not.toHaveClass(/show/);
+  await waitForAppReady(page);
+  await resetToIdleState(page);
 }
 
 export async function loadFixture(page, filePath = FIXTURE_XLSX) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(
+      `Fixture no encontrado: ${filePath}. Ejecuta npm run setup:e2e o define FIXTURE_XLSX en .env.test`,
+    );
+  }
+
+  await waitForAppReady(page);
+  await expect(page.locator('#file-input')).toBeAttached();
   await page.setInputFiles('#file-input', filePath);
+
+  await Promise.race([
+    page.locator('#loading').waitFor({ state: 'visible', timeout: 8_000 }),
+    page.locator('#table-body tr').first().waitFor({ state: 'visible', timeout: 60_000 }),
+  ]).catch(() => {});
+
   await page.locator('#loading').waitFor({ state: 'hidden', timeout: 120_000 });
+  await page.locator('#table-body tr').first().waitFor({ state: 'visible', timeout: 60_000 });
   await expect(page.locator('#dropzone')).toBeHidden();
-  await page.locator('#table-body tr').first().waitFor({ timeout: 60_000 });
 }
 
 export async function flushSession(page) {
@@ -72,6 +125,7 @@ export async function reloadAndExpectData(page) {
   try {
     await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });
   } catch { /* auth ya restaurado */ }
+  await waitForAppReady(page);
   await expect(page.locator('#dropzone')).toBeHidden({ timeout: 60_000 });
   await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 60_000 });
 }
@@ -153,6 +207,9 @@ export async function closeAllTabs(page) {
 
 export async function expectEmptyState(page) {
   await expect(page.locator('#dropzone')).toBeVisible();
+  await expect(page.locator('#searchbar')).toBeHidden();
+  await expect(page.locator('#chips-bar')).toBeHidden();
+  await expect(page.locator('#tabs-bar')).toBeHidden();
   await expect(page.locator('#pills-view')).not.toHaveClass(/open/);
   await expect(page.locator('#pills-grid')).toBeEmpty();
   await expect(page.locator('#topbar-breadcrumb')).toBeHidden();
@@ -172,7 +229,7 @@ export async function discoverSearchTerm(page) {
       const v = String(row[col] || '').trim();
       if (v.length >= 3) return v.slice(0, 12);
     }
-    return 'test';
+    return 'Ana';
   });
 }
 

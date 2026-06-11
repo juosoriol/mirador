@@ -1,6 +1,7 @@
 import { test as setup, expect } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { waitForAppReady, resetToIdleState } from '../../helpers/mirador.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const authFile = path.resolve(__dirname, '../../.auth/user.json');
@@ -23,5 +24,7 @@ setup('guardar sesión Firebase', async ({ page }) => {
     await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
   }
 
+  await waitForAppReady(page);
+  await resetToIdleState(page);
   await page.context().storageState({ path: authFile });
 });

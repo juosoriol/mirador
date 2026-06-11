@@ -549,6 +549,7 @@ async function _bootSessionRestore(){
       showDropzone(true);
     }
     _mobileUiRefresh();
+    window.__miradorBootDone = true;
   }
 }
 
@@ -4037,6 +4038,7 @@ function closeMobileFilterSheet(){
 window.addEventListener('resize', ()=>{ _mobileUiRefresh(); if(!_isMobileUi()) closeMobileFilterSheet(); });
 
 // ── INICIO ────────────────────────────────────────────────────────────────────
+window.__miradorBootDone = false;
 applyTheme(currentTheme);
 initChipSearch();
 document.body.classList.remove('focus-a','focus-b','focus-c','focus-d','focus-c-revealed');

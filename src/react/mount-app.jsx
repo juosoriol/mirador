@@ -12,6 +12,10 @@ import { DataArea } from './DataArea.jsx';
 import { PillsView } from './PillsView.jsx';
 import { StatusBar } from './StatusBar.jsx';
 import { MobileBnav } from './MobileBnav.jsx';
+import { Sidebar } from './Sidebar.jsx';
+import { DocsPanel } from './DocsPanel.jsx';
+import { AppOverlays } from './AppOverlays.jsx';
+import { MobileFilterSheet } from './MobileFilterSheet.jsx';
 
 export function mountAppShell() {
   const loginRoot = document.getElementById('login-root');
@@ -56,6 +60,16 @@ export function mountAppShell() {
     createRoot(mobileActiveRoot).render(<MobileActiveBar />);
   }
 
+  const sidebarRoot = document.getElementById('sidebar-root');
+  if (sidebarRoot) {
+    createRoot(sidebarRoot).render(<Sidebar />);
+  }
+
+  const docsRoot = document.getElementById('docs-panel-root');
+  if (docsRoot) {
+    createRoot(docsRoot).render(<DocsPanel />);
+  }
+
   const dataAreaRoot = document.getElementById('data-area-root');
   if (dataAreaRoot) {
     createRoot(dataAreaRoot).render(<DataArea />);
@@ -74,5 +88,15 @@ export function mountAppShell() {
   const bnavRoot = document.getElementById('mobile-bnav-root');
   if (bnavRoot) {
     createRoot(bnavRoot).render(<MobileBnav />);
+  }
+
+  const overlaysRoot = document.getElementById('overlays-root');
+  if (overlaysRoot) {
+    createRoot(overlaysRoot).render(<AppOverlays />);
+  }
+
+  const mobileFilterRoot = document.getElementById('mobile-filter-root');
+  if (mobileFilterRoot) {
+    createRoot(mobileFilterRoot).render(<MobileFilterSheet />);
   }
 }

@@ -136,10 +136,15 @@ function stripLegacyReactShell(bodyHtml) {
     .replace(/<div id="chips-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="chips-bar-root"></div>\n')
     .replace(/<div id="searchbar">[\s\S]*?<\/div>\s*\n?/, '<div id="searchbar-root"></div>\n')
     .replace(/<!-- Barra filtros activos móvil -->[\s\S]*?<div id="mobile-active-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="mobile-active-bar-root"></div>\n')
+    .replace(/<!-- Panel Mis Documentos -->[\s\S]*?<div id="docs-panel">[\s\S]*?<\/div>\s*\n?/, '<div id="docs-panel-root"></div>\n')
+    .replace(/<div id="sidebar">[\s\S]*?<\/div>\s*\n(?=\s*<div id="data-area)/, '<div id="sidebar-root"></div>\n')
     .replace(/<div id="data-area">[\s\S]*?<div id="table-wrap">[\s\S]*?<\/div>\s*\n\s*<\/div>\s*\n?/, '<div id="data-area-root"></div>\n')
     .replace(/<!-- ── PILLS VIEW ──[\s\S]*?<div id="pills-view">[\s\S]*?<\/div>\s*\n(?=\s*<\/div>)/, '<div id="pills-view-root"></div>\n')
     .replace(/<div id="statusbar">[\s\S]*?<\/div>\s*\n?/, '<div id="statusbar-root"></div>\n')
+    .replace(/<div id="detail-overlay">[\s\S]*?<div id="pills-ficha-overlay">[\s\S]*?<\/div>\s*\n\s*<\/div>\s*\n?/, '<div id="overlays-root"></div>\n')
     .replace(/<!-- Barra inferior móvil -->[\s\S]*?<nav id="mobile-bnav"[\s\S]*?<\/nav>\s*\n?/, '<div id="mobile-bnav-root"></div>\n')
+    .replace(/<!-- Panel filtros avanzados móvil -->[\s\S]*?<div id="mobile-filter-overlay">[\s\S]*?<\/div>\s*\n?/, '<div id="mobile-filter-root"></div>\n')
+    .replace(/<button id="viewport-restore-btn"[\s\S]*?<\/button>\s*\n?/, '')
     .trim();
 }
 
@@ -151,7 +156,7 @@ const viteIndex = `<!DOCTYPE html>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260611-table-pills-react-v1', k='mirador_build_v';
+  var BUILD='20260611-overlays-react-v1', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -194,6 +199,7 @@ import { mountAppShell } from './react/mount-app.jsx';
 mountAppShell();
 
 async function boot() {
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
   await import('./app/core.js');
   await import('./services/firebase-app.js');
   if (typeof window._mobileUiRefresh === 'function') {

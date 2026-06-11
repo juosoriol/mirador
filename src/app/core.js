@@ -6,12 +6,20 @@ import {
   detectBestHeaderRow,
   getVisibleSheetNames,
   parseWorksheet,
+  extractSheetDataFromHeaderRow,
 } from '../engine/sheet-loader.js';
 import {
   applyParsedSheetToTab,
   createTabState,
   resetTabFiltersForNewSheet,
 } from '../engine/tab-model.js';
+import {
+  VT_ROW_H,
+  VT_BUFFER,
+  virtualTableState,
+  invalidateVirtualTableCache,
+  createVirtualTableController,
+} from '../engine/virtual-table.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -1883,7 +1891,7 @@ function refreshActiveView(tabId){
     $('data-area').style.display='';
     $('table-wrap').style.display='flex';
     applyFilters();
-    _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+    invalidateVirtualTableCache();
     requestAnimationFrame(()=>_vtRenderVisible());
   }
   updateStatusBar();
@@ -1905,347 +1913,6 @@ function clearFilters(){
   applyFilters();
   _mobileUiRefresh();
   toast('Filtros limpiados');
-}
-
-// ── TABLA — VIRTUAL SCROLL ───────────────────────────────────────────────────
-const VT_ROW_H    = 30;
-const VT_BUFFER   = 12;
-let _vtRAF = null;
-let _vtRowTap = {idx:null, t:0};
-let _vtLastStart = -1;
-let _vtLastEnd = -1;
-let _frzLeftMap = {};   // col → exact left offset in px (measured from real DOM)
-// Cache de alturas reales medidas por fila virtual
-let _vtRowHeights = {};   // vrow → measured height
-let _vtTotalH = 0;        // altura total estimada del contenido
-
-function renderTable(){
-  const tab=T(); if(!tab) return;
-
-  const hid=tab.hiddenCols||new Set();
-  const frz=tab.frozenCols||new Set();
-  const frozenOrder=tab.frozenOrder||[...frz];
-  const orderedCols=[...frozenOrder.filter(c=>frz.has(c)&&!hid.has(c)),
-                     ...tab.columns.filter(c=>!frz.has(c)&&!hid.has(c))];
-
-  // Reset frozen offsets — will be measured after DOM paint
-  _frzLeftMap = {};
-
-  // Build header with expand button on each th
-  const headHtml='<tr>'+orderedCols.map(col=>{
-    if(hid.has(col)) return'';
-    const sc=tab.sortCol===col?(tab.sortDir===1?'asc':'desc'):'';
-    const isFrz=frz.has(col);
-    const frzCls=isFrz?'frozen':'';
-    const frzStyle=isFrz?' style="left:0"':'';
-    const lockIcon=isFrz?' 🔒':'';
-    return`<th class="${sc} ${frzCls}" data-col="${eh(col)}"${frzStyle}
-      onclick="sortBy('${ejs(col)}')"
-      oncontextmenu="openColMenu(event,'${ejs(col)}')"
-      style="position:sticky;top:0${isFrz?';left:0':''}"
-      >${eh(col)}${lockIcon} <button class="col-expand-btn" onclick="event.stopPropagation();toggleColExpand(this)" title="Expandir/colapsar columna">⤢</button></th>`;
-  }).join('')+'</tr>';
-
-  $('table-head').innerHTML=headHtml;
-
-  // Registrar scroll handler
-  const scroll=$('vt-scroll');
-  if(scroll) scroll.onscroll=_vtOnScroll;
-
-  // Info bar
-  const totalRows=tab.filtered.length;
-  const info=$('vt-info');
-  if(totalRows>200){
-    info.classList.add('visible');
-    info.textContent=totalRows.toLocaleString()+' filas \xB7 scroll virtual activo';
-  } else {
-    info.classList.remove('visible');
-  }
-
-  _vtLastStart=-1; _vtLastEnd=-1;
-  _vtRowHeights={}; // reset height cache on full rebuild
-  _vtRenderVisible();
-
-  // Measure real th widths AFTER paint and apply exact left offsets + lock widths
-  requestAnimationFrame(()=>{
-    const ths=[...$('table-head').querySelectorAll('th')];
-    // Lock each column width to prevent layout shift during virtual scroll
-    ths.forEach(th=>{
-      const w=th.offsetWidth;
-      if(w>0) th.style.minWidth=w+'px';
-    });
-    // Now measure frozen offsets with locked widths
-    let leftAccum=0;
-    ths.filter(th=>th.classList.contains('frozen')).forEach(th=>{
-      const col=th.dataset.col;
-      _frzLeftMap[col]=leftAccum;
-      th.style.left=leftAccum+'px';
-      leftAccum+=th.offsetWidth;
-    });
-    // Re-render with correct offsets
-    _vtLastStart=-1; _vtLastEnd=-1;
-    _vtRowHeights={};
-    _vtRenderVisible();
-  });
-}
-
-function toggleColExpand(btn){
-  const th=btn.closest('th');
-  if(!th) return;
-  const col=th.dataset.col;
-  const tab=T(); if(!tab) return;
-  if(!tab.expandedCols) tab.expandedCols=new Set();
-
-  const isExpanded=tab.expandedCols.has(col);
-  isExpanded ? tab.expandedCols.delete(col) : tab.expandedCols.add(col);
-
-  // Update th immediately (no scroll position change)
-  th.classList.toggle('col-expanded',!isExpanded);
-  btn.textContent=isExpanded?'⤢':'⤡';
-
-  // Update visible tds by data-col (not index — survives virtual scroll)
-  _applyExpandedCols();
-}
-
-function _applyExpandedCols(){
-  const tab=T(); if(!tab) return;
-  const expanded=tab.expandedCols||new Set();
-  // Update all currently rendered tds
-  $('table-body').querySelectorAll('tr').forEach(tr=>{
-    [...tr.children].forEach((td,i)=>{
-      const th=$('table-head').querySelector(`th:nth-child(${i+1})`);
-      const col=th?.dataset.col;
-      if(col) td.classList.toggle('col-expanded', expanded.has(col));
-    });
-  });
-  // Update ths
-  $('table-head').querySelectorAll('th[data-col]').forEach(th=>{
-    const col=th.dataset.col;
-    const btn=th.querySelector('.col-expand-btn');
-    const isExp=expanded.has(col);
-    th.classList.toggle('col-expanded',isExp);
-    if(btn) btn.textContent=isExp?'⤡':'⤢';
-  });
-}
-
-function _vtOnScroll(){
-  if(_vtRAF) return;
-  _vtRAF=requestAnimationFrame(()=>{
-    _vtRAF=null;
-    try{ _vtRenderVisible(); }catch(e){ console.error('vtRender error:',e); }
-  });
-}
-
-// Construye un <tr> completo para la fila virtual `row`
-function _vtBuildRow(tab, row, renderCols, hid, frz, rules, txt, scol, allCols){
-  const i=tab.filtered[row]; if(i===undefined) return null;
-  const rowData=tab.rawData[i]; if(!rowData) return null;
-  const tr=document.createElement('tr');
-  if(tab.selected.has(i)) tr.className='selected';
-  tr.dataset.idx=i;
-  tr.dataset.vrow=row;
-  tr.onclick=e=>{
-    const now=Date.now();
-    if(_vtRowTap.idx===i&&now-_vtRowTap.t<400){
-      _vtRowTap={idx:null,t:0};
-      openDetail(i);
-      return;
-    }
-    _vtRowTap={idx:i,t:now};
-    toggleRow(e,i);
-  };
-  tr.ondblclick=e=>{e.preventDefault();_vtRowTap={idx:null,t:0};openDetail(i);};
-
-  renderCols.forEach(col=>{
-    const td=document.createElement('td');
-    if(hid.has(col)){td.className='col-hidden';tr.appendChild(td);return}
-    if(frz.has(col)){
-      td.className='frozen';
-      const left=_frzLeftMap[col]||0;
-      td.style.left=left+'px';
-    }
-    const raw_v=rowData[col]??''; const v=fmtCell(col,raw_v,tab);
-    td.title=v;
-
-    let bg='';
-    for(const rule of rules){
-      if(rule.col!==col) continue;
-      const rv=v.toLowerCase(), rv2=rule.val.toLowerCase();
-      if((rule.op==='='&&rv===rv2)||(rule.op==='!='&&rv!==rv2)||
-         (rule.op==='>'&&parseFloat(v)>parseFloat(rule.val))||
-         (rule.op==='<'&&parseFloat(v)<parseFloat(rule.val))||
-         (rule.op==='contiene'&&rv.includes(rv2))){ bg=rule.color; break; }
-    }
-
-    if(txt&&v&&(!scol||allCols||scol===col)){
-      const idx=v.toLowerCase().indexOf(txt);
-      if(idx>=0){
-        const pre=document.createTextNode(v.slice(0,idx));
-        const mark=el('span',{cls:'hl'},[v.slice(idx,idx+txt.length)]);
-        const post=document.createTextNode(v.slice(idx+txt.length));
-        if(bg){ const wrap=el('span',{style:`background:${bg};color:#000;border-radius:3px;padding:0 4px`}); wrap.append(pre,mark,post); td.appendChild(wrap); }
-        else{ td.append(pre,mark,post); }
-        tr.appendChild(td); return;
-      }
-    }
-    if(bg){ td.innerHTML=`<span style="background:${bg};color:#000;border-radius:3px;padding:0 4px">${eh(v)}</span>`; }
-    else   { td.textContent=v; }
-    tr.appendChild(td);
-  });
-  return tr;
-}
-
-function _vtRenderVisible(){
-  const tab=T(); if(!tab) return;
-  const scroll=$('vt-scroll');
-  const scrollTop=scroll.scrollTop;
-  const viewH=scroll.clientHeight;
-  const totalRows=tab.filtered.length;
-
-  // Usar altura promedio medida (cae back a VT_ROW_H hasta tener datos reales)
-  const measuredKeys=Object.keys(_vtRowHeights);
-  const avgH=measuredKeys.length>0
-    ? measuredKeys.reduce((s,k)=>s+_vtRowHeights[k],0)/measuredKeys.length
-    : VT_ROW_H;
-  const rowH=Math.max(VT_ROW_H, avgH);
-
-  let startRow=Math.floor(scrollTop/rowH)-VT_BUFFER;
-  let endRow=Math.ceil((scrollTop+viewH)/rowH)+VT_BUFFER;
-  startRow=Math.max(0,startRow);
-  endRow=Math.min(totalRows-1,endRow);
-
-  // Si el rango no cambió, nada que hacer
-  if(startRow===_vtLastStart && endRow===_vtLastEnd) return;
-
-  const txt   = ($('search-input').value||'').toLowerCase().trim();
-  const scol  = $('search-col').value;
-  const allCols = scol==='(Todas las columnas)'||!scol;
-  const hid=tab.hiddenCols||new Set();
-  const frz=tab.frozenCols||new Set();
-  const rules=tab.condRules.filter(r=>r.col&&r.op&&r.val&&r.color);
-  const visColCount=tab.columns.filter(c=>!hid.has(c)).length||1;
-  const frozenOrder=tab.frozenOrder||[...frz];
-  const renderCols=[...frozenOrder.filter(c=>frz.has(c)&&!hid.has(c)),
-                    ...tab.columns.filter(c=>!frz.has(c)&&!hid.has(c))];
-
-  const tbody=$('table-body');
-
-  // ── DIFF: calcular qué filas entran y salen ───────────────────────────────
-  const prevStart=_vtLastStart, prevEnd=_vtLastEnd;
-  _vtLastStart=startRow; _vtLastEnd=endRow;
-
-  const isFullRebuild = prevStart===-1; // primer render o reset
-
-  if(isFullRebuild){
-    // Construcción inicial: usar fragmento, sin parpadeo
-    const frag=document.createDocumentFragment();
-
-    // Spacer top
-    if(startRow>0){
-      const sp=document.createElement('tr');
-      sp.id='vt-pad-top';
-      sp.innerHTML=`<td colspan="${visColCount}" style="height:${startRow*rowH}px;padding:0;border:none"></td>`;
-      frag.appendChild(sp);
-    }
-
-    for(let row=startRow;row<=endRow;row++){
-      const tr=_vtBuildRow(tab,row,renderCols,hid,frz,rules,txt,scol,allCols);
-      if(tr) frag.appendChild(tr);
-    }
-
-    // Spacer bottom
-    const botH=(totalRows-(endRow+1))*rowH;
-    if(botH>0){
-      const sp=document.createElement('tr');
-      sp.id='vt-pad-bot';
-      sp.innerHTML=`<td colspan="${visColCount}" style="height:${botH}px;padding:0;border:none"></td>`;
-      frag.appendChild(sp);
-    }
-
-    tbody.innerHTML='';
-    tbody.appendChild(frag);
-
-  } else {
-    // ── Render diferencial: solo tocar lo que cambia ──────────────────────
-
-    // Medir alturas reales de las filas ya renderizadas antes de cualquier cambio
-    tbody.querySelectorAll('tr[data-vrow]').forEach(tr=>{
-      const vr=+tr.dataset.vrow;
-      const h=tr.offsetHeight;
-      if(h>0) _vtRowHeights[vr]=h;
-    });
-
-    // Quitar filas que salen por arriba
-    if(startRow>prevStart){
-      for(let row=prevStart;row<Math.min(startRow,prevEnd+1);row++){
-        const tr=tbody.querySelector(`tr[data-vrow="${row}"]`);
-        if(tr) tr.remove();
-      }
-    }
-    // Quitar filas que salen por abajo
-    if(endRow<prevEnd){
-      for(let row=Math.max(endRow+1,prevStart);row<=prevEnd;row++){
-        const tr=tbody.querySelector(`tr[data-vrow="${row}"]`);
-        if(tr) tr.remove();
-      }
-    }
-
-    // Spacer top: actualizar altura
-    let padTop=tbody.querySelector('#vt-pad-top');
-    const topH=startRow*rowH;
-    if(topH>0){
-      if(!padTop){
-        padTop=document.createElement('tr'); padTop.id='vt-pad-top';
-        padTop.innerHTML=`<td colspan="${visColCount}" style="height:${topH}px;padding:0;border:none"></td>`;
-        tbody.insertBefore(padTop,tbody.firstChild);
-      } else {
-        const td=padTop.querySelector('td');
-        if(td) td.style.height=topH+'px';
-      }
-    } else if(padTop){ padTop.remove(); }
-
-    // Spacer bottom: actualizar altura
-    let padBot=tbody.querySelector('#vt-pad-bot');
-    const botH=(totalRows-(endRow+1))*rowH;
-    if(botH>0){
-      if(!padBot){
-        padBot=document.createElement('tr'); padBot.id='vt-pad-bot';
-        padBot.innerHTML=`<td colspan="${visColCount}" style="height:${botH}px;padding:0;border:none"></td>`;
-        tbody.appendChild(padBot);
-      } else {
-        const td=padBot.querySelector('td');
-        if(td) td.style.height=botH+'px';
-      }
-    } else if(padBot){ padBot.remove(); }
-
-    // Añadir filas nuevas por arriba
-    if(startRow<prevStart){
-      // Buscar ancla: primera fila existente o justo después del spacer top
-      const existingFirst=tbody.querySelector('tr[data-vrow]');
-      const padTopEl=tbody.querySelector('#vt-pad-top');
-      const anchor=existingFirst||(padTopEl?padTopEl.nextSibling:tbody.firstChild);
-      const newRows=[];
-      for(let row=prevStart-1;row>=startRow;row--){
-        const tr=_vtBuildRow(tab,row,renderCols,hid,frz,rules,txt,scol,allCols);
-        if(tr) newRows.push(tr);
-      }
-      for(let j=newRows.length-1;j>=0;j--){
-        tbody.insertBefore(newRows[j], anchor);
-      }
-    }
-
-    // Añadir filas nuevas por abajo
-    if(endRow>prevEnd){
-      const anchorBot=tbody.querySelector('#vt-pad-bot');
-      for(let row=prevEnd+1;row<=endRow;row++){
-        const tr=_vtBuildRow(tab,row,renderCols,hid,frz,rules,txt,scol,allCols);
-        if(tr){ if(anchorBot) tbody.insertBefore(tr,anchorBot); else tbody.appendChild(tr); }
-      }
-    }
-  }
-
-  // Aplicar estado de columnas expandidas sin forzar reflow completo
-  _applyExpandedCols();
 }
 
 function sortBy(col){
@@ -3477,7 +3144,8 @@ document.addEventListener('keydown',e=>{
     else if(targetTop+VT_ROW_H>viewTop+viewH) scroll.scrollTop=targetTop-viewH+VT_ROW_H;
 
     // Re-render para actualizar selección visual
-    _vtLastStart=-1; _vtRenderVisible();
+    invalidateVirtualTableCache();
+    _vtRenderVisible();
     updateStatusBar();
   }
 
@@ -3490,7 +3158,8 @@ document.addEventListener('keydown',e=>{
     const rawIdx = tab.filtered[cursorIdx];
     tab.selected.clear(); tab.selected.add(rawIdx);
     $('vt-scroll').scrollTop = cursorIdx*VT_ROW_H;
-    _vtLastStart=-1; _vtRenderVisible();
+    invalidateVirtualTableCache();
+    _vtRenderVisible();
     updateStatusBar();
   }
 
@@ -3900,7 +3569,7 @@ function _doReload(tabId){
       tab._lastLoaded=Date.now();
       if(tabId===activeTabId){
         // Recarga activa: refrescar UI completa preservando filtros y scroll
-        _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+        invalidateVirtualTableCache();
         tab.searchText=prevSearchText;
         tab.pillsSearchText=prevPillsSearch;
         loadSheet(targetSheet, tabId, true);
@@ -3912,7 +3581,7 @@ function _doReload(tabId){
             const s=$('vt-scroll');
             if(!s) return;
             s.scrollTop=prevScrollTop;
-            _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+            invalidateVirtualTableCache();
             _vtRenderVisible();
           });
         }
@@ -3923,7 +3592,7 @@ function _doReload(tabId){
         if(ws){
           const range=XLSX.utils.decode_range(ws['!ref']||'A1');
           const hRow=tab._manualHdrRow??range.s.r;
-          const extracted=_extractSheetDataFromHeaderRow(ws, range, hRow);
+          const extracted=extractSheetDataFromHeaderRow(ws, range, hRow);
           tab.columns=extracted.columns;
           const raw=extracted.raw;
           if(raw.length){
@@ -5266,8 +4935,9 @@ function pillsFichaOverlayClick(e){ if(e.target===$('pills-ficha-overlay')) pill
 
 // Swipe gestures en móvil
 (function(){
-  let sx=0, sy=0;
   const panel = $('pills-ficha-panel');
+  if (!panel) return;
+  let sx=0, sy=0;
   panel.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;},{passive:true});
   panel.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
@@ -5474,6 +5144,40 @@ togglePillsMode = function(){
   }
 };
 
+// ── TABLA — virtual table engine (see src/engine/virtual-table.js) ─────────────
+let _vtApi = null;
+function _getVt() {
+  if (!_vtApi) {
+    _vtApi = createVirtualTableController({
+      getTab: T,
+      $,
+      eh,
+      ejs,
+      el,
+      fmtCell,
+      toggleRow,
+      openDetail,
+    });
+  }
+  return _vtApi;
+}
+
+function renderTable() {
+  _getVt().renderTable();
+}
+function _vtRenderVisible() {
+  _getVt().renderVisible();
+}
+function _vtOnScroll() {
+  _getVt().onScroll();
+}
+function _applyExpandedCols() {
+  _getVt().applyExpandedCols();
+}
+function toggleColExpand(btn) {
+  _getVt().toggleColExpand(btn);
+}
+
 // Mostrar botones de archivo si hay sesión restaurada (también tras _bootSessionRestore)
 
 // ── Inline handler globals (auto-generated by scripts/split-phase0.mjs) ──
@@ -5506,6 +5210,8 @@ const __miradorGlobals = {
   THEME_KEY,
   VT_BUFFER,
   VT_ROW_H,
+  virtualTableState,
+  invalidateVirtualTableCache,
   WORKBOOK_IDB_PREFIX,
   _EXCEL_EXTS,
   _activeSearchText,
@@ -5535,7 +5241,6 @@ const __miradorGlobals = {
   _excelSheetIcon,
   _exitPillsMode,
   _exportFallback,
-  _extractSheetDataFromHeaderRow,
   _fileLoadFailed,
   _flrRefreshLabel,
   _flushSessionSave,
@@ -5547,7 +5252,6 @@ const __miradorGlobals = {
   _fmSave,
   _fmSaveFolders,
   _fmTimeAgo,
-  _frzLeftMap,
   _getRecentSearches,
   _hdrPicker,
   _hdrRowForSheet,
@@ -5648,15 +5352,8 @@ const __miradorGlobals = {
   _updateSheetsBtn,
   _visibleChipsInOneLine,
   _vpRestoreHideTimer,
-  _vtBuildRow,
-  _vtLastEnd,
-  _vtLastStart,
   _vtOnScroll,
-  _vtRAF,
   _vtRenderVisible,
-  _vtRowHeights,
-  _vtRowTap,
-  _vtTotalH,
   _workbookIdbKey,
   activeTabId,
   addCondRule,

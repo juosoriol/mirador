@@ -47,6 +47,23 @@ test.describe('Escritorio — modo Tabla', () => {
     await expect(page.locator('#ms-list .ms-item.active .ms-item-name')).toHaveText(targetName);
   });
 
+  test('recarga página y restaura datos de sesión', async ({ page }) => {
+    const total = await getRowCount(page);
+    expect(total).toBeGreaterThan(0);
+
+    await page.reload();
+    try {
+      await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });
+    } catch {
+      // auth setup ya debería haber iniciado sesión
+    }
+
+    await expect(page.locator('#dropzone')).toBeHidden({ timeout: 30_000 });
+    await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 30_000 });
+    expect(await getRowCount(page)).toBeGreaterThan(0);
+    await expect(page.locator('#tabs-bar .tab')).toHaveCount(1);
+  });
+
   test('panel Acciones abre y cierra', async ({ page }) => {
     await page.locator('#btn-actions').click();
     await expect(page.locator('#actions-panel')).toHaveClass(/open/);

@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-sheet-switch-fix', k='mirador_build_v';
+  var BUILD='20260610-session-reload-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1945,58 +1945,171 @@ const el = (tag,props={},children=[]) => {
 };
 
 // Debounce genérico
-const debounce = (fn,ms) => { let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; };
+const debounce = (fn,ms) => {
+  let t;
+  const d = (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); };
+  d.flush = ()=>{ clearTimeout(t); fn(); };
+  d.cancel = ()=>{ clearTimeout(t); };
+  return d;
+};
 
 // ── SESIÓN ────────────────────────────────────────────────────────────────────
+const SESSION_IDB = 'mirador_session_db';
+const SESSION_IDB_STORE = 'session';
+
+function _sessionCompactTab(t){
+  const raw = t.rawData || [];
+  const cols = t.columns || [];
+  let keep = cols;
+  if(cols.length && raw.length){
+    keep = cols.filter(c => raw.some(r => r[c] !== '' && r[c] != null));
+    if(!keep.length) keep = cols;
+  }
+  let compactRaw = raw;
+  if(keep.length < cols.length){
+    compactRaw = raw.map(r => {
+      const o = {};
+      for(const c of keep) o[c] = r[c] ?? '';
+      return o;
+    });
+  }
+  if(compactRaw.length > MAX_SESSION) compactRaw = compactRaw.slice(0, MAX_SESSION);
+  return { columns: keep, rawData: compactRaw };
+}
+
+function _sessionBuildData(){
+  const cur = T();
+  if(cur){
+    cur.searchCol = $('search-col').value || '';
+    cur.dateFrom = $('date-from').value || '';
+    cur.dateTo = $('date-to').value || '';
+    cur.dateCol = $('date-col').value || '';
+    if(_pillsOn) cur.pillsSearchText = $('pills-search-input')?.value ?? cur.pillsSearchText ?? '';
+    else cur.searchText = $('search-input')?.value || '';
+  }
+  return {
+    activeTabId,
+    activeName: T()?.fileName || '',
+    ts: Date.now(),
+    tabs: [...tabs.values()].map(t => {
+      const compact = _sessionCompactTab(t);
+      const keepSet = new Set(compact.columns);
+      const pickCols = arr => (arr || []).filter(c => keepSet.has(c));
+      const cleanFilters = {};
+      for(const [col, val] of Object.entries(t.colFilters || {})){
+        if(keepSet.has(col)) cleanFilters[col] = val;
+      }
+      return {
+        id: t.id, fileName: t.fileName, color: t.color,
+        activeSheet: t.activeSheet, sheets: t.sheets,
+        colFilters: cleanFilters, condRules: (t.condRules || []).filter(r => keepSet.has(r.col)),
+        sortCol: keepSet.has(t.sortCol) ? t.sortCol : null, sortDir: t.sortDir,
+        searchText: t.searchText, pillsSearchText: t.pillsSearchText || '', searchCol: t.searchCol,
+        dateFrom: t.dateFrom, dateTo: t.dateTo, dateCol: keepSet.has(t.dateCol) ? t.dateCol : '',
+        dateColsDetected: (t.dateColsDetected || []).filter(c => keepSet.has(c)),
+        hiddenCols: pickCols([...t.hiddenCols || []]), frozenCols: pickCols([...t.frozenCols || []]),
+        frozenOrder: pickCols(t.frozenOrder || []),
+        columns: compact.columns,
+        _manualHdrRow: t._manualHdrRow ?? null,
+        _hdrRangeStart: t._hdrRangeStart ?? null,
+        _hdrBySheet: t._hdrBySheet ?? null,
+        statsPanels: (t.statsPanels || []).filter(c => keepSet.has(c)),
+        rawData: compact.rawData,
+      };
+    }),
+    pillsCfg: typeof _pillsLoadCfg === 'function' ? _pillsLoadCfg() : null,
+  };
+}
+
+function _sessionReadLocal(){
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch(_) { return null; }
+}
+
+function _sessionOpenIdb(){
+  return new Promise((resolve, reject) => {
+    if(typeof indexedDB === 'undefined'){ reject(new Error('indexedDB unavailable')); return; }
+    const req = indexedDB.open(SESSION_IDB, 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(SESSION_IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function _sessionWriteIdb(json){
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
+    tx.objectStore(SESSION_IDB_STORE).put(json, SESSION_KEY);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  }));
+}
+
+function _sessionReadIdb(){
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readonly');
+    const req = tx.objectStore(SESSION_IDB_STORE).get(SESSION_KEY);
+    req.onsuccess = () => {
+      if(!req.result){ resolve(null); return; }
+      try { resolve(JSON.parse(req.result)); } catch(_) { resolve(null); }
+    };
+    req.onerror = () => reject(req.error);
+  }));
+}
+
+function _sessionClearIdb(){
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
+    tx.objectStore(SESSION_IDB_STORE).delete(SESSION_KEY);
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  })).catch(()=>{});
+}
+
+async function _sessionReadAll(){
+  const local = _sessionReadLocal();
+  if(local && !local._store) return local;
+  return _sessionReadIdb().catch(() => null);
+}
+
+function clearStoredSession(){
+  try { localStorage.removeItem(SESSION_KEY); } catch(_) {}
+  _sessionClearIdb();
+}
+
 function saveSession(){
   if(!tabs.size) return;
-  // Sincronizar searchText antes de serializar
-  const cur=T();
-  if(cur){
-    cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||'';
-    if(_pillsOn) cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
-    else cur.searchText=$('search-input')?.value||'';
+  const data = _sessionBuildData();
+  const json = JSON.stringify(data);
+  try {
+    localStorage.setItem(SESSION_KEY, json);
+    _sessionClearIdb();
+  } catch(_) {
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify({
+        _store: 'idb', ts: data.ts, activeName: data.activeName, tabCount: data.tabs.length,
+      }));
+    } catch(_) {}
+    _sessionWriteIdb(json).catch(()=>{});
   }
-  const data={
-    activeTabId,
-    activeName:T()?.fileName||'',
-    ts:Date.now(),
-    tabs:[...tabs.values()].map(t=>({
-      id:t.id, fileName:t.fileName, color:t.color,
-      activeSheet:t.activeSheet, sheets:t.sheets,
-      colFilters:t.colFilters, condRules:t.condRules,
-      sortCol:t.sortCol, sortDir:t.sortDir,
-      searchText:t.searchText, pillsSearchText:t.pillsSearchText||'', searchCol:t.searchCol,
-      dateFrom:t.dateFrom, dateTo:t.dateTo, dateCol:t.dateCol,
-      dateColsDetected:t.dateColsDetected,
-      hiddenCols:[...t.hiddenCols||[]], frozenCols:[...t.frozenCols||[]], frozenOrder:t.frozenOrder||[],
-      columns:t.columns,
-      _manualHdrRow:t._manualHdrRow??null,
-      _hdrRangeStart:t._hdrRangeStart??null,
-      _hdrBySheet:t._hdrBySheet??null,
-      statsPanels:t.statsPanels||null,
-      // Truncar para no superar cuota de localStorage (~5MB)
-      rawData:(t.rawData||[]).length>MAX_SESSION ? t.rawData.slice(0,MAX_SESSION) : (t.rawData||[]),
-    })),
-    pillsCfg: _pillsLoadCfg(),
-  };
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(_){}
+}
+
+function _flushSessionSave(){
+  saveSessionDebounced.flush?.();
+  saveSession();
 }
 
 function promptSessionRestore(){
-  const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
-  if(!saved||!saved.tabs||!saved.tabs.length) return false;
-  const withData=saved.tabs.filter(t=>t.rawData&&t.rawData.length>0).length;
-  if(!withData) return false;
-  restoreSession();
-  return true;
+  const saved = _sessionReadLocal();
+  if(!saved || saved._store === 'idb' || !saved.tabs?.length) return false;
+  if(!saved.tabs.some(t => t.rawData?.length)) return false;
+  return restoreSession();
 }
 
-function openSessionPanel(){
+async function openSessionPanel(){
   const existing=$('session-panel');
   if(existing){ existing.remove(); return; }
 
-  const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+  const saved = await _sessionReadAll();
   const panel=document.createElement('div');
   panel.id='session-panel';
   panel.style.cssText='position:fixed;z-index:700;background:var(--s1);border:1px solid var(--border2);border-radius:var(--r);box-shadow:0 6px 24px rgba(0,0,0,.4);width:320px;font-size:12px;overflow:hidden';
@@ -2029,9 +2142,9 @@ function openSessionPanel(){
       </div>
       <div style="max-height:360px;overflow-y:auto">${tabsHTML}</div>
       <div style="padding:8px 14px;border-top:0.5px solid var(--border);display:flex;gap:8px">
-        <button onclick="restoreSession();$('session-panel')?.remove()" style="flex:1;padding:5px;border-radius:var(--r);border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc-text);cursor:pointer;font-size:11px;font-family:var(--font)">↺ Restaurar sesión</button>
+        <button onclick="restoreSessionAsync().then(()=>$('session-panel')?.remove())" style="flex:1;padding:5px;border-radius:var(--r);border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc-text);cursor:pointer;font-size:11px;font-family:var(--font)">↺ Restaurar sesión</button>
         <button onclick="clearRecentSearches();$('session-panel')?.remove()" title="Borrar historial de búsquedas" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:var(--font)">🧹</button>
-        <button onclick="localStorage.removeItem('${SESSION_KEY}');$('session-panel')?.remove();toast('Sesión eliminada')" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:var(--font)">Borrar</button>
+        <button onclick="clearStoredSession();$('session-panel')?.remove();toast('Sesión eliminada')" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-size:11px;font-family:var(--font)">Borrar</button>
       </div>`;
   }
 
@@ -2052,43 +2165,71 @@ function openSessionPanel(){
   },{once:true}),10);
 }
 
+function _applySavedSession(saved, quiet){
+  if(!saved?.tabs?.length) return false;
+  saved.tabs.forEach(s=>{
+    if(!s.columns?.length||!s.rawData?.length) return;
+    tabCounter=Math.max(tabCounter,s.id);
+    tabs.set(s.id,{
+      id:s.id, fileName:s.fileName, color:s.color||TAB_COLORS[(s.id-1)%TAB_COLORS.length],
+      workbook:null, sheets:s.sheets||[s.activeSheet||''], activeSheet:s.activeSheet||'',
+      rawData:s.rawData, columns:s.columns, filtered:[], selected:new Set(),
+      searchIndex:null, colUniques:null, colNulls:null,
+      hiddenCols:new Set(s.hiddenCols||[]), frozenCols:new Set(s.frozenCols||[]), frozenOrder:s.frozenOrder||[],
+      colFilters:s.colFilters||{}, condRules:s.condRules||[],
+      sortCol:s.sortCol||null, sortDir:s.sortDir||1, activeChipCol:null,
+      dateColsDetected:s.dateColsDetected||[],
+      _manualHdrRow: s._manualHdrRow ?? null,
+      _hdrRangeStart: s._hdrRangeStart ?? null,
+      _hdrBySheet: s._hdrBySheet ?? null,
+      statsPanels: s.statsPanels || null,
+      searchText:s.searchText||'', pillsSearchText:s.pillsSearchText||'', searchCol:s.searchCol||'',
+      dateFrom:s.dateFrom||'', dateTo:s.dateTo||'', dateCol:s.dateCol||'',
+    });
+  });
+  if(!tabs.size) return false;
+  activeTabId = tabs.has(saved.activeTabId) ? saved.activeTabId : [...tabs.keys()][0];
+  if(saved.pillsCfg) try{ localStorage.setItem(PILLS_KEY, JSON.stringify(saved.pillsCfg)); }catch(_){}
+  renderTabs(); restoreTabUI();
+  if(T()?.rawData?.length) refreshActiveView(activeTabId);
+  if(!quiet) toast(`Sesión restaurada — ${tabs.size} pestaña(s)`);
+  return true;
+}
+
 function restoreSession(){
   try {
-    const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
-    if(!saved?.tabs?.length) return false;
-    saved.tabs.forEach(s=>{
-      if(!s.columns?.length||!s.rawData?.length) return;
-      tabCounter=Math.max(tabCounter,s.id);
-      tabs.set(s.id,{
-        id:s.id, fileName:s.fileName, color:s.color||TAB_COLORS[(s.id-1)%TAB_COLORS.length],
-        workbook:null, sheets:s.sheets||[s.activeSheet||''], activeSheet:s.activeSheet||'',
-        rawData:s.rawData, columns:s.columns, filtered:[], selected:new Set(),
-        searchIndex:null, colUniques:null, colNulls:null,
-        hiddenCols:new Set(s.hiddenCols||[]), frozenCols:new Set(s.frozenCols||[]), frozenOrder:s.frozenOrder||[],
-        colFilters:s.colFilters||{}, condRules:s.condRules||[],
-        sortCol:s.sortCol||null, sortDir:s.sortDir||1, activeChipCol:null,
-        dateColsDetected:s.dateColsDetected||[],
-        _manualHdrRow: s._manualHdrRow ?? null,
-        _hdrRangeStart: s._hdrRangeStart ?? null,
-        _hdrBySheet: s._hdrBySheet ?? null,
-        statsPanels: s.statsPanels || null,
-        searchText:s.searchText||'', pillsSearchText:s.pillsSearchText||'', searchCol:s.searchCol||'',
-        dateFrom:s.dateFrom||'', dateTo:s.dateTo||'', dateCol:s.dateCol||'',
-      });
-    });
-    if(!tabs.size) return false;
-    activeTabId = tabs.has(saved.activeTabId) ? saved.activeTabId : [...tabs.keys()][0];
-    // Restaurar config de pills si venía en la sesión
-    if(saved.pillsCfg) try{ localStorage.setItem(PILLS_KEY, JSON.stringify(saved.pillsCfg)); }catch(_){}
-    renderTabs(); restoreTabUI();
-    toast(`Sesión restaurada — ${tabs.size} pestaña(s)`);
-    return true;
-  } catch(_){ return false; }
+    const saved = _sessionReadLocal();
+    if(saved?._store === 'idb') return false;
+    return _applySavedSession(saved);
+  } catch(_) { return false; }
+}
+
+async function restoreSessionAsync(){
+  try {
+    const saved = await _sessionReadAll();
+    if(!saved?.tabs?.some(t => t.rawData?.length)) return false;
+    return _applySavedSession(saved, true);
+  } catch(_) { return false; }
+}
+
+async function _bootSessionRestore(){
+  const ok = await restoreSessionAsync();
+  if(!ok && tabs.size === 0) showDropzone(true);
+  else if(tabs.size > 0){
+    _syncDataAreaView();
+    const tab = T();
+    if(tab?.rawData?.length && !tab.filtered?.length) refreshActiveView(activeTabId);
+  }
+  if(T()) _showFileActions();
 }
 
 const saveSessionDebounced = debounce(saveSession, 1000);
 setInterval(saveSession, 30000);
-window.addEventListener('beforeunload', saveSession);
+window.addEventListener('beforeunload', _flushSessionSave);
+window.addEventListener('pagehide', _flushSessionSave);
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') _flushSessionSave();
+});
 
 // ── CERRAR OVERLAYS AL INICIO (fix móviles) ──
 window.addEventListener('DOMContentLoaded', function(){
@@ -2675,6 +2816,7 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   updateBreadcrumb();
   renderSheetsSidebar();
   fmRegisterFile(tab.fileName, tab.sheets?.length||0, tab.rawData.length);
+  saveSession();
   saveSessionDebounced();
 }
 
@@ -6673,9 +6815,6 @@ window.addEventListener('resize', ()=>{ _mobileUiRefresh(); if(!_isMobileUi()) c
 
 // ── INICIO ────────────────────────────────────────────────────────────────────
 applyTheme(currentTheme);
-if(!promptSessionRestore()) restoreSession();
-if(tabs.size===0) showDropzone(true);
-else _syncDataAreaView();
 initChipSearch();
 document.body.classList.remove('focus-a','focus-b','focus-c','focus-d','focus-c-revealed');
 try{ localStorage.removeItem('mirador_focus_v1'); }catch(_){}
@@ -7221,7 +7360,7 @@ function _closeActionsPanelOutside(e){
 function _showFileActions(){
   $('btn-export').style.display='';
   _updateSheetsBtn();
-  if(_fbUser){
+  if(typeof _fbUser !== 'undefined' && _fbUser){
     const sc=$('btn-save-cloud'); if(sc) sc.style.display='';
     const apSc=$('ap-save-cloud'); if(apSc) apSc.style.display='';
   }
@@ -7289,8 +7428,7 @@ togglePillsMode = function(){
   }
 };
 
-// Mostrar botones de archivo si hay sesión restaurada
-if(T()) _showFileActions();
+// Mostrar botones de archivo si hay sesión restaurada (también tras _bootSessionRestore)
 
 </script>
 
@@ -7390,6 +7528,10 @@ _fbAuth.onAuthStateChanged(user => {
     document.getElementById('login-main-content').style.display = '';
     _fbUpdateUserUI(user);
     _fbInitUserProfile(user);
+    if(tabs.size > 0 && T()?.rawData?.length){
+      refreshActiveView(activeTabId);
+      _showFileActions();
+    }
     if(typeof _mobileUiRefresh==='function') _mobileUiRefresh();
   } else {
     _fbUserRole = null;
@@ -7883,6 +8025,7 @@ new MutationObserver(scheduleOverlayCheck).observe(document.body, {
 window.addEventListener('resize', scheduleOverlayCheck);
 window._lockModalViewport = _lockModalViewport;
 window.scheduleOverlayCheck = scheduleOverlayCheck;
+if(typeof _bootSessionRestore === 'function') _bootSessionRestore();
 </script>
 
 <!-- Barra inferior móvil -->

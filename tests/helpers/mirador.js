@@ -30,19 +30,27 @@ export function requireCredentials() {
   return { email, password };
 }
 
-export async function waitForAppReady(page) {
-  await page.waitForFunction(() => {
+export async function waitForAppReady(page, { retry = true } = {}) {
+  const ready = () => {
     if (window.__miradorBootDone === true) return true;
     const loading = document.getElementById('loading');
     const loadingHidden = !loading || getComputedStyle(loading).display === 'none';
     return loadingHidden
       && typeof window.openFilePicker === 'function'
       && typeof window.showDropzone === 'function';
-  }, null, { timeout: 60_000 });
+  };
+
+  try {
+    await page.waitForFunction(ready, null, { timeout: 45_000 });
+  } catch (err) {
+    if (!retry) throw err;
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(ready, null, { timeout: 45_000 });
+  }
 }
 
-export async function resetToIdleState(page) {
-  await waitForAppReady(page);
+export async function resetToIdleState(page, { skipReady = false } = {}) {
+  if (!skipReady) await waitForAppReady(page);
   await page.evaluate(() => {
     if (typeof clearStoredSession === 'function') clearStoredSession();
     if (typeof tabs !== 'undefined') {
@@ -63,33 +71,32 @@ export async function resetToIdleState(page) {
 
 export async function login(page) {
   const { email, password } = requireCredentials();
-  await page.goto('/');
-  const loginScreen = page.locator('#login-screen');
-  await loginScreen.waitFor({ state: 'visible', timeout: 20_000 });
 
-  if (await loginScreen.evaluate((el) => el.classList.contains('hidden'))) {
-    await waitForAppReady(page);
-    await resetToIdleState(page);
-    return;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const loginScreen = page.locator('#login-screen');
+    await loginScreen.waitFor({ state: 'visible', timeout: 20_000 });
+
+    if (!(await loginScreen.evaluate((el) => el.classList.contains('hidden')))) {
+      try {
+        await expect(loginScreen).toHaveClass(/hidden/, { timeout: 5_000 });
+      } catch {
+        await page.fill('#login-email', email);
+        await page.fill('#login-pass', password);
+        await page.getByRole('button', { name: 'Ingresar' }).click();
+        await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
+        await expect(page.locator('#login-error')).not.toHaveClass(/show/);
+      }
+    }
+
+    try {
+      await waitForAppReady(page, { retry: attempt === 0 });
+      await resetToIdleState(page, { skipReady: true });
+      return;
+    } catch (err) {
+      if (attempt === 1) throw err;
+    }
   }
-
-  try {
-    await expect(loginScreen).toHaveClass(/hidden/, { timeout: 10_000 });
-    await waitForAppReady(page);
-    await resetToIdleState(page);
-    return;
-  } catch {
-    // continuar con login manual
-  }
-
-  await page.fill('#login-email', email);
-  await page.fill('#login-pass', password);
-  await page.getByRole('button', { name: 'Ingresar' }).click();
-
-  await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
-  await expect(page.locator('#login-error')).not.toHaveClass(/show/);
-  await waitForAppReady(page);
-  await resetToIdleState(page);
 }
 
 export async function loadFixture(page, filePath = FIXTURE_XLSX) {

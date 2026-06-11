@@ -342,7 +342,13 @@ async function saveToCloud(){
     btn.innerHTML = originalText;
     btn.disabled = false;
 
-    if (typeof toast === 'function') {
+    if (typeof toastCloudSaved === 'function') {
+      toastCloudSaved({
+        fileName,
+        sheetCount: sheetNames.length,
+        sizeBytes: file.size,
+      });
+    } else if (typeof toast === 'function') {
       toast(`✅ "${fileName}" guardado en la nube`);
     } else {
       alert('✅ Documento guardado correctamente.');

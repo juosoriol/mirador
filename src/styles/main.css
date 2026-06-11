@@ -581,6 +581,21 @@ input[type=color]{padding:2px;height:28px;width:30px;cursor:pointer;border-radiu
 #toast{position:absolute;bottom:44px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:7px 16px;font-size:12px;color:var(--text);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:999;white-space:nowrap}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.show:has(span[onclick]){pointer-events:auto}
+#toast.toast-rich{white-space:normal;min-width:300px;max-width:min(92vw,440px);padding:0;border-left:3px solid #10b981;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+#toast.toast-success{background:var(--s1);border-color:var(--border);border-left-color:#10b981}
+#toast.show.toast-rich{pointer-events:auto}
+.toast-rich-inner{display:flex;align-items:center;gap:12px;padding:12px 14px}
+.toast-rich-icon{font-size:20px;flex-shrink:0;width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:rgba(16,185,129,.16);border-radius:10px}
+.toast-rich-text{flex:1;min-width:0}
+.toast-rich-title{font-size:11px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.toast-rich-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toast-rich-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.toast-rich-action{flex-shrink:0;padding:7px 12px;border-radius:8px;border:1px solid var(--acc);background:var(--acc-dim);color:var(--acc-text);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:filter .12s}
+.toast-rich-action:hover{filter:brightness(1.08)}
+@media(max-width:500px){
+  #toast.toast-rich{left:12px;right:12px;transform:translateY(10px);max-width:none}
+  #toast.show.toast-rich{transform:translateY(0)}
+}
 /* Scrollbar global — delgada */
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:transparent}

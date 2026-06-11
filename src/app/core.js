@@ -3089,8 +3089,43 @@ function updateStatusBar(){
 function setStatus(m){ /* status textual retirado de la barra inferior */ }
 let _toastTimer=null;
 function toast(msg,err){
-  const e=$('toast'); e.textContent=msg; e.style.borderColor=err?'var(--danger)':'var(--border)';
-  e.classList.add('show'); clearTimeout(_toastTimer); _toastTimer=setTimeout(()=>e.classList.remove('show'),2800);
+  const e=$('toast'); if(!e) return;
+  e.classList.remove('toast-rich','toast-success','toast-error');
+  e.textContent=msg;
+  e.style.borderColor=err?'var(--danger)':'var(--border)';
+  e.style.pointerEvents='';
+  e.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{ e.classList.remove('show'); e.textContent=''; },2800);
+}
+function toastCloudSaved({ fileName, sheetCount = 0, sizeBytes = 0 } = {}){
+  const e=$('toast'); if(!e) return;
+  const displayName=(fileName||'Documento').replace(/\.xlsx?$/i,'');
+  const sizeStr=sizeBytes>=1024*1024
+    ?(sizeBytes/1024/1024).toFixed(1)+' MB'
+    :sizeBytes>=1024?(sizeBytes/1024).toFixed(0)+' KB':'';
+  const meta=[sheetCount?`${sheetCount} hoja${sheetCount!==1?'s':''}`:null,sizeStr||null].filter(Boolean).join(' · ');
+  e.classList.remove('toast-error');
+  e.classList.add('toast-rich','toast-success');
+  e.style.borderColor='';
+  e.style.pointerEvents='auto';
+  e.innerHTML=`
+    <div class="toast-rich-inner">
+      <div class="toast-rich-icon" aria-hidden="true">☁️</div>
+      <div class="toast-rich-text">
+        <div class="toast-rich-title">Archivo guardado en la nube</div>
+        <div class="toast-rich-name" title="${eh(fileName||'')}">${eh(displayName)}</div>
+        ${meta?`<div class="toast-rich-meta">${eh(meta)}</div>`:''}
+      </div>
+      <button type="button" class="toast-rich-action" onclick="openDocsPanel();document.getElementById('toast')?.classList.remove('show')">Ver</button>
+    </div>`;
+  e.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{
+    e.classList.remove('show','toast-rich','toast-success');
+    e.innerHTML='';
+    e.style.pointerEvents='';
+  },5500);
 }
 function _showHdrToast(fila){
   const e=$('toast');
@@ -5529,6 +5564,7 @@ const __miradorGlobals = {
   tabCounter,
   tabs,
   toast,
+  toastCloudSaved,
   toggleActionsPanel,
   toggleChipDropdown,
   toggleChipsBar,

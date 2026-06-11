@@ -6,6 +6,12 @@ import { TabBar } from './TabBar.jsx';
 import { TopBar } from './TopBar.jsx';
 import { ChipsBar } from './ChipsBar.jsx';
 import { SearchBar } from './SearchBar.jsx';
+import { StatsBar } from './StatsBar.jsx';
+import { MobileActiveBar } from './MobileActiveBar.jsx';
+import { DataArea } from './DataArea.jsx';
+import { PillsView } from './PillsView.jsx';
+import { StatusBar } from './StatusBar.jsx';
+import { MobileBnav } from './MobileBnav.jsx';
 
 export function mountAppShell() {
   const loginRoot = document.getElementById('login-root');
@@ -38,5 +44,35 @@ export function mountAppShell() {
   const searchRoot = document.getElementById('searchbar-root');
   if (searchRoot) {
     createRoot(searchRoot).render(<SearchBar />);
+  }
+
+  const statsRoot = document.getElementById('stats-bar-root');
+  if (statsRoot) {
+    createRoot(statsRoot).render(<StatsBar />);
+  }
+
+  const mobileActiveRoot = document.getElementById('mobile-active-bar-root');
+  if (mobileActiveRoot) {
+    createRoot(mobileActiveRoot).render(<MobileActiveBar />);
+  }
+
+  const dataAreaRoot = document.getElementById('data-area-root');
+  if (dataAreaRoot) {
+    createRoot(dataAreaRoot).render(<DataArea />);
+  }
+
+  const pillsRoot = document.getElementById('pills-view-root');
+  if (pillsRoot) {
+    createRoot(pillsRoot).render(<PillsView />);
+  }
+
+  const statusRoot = document.getElementById('statusbar-root');
+  if (statusRoot) {
+    createRoot(statusRoot).render(<StatusBar />);
+  }
+
+  const bnavRoot = document.getElementById('mobile-bnav-root');
+  if (bnavRoot) {
+    createRoot(bnavRoot).render(<MobileBnav />);
   }
 }

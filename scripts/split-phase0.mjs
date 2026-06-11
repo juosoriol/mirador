@@ -132,8 +132,14 @@ function stripLegacyReactShell(bodyHtml) {
   return bodyHtml
     .replace(/<div id="topbar">[\s\S]*?<input type="file" id="file-input"[\s\S]*?<\/div>\s*\n?/, '')
     .replace(/<div id="tabs-bar">[\s\S]*?<\/div>\s*\n?/, '')
+    .replace(/<div id="stats-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="stats-bar-root"></div>\n')
     .replace(/<div id="chips-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="chips-bar-root"></div>\n')
     .replace(/<div id="searchbar">[\s\S]*?<\/div>\s*\n?/, '<div id="searchbar-root"></div>\n')
+    .replace(/<!-- Barra filtros activos móvil -->[\s\S]*?<div id="mobile-active-bar">[\s\S]*?<\/div>\s*\n?/, '<div id="mobile-active-bar-root"></div>\n')
+    .replace(/<div id="data-area">[\s\S]*?<div id="table-wrap">[\s\S]*?<\/div>\s*\n\s*<\/div>\s*\n?/, '<div id="data-area-root"></div>\n')
+    .replace(/<!-- ── PILLS VIEW ──[\s\S]*?<div id="pills-view">[\s\S]*?<\/div>\s*\n(?=\s*<\/div>)/, '<div id="pills-view-root"></div>\n')
+    .replace(/<div id="statusbar">[\s\S]*?<\/div>\s*\n?/, '<div id="statusbar-root"></div>\n')
+    .replace(/<!-- Barra inferior móvil -->[\s\S]*?<nav id="mobile-bnav"[\s\S]*?<\/nav>\s*\n?/, '<div id="mobile-bnav-root"></div>\n')
     .trim();
 }
 
@@ -145,7 +151,7 @@ const viteIndex = `<!DOCTYPE html>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260611-filterbar-react-v1', k='mirador_build_v';
+  var BUILD='20260611-table-pills-react-v1', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);

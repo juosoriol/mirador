@@ -1,0 +1,26 @@
+import { memo } from 'react';
+import { callLegacy } from './call-legacy.js';
+
+function MobileActiveBarInner() {
+  return (
+    <div id="mobile-active-bar">
+      <div id="mobile-active-pills" />
+      <button
+        type="button"
+        id="btn-mobile-quick-clear"
+        onClick={() => callLegacy('clearChipFiltersOnly')}
+        title="Quitar filtros de columnas"
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M3 6h18" />
+          <path d="M8 6V4h8v2" />
+          <path d="M19 6l-1 14H6L5 6" />
+        </svg>
+        Limpiar
+      </button>
+    </div>
+  );
+}
+
+/** core.js updates #mobile-active-pills innerHTML. */
+export const MobileActiveBar = memo(MobileActiveBarInner);

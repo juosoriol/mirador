@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260611-filterbar-react-v1', k='mirador_build_v';
+  var BUILD='20260611-table-pills-react-v1', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -33,19 +33,12 @@
 
 <div id="tabs-bar-root"></div>
 
-<div id="stats-bar"></div>
+<div id="stats-bar-root"></div>
 <div id="chips-bar-root"></div>
 <div id="chip-dropdown"></div>
 <div id="searchbar-root"></div>
 
-<!-- Barra filtros activos móvil -->
-<div id="mobile-active-bar">
-  <div id="mobile-active-pills"></div>
-  <button type="button" id="btn-mobile-quick-clear" onclick="clearChipFiltersOnly()" title="Quitar filtros de columnas">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/></svg>
-    Limpiar
-  </button>
-</div>
+<div id="mobile-active-bar-root"></div>
 
 <!-- Panel Mis Documentos -->
 <div id="docs-panel">
@@ -86,95 +79,11 @@
       </div>
     </div>
   </div>
-  <div id="data-area">
-    <div id="dropzone" role="button" tabindex="0" title="Abrir archivo Excel"
-      onclick="openFilePicker()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openFilePicker()}"
-      ondragover="onDragOver(event)" ondrop="onDrop(event)" ondragleave="this.classList.remove('dragover')">
-      <div class="drop-icon">📊</div>
-      <h2>Arrastra tu archivo Excel aquí</h2>
-      <p style="font-size:12px">o haz clic para elegir un archivo</p>
-      <button type="button" class="drop-open-btn" onclick="event.stopPropagation();openFilePicker()">📂 Abrir archivo</button>
-      <p style="font-size:11px;margin-top:4px;color:var(--muted)">Mirador — Abre varios archivos en pestañas independientes</p>
-    </div>
-    <div id="loading"><div class="spinner"></div><span>Cargando...</span></div>
-    <div id="table-wrap">
-      <div id="vt-scroll">
-        <table class="vt-table" id="vt-body-table">
-          <thead id="table-head"></thead>
-          <tbody id="table-body"></tbody>
-        </table>
-      </div>
-      <div id="vt-info"></div>
-    </div>
-  </div>
-
-  <!-- ── PILLS VIEW ── (fuera del sidebar, hijo directo de #main) -->
-  <div id="pills-view">
-    <!-- Buscador propio del modo pills -->
-    <div id="pills-search-bar" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-      <input type="text" id="pills-search-input" placeholder="🔍  Buscar..." autocomplete="off"
-        oninput="pillsOnSearch(this.value)"
-        style="flex:1;background:var(--s1);border:1.5px solid var(--border);border-radius:20px;padding:9px 14px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);transition:border-color .15s"/>
-      <button id="pills-search-clear" onclick="pillsClearSearch()" style="display:none;padding:6px 12px;border-radius:20px;font-size:12px;border:1px solid var(--border2);background:var(--s1);color:var(--muted);cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0">✕ Limpiar</button>
-    </div>
-    <div class="pills-toolbar">
-      <span class="pills-toolbar-count" id="pills-toolbar-count"></span>
-      <button class="pills-cfg-btn" id="pills-filter-btn" onclick="pillsToggleMobileFilter()" style="display:none">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        <span id="pills-filter-label">Filtros</span>
-      </button>
-      <button class="pills-cfg-btn" id="pills-cfg-btn" onclick="pillsToggleConfig()">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
-        Configurar
-      </button>
-    </div>
-    <div id="pills-cfg-panel">
-      <div class="pills-cfg-row">
-        <span class="pills-cfg-label">Campo principal</span>
-        <select class="pills-cfg-select" id="pills-sel-main" onchange="renderPillsView()"></select>
-      </div>
-      <div class="pills-cfg-row">
-        <span class="pills-cfg-label">Campo secundario</span>
-        <select class="pills-cfg-select" id="pills-sel-sec" onchange="renderPillsView()"></select>
-      </div>
-      <div class="pills-cfg-row">
-        <span class="pills-cfg-label">Color por</span>
-        <select class="pills-cfg-select" id="pills-sel-color" onchange="renderPillsView()">
-          <option value="none">Sin color</option>
-        </select>
-      </div>
-      <div class="pills-cfg-row">
-        <span class="pills-cfg-label">Avatar</span>
-        <select class="pills-cfg-select" id="pills-sel-avatar" onchange="renderPillsView()"></select>
-      </div>
-      <div class="pills-cfg-row">
-        <span class="pills-cfg-label">Diseño</span>
-        <select class="pills-cfg-select" id="pills-sel-design" onchange="renderPillsView()">
-          <option value="d1">▣ ID Card</option>
-          <option value="d2">≡ Lista compacta</option>
-          <option value="d3">○ Chips</option>
-          <option value="d5">◎ Timeline</option>
-        </select>
-      </div>
-      <div class="pills-cfg-row" style="justify-content:flex-end;padding-top:4px">
-        <button onclick="pillsResetDefaults()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:var(--font)">↺ Por defecto</button>
-      </div>
-    </div>
-    <div id="pills-grid-wrap">
-      <div id="pills-loading" aria-live="polite" aria-busy="false">
-        <div class="spinner"></div>
-        <span id="pills-loading-text">Cargando registros…</span>
-      </div>
-      <div id="pills-grid"></div>
-    </div>
-  </div>
+  <div id="data-area-root"></div>
+  <div id="pills-view-root"></div>
 </div>
 
-<div id="statusbar">
-  <span>Total: <span class="sv" id="st-total">0</span></span>
-  <span>Visibles: <span class="sv" id="st-vis">0</span></span>
-  <span>Sel: <span class="sv" id="st-sel">0</span></span>
-</div>
+<div id="statusbar-root"></div>
 
 <div id="detail-overlay" onclick="closeDetail(event)">
   <div id="detail-panel" onclick="event.stopPropagation()">
@@ -424,28 +333,7 @@
   </div>
 </div>
 
-<!-- Barra inferior móvil --><nav id="mobile-bnav" aria-label="Navegación móvil">
-  <div class="mbnav-inner">
-    <div class="mbnav-btn mbnav-view-wrap" id="mbnav-view">
-      <button type="button" id="btn-pills-mode-bnav" onclick="togglePillsMode()" title="Alternar Tabla / Pills">
-        <span class="pills-toggle-seg seg-table">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-          Tabla
-        </span>
-        <span class="pills-toggle-seg seg-pills">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
-          Pills
-        </span>
-      </button>
-    </div>
-    <button type="button" class="mbnav-btn" id="mbnav-filters" onclick="openMobileFilterSheet()">
-      <span class="mbnav-ico">⛃<span class="mbnav-badge" id="mbnav-filter-badge">0</span></span>Filtros
-    </button>
-    <button type="button" class="mbnav-btn" id="mbnav-menu" onclick="toggleActionsPanel()">
-      <span class="mbnav-ico">☰</span>Menú
-    </button>
-  </div>
-</nav>
+<div id="mobile-bnav-root"></div>
 
 <!-- Panel filtros avanzados móvil -->
 <div id="mobile-filter-overlay" onclick="closeMobileFilterSheet()">

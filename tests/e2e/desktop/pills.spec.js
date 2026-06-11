@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   login, loadFixture, enterPillsMode, exitPillsMode,
-  closeAllTabs, expectEmptyState, getRowCount,
+  closeAllTabs, expectEmptyState, getRowCount, FIXTURE_XLSX,
 } from '../../helpers/mirador.js';
 
 test.describe('Escritorio — modo Pills', () => {
@@ -27,6 +27,19 @@ test.describe('Escritorio — modo Pills', () => {
     await page.fill('#pills-search-input', 'zzz_inexistente_xyz');
     await page.waitForTimeout(400);
     expect(await getRowCount(page)).toBeLessThanOrEqual(total);
+  });
+
+  test('cambiar pestaña recarga pills con spinner', async ({ page }) => {
+    const firstCount = await getRowCount(page);
+    const firstMain = await page.locator('#pills-grid [class*="mpill"]').first().textContent();
+    await page.setInputFiles('#file-input', FIXTURE_XLSX);
+    await page.locator('#loading').waitFor({ state: 'hidden', timeout: 60_000 });
+    await page.locator('.tab').first().click();
+    await page.waitForTimeout(800);
+    await expect(page.locator('#pills-loading')).not.toHaveClass(/show/);
+    expect(await getRowCount(page)).toBe(firstCount);
+    const restoredMain = await page.locator('#pills-grid [class*="mpill"]').first().textContent();
+    expect(restoredMain).toBe(firstMain);
   });
 
   test('volver a tabla oculta pills', async ({ page }) => {

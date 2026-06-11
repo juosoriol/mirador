@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-sheets-btn-fix', k='mirador_build_v';
+  var BUILD='20260610-pills-tab-refresh', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -710,6 +710,12 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
 .pills-cfg-select:focus{border-color:var(--acc)}
 #pills-search-input:focus{border-color:var(--acc)!important}
 #pills-search-input::placeholder{color:var(--muted)}
+#pills-grid-wrap{position:relative;min-height:120px;flex:1}
+#pills-loading{
+  display:none;position:absolute;inset:0;z-index:6;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;background:var(--bg);color:var(--muted);font-size:13px
+}
+#pills-loading.show{display:flex}
 #pills-grid{display:flex;flex-wrap:wrap;gap:7px}
 #pills-grid.pg-col{flex-direction:column;flex-wrap:nowrap;gap:6px}
 #pills-grid.pg-wrap{flex-wrap:wrap;flex-direction:row}
@@ -1633,7 +1639,13 @@ html[data-modal-vp="mobile"] #pills-ficha-panel{
         <button onclick="pillsResetDefaults()" style="font-size:11px;padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;font-family:var(--font)">↺ Por defecto</button>
       </div>
     </div>
-    <div id="pills-grid"></div>
+    <div id="pills-grid-wrap">
+      <div id="pills-loading" aria-live="polite" aria-busy="false">
+        <div class="spinner"></div>
+        <span id="pills-loading-text">Cargando registros…</span>
+      </div>
+      <div id="pills-grid"></div>
+    </div>
   </div>
 </div>
 
@@ -2269,8 +2281,18 @@ function switchTab(id){
   const cur=T();
   if(cur){
     cur.searchCol=$('search-col').value||''; cur.dateFrom=$('date-from').value||''; cur.dateTo=$('date-to').value||''; cur.dateCol=$('date-col').value||'';
-    if(_pillsOn) cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
-    else cur.searchText=$('search-input')?.value||'';
+    if(_pillsOn){
+      cur.pillsSearchText=$('pills-search-input')?.value??cur.pillsSearchText??'';
+      cur._pillsSel={
+        main:$('pills-sel-main')?.value||'',
+        sec:$('pills-sel-sec')?.value||'',
+        color:$('pills-sel-color')?.value||'none',
+        avatar:$('pills-sel-avatar')?.value||'',
+        design:$('pills-sel-design')?.value||'d1',
+      };
+    } else {
+      cur.searchText=$('search-input')?.value||'';
+    }
   }
   activeTabId=id; renderTabs(); restoreTabUI();
 }
@@ -2316,11 +2338,10 @@ function restoreTabUI(){
     $('table-wrap').style.display='none';
     $('data-area').style.display='none';
     $('pills-view')?.classList.add('open');
-    _pillsPopulateSelectors();
-    applyFilters();
     updateBreadcrumb();
     setStatus(`"${tab.activeSheet||'Datos'}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas`);
     _mobileUiRefresh();
+    _refreshPillsTabView({reason:'tab'});
     return;
   }
   $('search-input').value = tab.searchText||'';
@@ -6584,6 +6605,65 @@ let _pillsCfgOn  = false;
 let _pillsFichaIdx = 0;
 let _pillsFichaOpen = false;
 let _pillsFilteredCache = [];
+let _pillsRefreshToken = 0;
+
+function _pillsShowLoading(show, label){
+  const el=$('pills-loading');
+  const grid=$('pills-grid');
+  const txt=$('pills-loading-text');
+  if(txt && label) txt.textContent=label;
+  if(el){
+    el.classList.toggle('show',!!show);
+    el.setAttribute('aria-busy', show ? 'true' : 'false');
+  }
+  if(show && grid) grid.innerHTML='';
+  if(show){
+    const cnt=$('pills-toolbar-count');
+    if(cnt) cnt.textContent='';
+    _pillsFilteredCache=[];
+  }
+}
+
+function _refreshPillsTabView(opts={}){
+  const token=++_pillsRefreshToken;
+  const tab=T();
+  if(!_pillsOn || !tab?.rawData?.length){
+    _pillsShowLoading(false);
+    return Promise.resolve();
+  }
+  if(_pillsFichaOpen) pillsCloseFicha();
+
+  const label=opts.reason==='tab'
+    ? `Cargando "${tab.fileName||'datos'}"…`
+    : 'Cargando registros…';
+  _pillsShowLoading(true, label);
+
+  tab.searchIndex=null;
+  tab.colUniques=null;
+  tab.colNulls=null;
+  tab.filtered=[];
+
+  const minMs=opts.minMs ?? 500;
+  const t0=Date.now();
+
+  const paint=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  return paint().then(()=>{
+    if(token!==_pillsRefreshToken) return;
+    _pillsPopulateSelectors();
+    applyFilters();
+  }).then(()=>{
+    if(token!==_pillsRefreshToken) return;
+    const wait=Math.max(0, minMs-(Date.now()-t0));
+    if(!wait) return;
+    return new Promise(r=>setTimeout(r, wait));
+  }).then(()=>{
+    if(token!==_pillsRefreshToken) return;
+    _pillsShowLoading(false);
+    _pillsUpdateFilterBtn();
+    _mobileUiRefresh();
+  });
+}
 // Posición original del chips-bar para restaurar al salir de pills mode
 let _pillsCbParent = null;
 let _pillsCbNext   = null;
@@ -6662,16 +6742,8 @@ function togglePillsMode(){
       pv.insertBefore(cb, $('pills-search-bar'));
     }
 
-    _pillsPopulateSelectors();
     _syncPillsSearchUI(T());
-    // Asegurar que tab.filtered esté poblado (puede estar vacío en sesión restaurada)
-    const tab0 = T();
-    if(tab0 && tab0.rawData.length > 0 && tab0.filtered.length === 0){
-      applyFilters(); // esto llama renderTabs() al final via override
-    } else {
-      renderPillsView();
-      if(typeof renderTabs === 'function') renderTabs();
-    }
+    if(T()?.rawData?.length) _refreshPillsTabView({reason:'enter'});
   _mobileUiRefresh();
 }
 
@@ -6721,8 +6793,9 @@ function _pillsPopulateSelectors(){
   const smartMain = _pillsFindCol(cols,['c[eé]dula','id','rut','codigo','code','dni','nit']);
   const smartSec  = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
 
-  const savedMain = saved?.main;
-  const savedSec  = saved?.sec;
+  const tabSel = tab._pillsSel;
+  const savedMain = tabSel?.main || saved?.main;
+  const savedSec  = tabSel?.sec  || saved?.sec;
 
   selMain.value = (savedMain && cols.includes(savedMain)) ? savedMain : (smartMain || cols[0]);
   selSec.value  = (savedSec  && cols.includes(savedSec))  ? savedSec  : (smartSec  || (cols[1]||cols[0]));
@@ -6734,23 +6807,29 @@ function _pillsPopulateSelectors(){
     const uniq = new Set((tab.rawData||[]).slice(0,300).map(r=>r[c]||'')).size;
     if(uniq<=20) colorSel.innerHTML += `<option value="${eh(c)}">${eh(c)}</option>`;
   });
-  const savedColor = saved?.color;
-  if(savedColor) colorSel.value = savedColor;
+  const savedColor = tabSel?.color || saved?.color;
+  if(savedColor && (savedColor==='none' || cols.includes(savedColor))) colorSel.value = savedColor;
 
   // Avatar: mismas opciones que main/sec, default = campo de nombre
   const avatarSel = $('pills-sel-avatar');
   if(avatarSel){
     avatarSel.innerHTML = opts;
     const smartAvatar = _pillsFindCol(cols,['nombre.apell','apell.*nombre','nombre','name','empleado','funcionario']);
-    const savedAvatar = saved?.avatar;
+    const savedAvatar = tabSel?.avatar || saved?.avatar;
     avatarSel.value = (savedAvatar && cols.includes(savedAvatar)) ? savedAvatar : (smartAvatar || selSec.value || cols[0]);
   }
 
   // Diseño: restaurar o default d7
   const designSel = $('pills-sel-design');
   if(designSel){
-    designSel.value = (saved?.design && saved.design !== 'd7') ? saved.design : 'd1';
+    const savedDesign = tabSel?.design || saved?.design;
+    designSel.value = (savedDesign && savedDesign !== 'd7') ? savedDesign : 'd1';
   }
+
+  tab._pillsSel={
+    main:selMain.value, sec:selSec.value, color:colorSel.value,
+    avatar:avatarSel?.value||'', design:designSel?.value||'d1',
+  };
 }
 
 function _pillsLoadCfg(){ try{ return JSON.parse(localStorage.getItem(PILLS_KEY)||'null'); }catch(_){return null;} }
@@ -7162,9 +7241,7 @@ const _origTogglePillsMode = togglePillsMode;
 togglePillsMode = function(){
   _origTogglePillsMode.apply(this, arguments);
   if(_pillsOn){
-    _syncPillsSearchUI(T());
     _blurActiveInput();
-    applyFilters();
   } else {
     const inp = $('pills-search-input');
     if(inp) inp.value = '';

@@ -1,4 +1,5 @@
 import { ALL_COLUMNS_LABEL } from './filter-types.js';
+import { filterActiveCondRules, getCondColorForCell } from './cond-engine.js';
 
 export const VT_ROW_H = 30;
 export const VT_BUFFER = 12;
@@ -152,22 +153,7 @@ export function createVirtualTableController(deps) {
       const v = fmtCell(col, raw_v, tab);
       td.title = v;
 
-      let bg = '';
-      for (const rule of rules) {
-        if (rule.col !== col) continue;
-        const rv = v.toLowerCase();
-        const rv2 = rule.val.toLowerCase();
-        if (
-          (rule.op === '=' && rv === rv2) ||
-          (rule.op === '!=' && rv !== rv2) ||
-          (rule.op === '>' && parseFloat(v) > parseFloat(rule.val)) ||
-          (rule.op === '<' && parseFloat(v) < parseFloat(rule.val)) ||
-          (rule.op === 'contiene' && rv.includes(rv2))
-        ) {
-          bg = rule.color;
-          break;
-        }
-      }
+      let bg = getCondColorForCell(v, col, rules);
 
       if (txt && v && (!scol || allCols || scol === col)) {
         const idx = v.toLowerCase().indexOf(txt);
@@ -245,7 +231,7 @@ export function createVirtualTableController(deps) {
     const allCols = scol === ALL_COLUMNS_LABEL || !scol;
     const hid = tab.hiddenCols || new Set();
     const frz = tab.frozenCols || new Set();
-    const rules = tab.condRules.filter((r) => r.col && r.op && r.val && r.color);
+    const rules = filterActiveCondRules(tab.condRules);
     const visColCount = tab.columns.filter((c) => !hid.has(c)).length || 1;
     const renderCols = getRenderColumns(tab);
     const tbody = $('table-body');

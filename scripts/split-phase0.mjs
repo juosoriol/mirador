@@ -76,7 +76,11 @@ function buildGlobalsBlock(names) {
     ...lines,
     '};',
     'for (const [key, val] of Object.entries(__miradorGlobals)) {',
-    '  if (val !== undefined) window[key] = val;',
+    '  if (val === undefined) {',
+    '    console.error(`[Mirador] __miradorGlobals missing export: ${key}`);',
+    '    continue;',
+    '  }',
+    '  window[key] = val;',
     '}',
     '',
   ].join('\n');

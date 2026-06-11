@@ -533,16 +533,23 @@ async function _bootSessionRestore(){
     $('dropzone').style.display = 'none';
     setStatus('Restaurando sesión…');
   }
-  const ok = await restoreSessionAsync();
-  if(ok) await _restoreWorkbooksFromIdb();
-  $('loading').style.display = 'none';
-  if(!ok && tabs.size === 0) showDropzone(true);
-  else if(tabs.size > 0){
-    _syncDataAreaView();
-    const tab = T();
-    if(tab?.rawData?.length) refreshActiveView(activeTabId);
+  try {
+    const ok = await restoreSessionAsync();
+    if(ok) await _restoreWorkbooksFromIdb();
+  } catch(_) { /* idle UI in finally */ }
+  finally {
+    $('loading').style.display = 'none';
+    const hasData = !!(T()?.rawData?.length);
+    if(hasData){
+      _syncDataAreaView();
+      refreshActiveView(activeTabId);
+      enableControls(true);
+      _showFileActions();
+    } else {
+      showDropzone(true);
+    }
+    _mobileUiRefresh();
   }
-  if(T()) _showFileActions();
 }
 
 const saveSessionDebounced = debounce(saveSession, 1000);
@@ -2732,11 +2739,24 @@ function renderFavList(){
 }
 
 // ── UI HELPERS ────────────────────────────────────────────────────────────────
+function _syncPanelControls(on){
+  const pairs=[
+    ['ap-graph','btn-graph'],['ap-cond','btn-cond'],['ap-cols','btn-cols'],
+    ['ap-export','btn-export'],['ap-export-all','btn-export-all'],['ap-refresh','btn-refresh'],
+    ['mm-graph','btn-graph'],['mm-cond','btn-cond'],['mm-cols','btn-cols'],
+    ['mm-export','btn-export'],['mm-refresh','btn-refresh'],
+  ];
+  pairs.forEach(([panelId, btnId])=>{
+    const p=$(panelId), b=$(btnId);
+    if(p) p.disabled = b ? b.disabled : !on;
+  });
+}
 function enableControls(on){
   const rt=$('recent-toggle'); if(rt) rt.style.display=on?'flex':'none';
   ['btn-export','btn-export-all','btn-cond','btn-copy','btn-copy-all','btn-fav','btn-clear','btn-cols','btn-date-cols',
    'btn-graph','btn-refresh','btn-clear-inline','btn-clear-chips','chk-regex','chk-excl','btn-regex-flags','search-input','search-col']
     .forEach(id=>{const e=$(id);if(e)e.disabled=!on});
+  _syncPanelControls(on);
   if(on) _showFileActions();
   updateBreadcrumb();
 }
@@ -4016,6 +4036,8 @@ try{ localStorage.removeItem('mirador_focus_v1'); }catch(_){}
 _sidebarInit();
 _renderRecentSearches();
 _mobileUiRefresh();
+if(T()?.rawData?.length){ enableControls(true); _showFileActions(); }
+else showDropzone(true);
 
 // ── MODO PILLS ────────────────────────────────────────────────────────────────
 const PILLS_KEY = 'mirador_pills_v1';

@@ -18,7 +18,6 @@ function SearchBarInner() {
           callLegacy('_updateSearchClearBtn');
         }}
         onKeyDown={(e) => callLegacy('_onSearchKey', e.nativeEvent)}
-        disabled
         inputMode="search"
         enterKeyHint="search"
       />
@@ -75,7 +74,6 @@ function SearchBarInner() {
           id="chk-regex"
           style={{ accentColor: 'var(--acc)' }}
           onChange={() => callLegacy('onRegexChange')}
-          disabled
         />{' '}
         Regex*
       </label>
@@ -83,7 +81,6 @@ function SearchBarInner() {
         type="button"
         id="btn-regex-flags"
         onClick={() => callLegacy('toggleRegexFlagsPanel')}
-        disabled
         title="Flags de regex"
         style={{
           display: 'none',
@@ -157,11 +154,10 @@ function SearchBarInner() {
           id="chk-excl"
           style={{ accentColor: 'var(--acc)' }}
           onChange={() => callLegacy('applyFilters')}
-          disabled
         />{' '}
         Excluir
       </label>
-      <select id="search-col" onChange={() => callLegacy('onSearchColChange')} disabled>
+      <select id="search-col" onChange={() => callLegacy('onSearchColChange')}>
         <option>Todas las columnas</option>
       </select>
       <input type="date" id="date-from" style={{ display: 'none' }} onChange={() => callLegacy('applyFilters')} />
@@ -175,7 +171,6 @@ function SearchBarInner() {
         className="btn"
         id="btn-clear-inline"
         onClick={() => callLegacy('clearFilters')}
-        disabled
         title="Limpiar filtros"
         style={{ padding: '5px 8px', fontSize: 12, marginLeft: 'auto' }}
       >

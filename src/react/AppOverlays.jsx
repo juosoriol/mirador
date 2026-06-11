@@ -556,7 +556,7 @@ function AppOverlaysInner() {
           ☁️ Guardar en la nube
         </button>
         <div className="ap-sep" />
-        <button type="button" className="ap-item" id="ap-graph" onClick={closeAnd('openGraphPanel')} disabled>
+        <button type="button" className="ap-item" id="ap-graph" onClick={closeAnd('openGraphPanel')}>
           📊 Gráfico
         </button>
         <button
@@ -564,22 +564,21 @@ function AppOverlaysInner() {
           className="ap-item ap-warn"
           id="ap-cond"
           onClick={closeAnd('openCondModal')}
-          disabled
           style={{ color: '#fcd34d' }}
         >
           ⬛ Colores condicionales
         </button>
-        <button type="button" className="ap-item" id="ap-cols" onClick={closeAnd('openColPanel')} disabled>
+        <button type="button" className="ap-item" id="ap-cols" onClick={closeAnd('openColPanel')}>
           ▦ Columnas
         </button>
         <div className="ap-sep" />
-        <button type="button" className="ap-item" id="ap-export" onClick={closeAnd('exportExcel')} disabled>
+        <button type="button" className="ap-item" id="ap-export" onClick={closeAnd('exportExcel')}>
           ↓ Exportar filtrado
         </button>
-        <button type="button" className="ap-item" id="ap-export-all" onClick={closeAnd('exportAllTabs')} disabled>
+        <button type="button" className="ap-item" id="ap-export-all" onClick={closeAnd('exportAllTabs')}>
           ↓↓ Exportar todas las pestañas
         </button>
-        <button type="button" className="ap-item" id="ap-refresh" onClick={closeAnd('openRefreshModal')} disabled>
+        <button type="button" className="ap-item" id="ap-refresh" onClick={closeAnd('openRefreshModal')}>
           ↺ Actualizar / Auto-refresh
         </button>
         <div className="ap-sep" />
@@ -592,22 +591,22 @@ function AppOverlaysInner() {
       </div>
 
       <div id="mobile-menu">
-        <button type="button" className="mm-item" id="mm-export" onClick={closeMobileAnd('exportExcel')} disabled>
+        <button type="button" className="mm-item" id="mm-export" onClick={closeMobileAnd('exportExcel')}>
           ↓ Exportar
         </button>
-        <button type="button" className="mm-item" id="mm-graph" onClick={closeMobileAnd('openGraphPanel')} disabled>
+        <button type="button" className="mm-item" id="mm-graph" onClick={closeMobileAnd('openGraphPanel')}>
           📊 Gráfico
         </button>
-        <button type="button" className="mm-item" id="mm-cond" onClick={closeMobileAnd('openCondModal')} disabled>
+        <button type="button" className="mm-item" id="mm-cond" onClick={closeMobileAnd('openCondModal')}>
           ⬛ Colores
         </button>
-        <button type="button" className="mm-item" id="mm-cols" onClick={closeMobileAnd('openColPanel')} disabled>
+        <button type="button" className="mm-item" id="mm-cols" onClick={closeMobileAnd('openColPanel')}>
           ▦ Columnas
         </button>
         <button type="button" className="mm-item" id="mm-views" onClick={closeMobileAnd('openViewsPanel')}>
           👁 Vistas
         </button>
-        <button type="button" className="mm-item" id="mm-refresh" onClick={closeMobileAnd('openRefreshModal')} disabled>
+        <button type="button" className="mm-item" id="mm-refresh" onClick={closeMobileAnd('openRefreshModal')}>
           ↺ Actualizar
         </button>
         <div className="mm-sep" />

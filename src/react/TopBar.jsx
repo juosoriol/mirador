@@ -162,7 +162,6 @@ function TopBarInner() {
           className="btn success"
           id="btn-export"
           onClick={() => callLegacy('exportExcel')}
-          disabled
           style={{ display: 'none' }}
         >
           ↓ Exportar
@@ -228,32 +227,32 @@ function TopBarInner() {
         </button>
 
         <div id="topbar-actions" style={{ display: 'none' }}>
-          <button type="button" className="btn" id="btn-graph" onClick={() => callLegacy('openGraphPanel')} disabled>
+          <button type="button" className="btn" id="btn-graph" onClick={() => callLegacy('openGraphPanel')}>
             Gráfico
           </button>
-          <button type="button" className="btn warn-btn" id="btn-cond" onClick={() => callLegacy('openCondModal')} disabled>
+          <button type="button" className="btn warn-btn" id="btn-cond" onClick={() => callLegacy('openCondModal')}>
             Colores
           </button>
           <button type="button" className="btn" id="btn-views" onClick={() => callLegacy('openViewsPanel')}>
             Vistas
           </button>
-          <button type="button" className="btn" id="btn-cols" onClick={() => callLegacy('openColPanel')} disabled>
+          <button type="button" className="btn" id="btn-cols" onClick={() => callLegacy('openColPanel')}>
             Columnas
           </button>
-          <button type="button" className="btn" id="btn-copy" onClick={() => callLegacy('copySelection')} disabled>
+          <button type="button" className="btn" id="btn-copy" onClick={() => callLegacy('copySelection')}>
             Copiar
           </button>
-          <button type="button" className="btn" id="btn-refresh" onClick={() => callLegacy('openRefreshModal')} disabled>
+          <button type="button" className="btn" id="btn-refresh" onClick={() => callLegacy('openRefreshModal')}>
             Actualizar
           </button>
-          <button type="button" className="btn" id="btn-export-all" onClick={() => callLegacy('exportAllTabs')} disabled>
+          <button type="button" className="btn" id="btn-export-all" onClick={() => callLegacy('exportAllTabs')}>
             Todas
           </button>
         </div>
 
-        <button type="button" id="btn-copy-all" onClick={() => callLegacy('copyFiltered')} style={{ display: 'none' }} disabled />
-        <button type="button" id="btn-fav" onClick={() => callLegacy('openViewsPanel')} style={{ display: 'none' }} disabled />
-        <button type="button" id="btn-clear" onClick={() => callLegacy('clearFilters')} style={{ display: 'none' }} disabled />
+        <button type="button" id="btn-copy-all" onClick={() => callLegacy('copyFiltered')} style={{ display: 'none' }} />
+        <button type="button" id="btn-fav" onClick={() => callLegacy('openViewsPanel')} style={{ display: 'none' }} />
+        <button type="button" id="btn-clear" onClick={() => callLegacy('clearFilters')} style={{ display: 'none' }} />
       </div>
 
       <input

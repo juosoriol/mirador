@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-reload-display-fix', k='mirador_build_v';
+  var BUILD='20260610-refresh-active-view', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1921,7 +1921,6 @@ let tabCounter   = 0;
 let searchTimer  = null;
 let lastClick    = null;
 let _pillsOn     = false;
-let _pillsRefreshing = false;
 
 // Acceso rápido al tab activo
 const T = () => tabs.get(activeTabId);
@@ -2342,7 +2341,7 @@ function restoreTabUI(){
     updateBreadcrumb();
     setStatus(`"${tab.activeSheet||'Datos'}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas`);
     _mobileUiRefresh();
-    _refreshPillsTabView({reason:'tab'});
+    refreshActiveView(activeTabId);
     return;
   }
   $('search-input').value = tab.searchText||'';
@@ -2444,26 +2443,7 @@ function renderSheetsSidebar(){
 }
 
 function _syncDataViewAfterLoad(tabId){
-  const tab=tabs.get(tabId);
-  if(!tab||tabId!==activeTabId) return;
-  $('loading').style.display='none';
-  $('dropzone').style.display='none';
-  if(_pillsOn){
-    $('table-wrap').style.display='none';
-    $('data-area').style.display='none';
-    $('pills-view')?.classList.add('open');
-    _syncPillsSearchUI(tab);
-    _pillsShowLoading(false);
-    _reloadPillsCore();
-  }else{
-    $('pills-view')?.classList.remove('open');
-    $('data-area').style.display='';
-    applyFilters();
-    $('table-wrap').style.display='flex';
-    _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
-  }
-  updateStatusBar();
-  _mobileUiRefresh();
+  refreshActiveView(tabId);
 }
 
 function loadSheet(name, tabId, preserveFilters){
@@ -2639,7 +2619,10 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   }
   tab.searchIndex=null; // siempre invalidar al recargar columnas
   tab.colUniques=null; tab.colNulls=null;
-  if(preserveFilters) _syncSearchInputFromTab(tab);
+  if(preserveFilters){
+    _syncSearchInputFromTab(tab);
+    if(_pillsOn) _syncPillsSearchUI(tab);
+  }
   buildChips(); buildSearchCombo(); buildDateColCombo();
   enableControls(true);
   _syncDataViewAfterLoad(tabId);
@@ -3607,12 +3590,42 @@ function applyFilters(){
 const _origApplyFilters = applyFilters;
 applyFilters = function(){
   _origApplyFilters.apply(this, arguments);
-  if(_pillsOn && !_pillsRefreshing){
+  if(_pillsOn){
     renderPillsView();
     _pillsUpdateFilterBtn();
     if(typeof renderTabs === 'function') renderTabs();
   }
 };
+
+function refreshActiveView(tabId){
+  const tid=tabId??activeTabId;
+  const tab=tabs.get(tid);
+  if(!tab||!tab.rawData?.length||tid!==activeTabId) return false;
+  $('loading').style.display='none';
+  $('dropzone').style.display='none';
+  _pillsShowLoading(false);
+  if(_pillsFichaOpen) pillsCloseFicha();
+  tab.searchIndex=null;
+  tab.colUniques=null;
+  tab.colNulls=null;
+  if(_pillsOn){
+    $('table-wrap').style.display='none';
+    $('data-area').style.display='none';
+    $('pills-view')?.classList.add('open');
+    _syncPillsSearchUI(tab);
+    _pillsPopulateSelectors();
+    applyFilters();
+  }else{
+    $('pills-view')?.classList.remove('open');
+    $('data-area').style.display='';
+    applyFilters();
+    $('table-wrap').style.display='flex';
+    _vtLastStart=-1; _vtLastEnd=-1; _vtRowHeights={};
+  }
+  updateStatusBar();
+  _mobileUiRefresh();
+  return true;
+}
 
 function clearFilters(){
   clearChipFiltersOnly();
@@ -5623,10 +5636,13 @@ function reloadTab(tabId){
 
 function _doReload(tabId){
   const tab=tabs.get(tabId); if(!tab) return;
-  // Sin archivo en memoria: no se puede recargar automáticamente
   if(!tab._file){
+    if(tab.workbook&&tab.activeSheet){
+      if(tabId===activeTabId) toast('↻ Actualizando '+tab.fileName+'…');
+      loadSheet(tab.activeSheet, tabId, true);
+      return;
+    }
     if(tabId===activeTabId) toast('⚠ Sin archivo original — usa ↻ para seleccionarlo',true);
-    // Detener auto-refresh si está activo para no seguir intentando
     if(_refreshTimers[tabId]){ clearInterval(_refreshTimers[tabId]); delete _refreshTimers[tabId]; tab._autoRefresh=0; renderTabs(); }
     return;
   }
@@ -6627,62 +6643,16 @@ let _pillsFilteredCache = [];
 
 function _pillsShowLoading(show, label){
   const el=$('pills-loading');
-  const grid=$('pills-grid');
   const txt=$('pills-loading-text');
   if(txt && label) txt.textContent=label;
   if(el){
     el.classList.toggle('show',!!show);
     el.setAttribute('aria-busy', show ? 'true' : 'false');
   }
-  if(show && grid) grid.innerHTML='';
-  if(show){
-    const cnt=$('pills-toolbar-count');
-    if(cnt) cnt.textContent='';
-    _pillsFilteredCache=[];
-  }
 }
 
-function _reloadPillsCore(){
-  const tab=T();
-  if(!_pillsOn || !tab?.rawData?.length) return false;
-  if(_pillsFichaOpen) pillsCloseFicha();
-  tab.searchIndex=null;
-  tab.colUniques=null;
-  tab.colNulls=null;
-  _pillsPopulateSelectors();
-  _pillsRefreshing=true;
-  try{
-    _origApplyFilters();
-  }finally{
-    _pillsRefreshing=false;
-  }
-  renderPillsView();
-  _pillsUpdateFilterBtn();
-  return true;
-}
-
-function _refreshPillsTabView(opts={}){
-  const tab=T();
-  if(!_pillsOn || !tab?.rawData?.length){
-    _pillsShowLoading(false);
-    return;
-  }
-  const label=opts.reason==='tab'
-    ? `Cargando "${tab.fileName||'datos'}"…`
-    : 'Cargando registros…';
-  if(opts.spinner!==false) _pillsShowLoading(true, label);
-  try{
-    if(!_reloadPillsCore()){
-      return;
-    }
-  }catch(e){
-    console.error('Pills refresh failed', e);
-    const grid=$('pills-grid');
-    if(grid) grid.innerHTML='<div style="padding:24px;color:var(--muted);text-align:center">No se pudieron cargar los registros</div>';
-  }finally{
-    _pillsShowLoading(false);
-    _mobileUiRefresh();
-  }
+function _refreshPillsTabView(){
+  refreshActiveView(activeTabId);
 }
 // Posición original del chips-bar para restaurar al salir de pills mode
 let _pillsCbParent = null;
@@ -6764,7 +6734,7 @@ function togglePillsMode(){
 
     buildChips();
     _syncPillsSearchUI(T());
-    if(T()?.rawData?.length) _refreshPillsTabView({reason:'enter'});
+    if(T()?.rawData?.length) refreshActiveView(activeTabId);
     else _pillsShowLoading(false);
   _mobileUiRefresh();
 }

@@ -34,6 +34,19 @@ test.describe('Escritorio — modo Tabla', () => {
     await expect(page.locator('#mobile-sheets-overlay')).not.toHaveClass(/open/);
   });
 
+  test('cambiar hoja carga datos de la nueva hoja', async ({ page }) => {
+    await page.locator('#btn-mobile-sheets').click();
+    const items = page.locator('#ms-list .ms-item');
+    expect(await items.count()).toBeGreaterThan(1);
+    const targetName = await items.nth(1).locator('.ms-item-name').innerText();
+    await items.nth(1).click();
+    await expect(page.locator('#mobile-sheets-overlay')).not.toHaveClass(/open/);
+    await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 30_000 });
+    expect(await getRowCount(page)).toBeGreaterThan(0);
+    await page.locator('#btn-mobile-sheets').click();
+    await expect(page.locator('#ms-list .ms-item.active .ms-item-name')).toHaveText(targetName);
+  });
+
   test('panel Acciones abre y cierra', async ({ page }) => {
     await page.locator('#btn-actions').click();
     await expect(page.locator('#actions-panel')).toHaveClass(/open/);

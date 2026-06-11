@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-table-reload-fix', k='mirador_build_v';
+  var BUILD='20260610-sheet-switch-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1973,6 +1973,7 @@ function saveSession(){
       columns:t.columns,
       _manualHdrRow:t._manualHdrRow??null,
       _hdrRangeStart:t._hdrRangeStart??null,
+      _hdrBySheet:t._hdrBySheet??null,
       statsPanels:t.statsPanels||null,
       // Truncar para no superar cuota de localStorage (~5MB)
       rawData:(t.rawData||[]).length>MAX_SESSION ? t.rawData.slice(0,MAX_SESSION) : (t.rawData||[]),
@@ -2069,6 +2070,7 @@ function restoreSession(){
         dateColsDetected:s.dateColsDetected||[],
         _manualHdrRow: s._manualHdrRow ?? null,
         _hdrRangeStart: s._hdrRangeStart ?? null,
+        _hdrBySheet: s._hdrBySheet ?? null,
         statsPanels: s.statsPanels || null,
         searchText:s.searchText||'', pillsSearchText:s.pillsSearchText||'', searchCol:s.searchCol||'',
         dateFrom:s.dateFrom||'', dateTo:s.dateTo||'', dateCol:s.dateCol||'',
@@ -2438,8 +2440,39 @@ function processFile(file){
 }
 
 // ── HOJAS ─────────────────────────────────────────────────────────────────────
+function _hdrRowForSheet(tab, sheetName){
+  const entry=tab._hdrBySheet?.[sheetName];
+  if(entry!=null){
+    const r=typeof entry==='number'?entry:entry.row;
+    if(r!=null) return r;
+  }
+  if(tab.activeSheet===sheetName&&tab._manualHdrRow!=null) return tab._manualHdrRow;
+  return null;
+}
+
 function renderSheetsSidebar(){
   _updateSheetsBtn();
+  const tab=T();
+  const sl=$('sheet-list');
+  if(!sl) return;
+  if(!tab?.sheets?.length){
+    sl.innerHTML='<div style="padding:10px 12px;color:var(--muted);font-size:11px">Abre un .xlsx</div>';
+    return;
+  }
+  const hdrRow=tab._manualHdrRow!=null&&tab._hdrRangeStart!=null
+    ? tab._manualHdrRow-tab._hdrRangeStart+1
+    : null;
+  const hdrInfo=hdrRow!=null
+    ? `<div style="padding:4px 12px 6px;font-size:10px;color:var(--muted);border-bottom:1px solid var(--border);margin-bottom:4px">
+         Encabezado: fila <strong style="color:var(--acc-text)">${hdrRow}</strong>
+         <span onclick="reopenHdrPicker()" style="margin-left:6px;color:var(--acc-text);cursor:pointer;text-decoration:underline;font-size:10px">cambiar</span>
+       </div>`
+    : '';
+  sl.innerHTML=hdrInfo+tab.sheets.map(n=>`
+    <div class="sheet-item${tab.activeSheet===n?' active':''}" onclick="loadSheet('${ejs(n)}',null,false)">
+      <div class="s-icon"></div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${eh(n)}</span>
+    </div>`).join('');
 }
 
 function _syncDataViewAfterLoad(tabId){
@@ -2450,14 +2483,21 @@ function loadSheet(name, tabId, preserveFilters){
   const tid = tabId||activeTabId;
   const tab = tabs.get(tid); if(!tab) return;
   if(tid!==activeTabId){activeTabId=tid;renderTabs()}
+  const prevSheet=tab.activeSheet;
   const prevSort=preserveFilters?{col:tab.sortCol,dir:tab.sortDir}:null;
   tab.activeSheet=name; tab.selected=new Set(); tab.activeChipCol=null;
   if(!preserveFilters){ tab.colFilters={}; tab.condRules=[]; tab.sortCol=null; }
   else if(prevSort){ tab.sortCol=prevSort.col; tab.sortDir=prevSort.dir; }
   closeDropdown(); renderSheetsSidebar();
 
-  // Sin workbook → datos ya en memoria (sesión/favorito)
+  // Sin workbook → datos ya en memoria (sesión/favorito); no se puede cambiar de hoja
   if(!tab.workbook){
+    if(prevSheet!==name){
+      tab.activeSheet=prevSheet;
+      renderSheetsSidebar();
+      toast('Abre el archivo de nuevo para cambiar de hoja', true);
+      return;
+    }
     _syncSearchInputFromTab(tab);
     buildChips(); buildSearchCombo(); buildDateColCombo();
     enableControls(true);
@@ -2472,9 +2512,9 @@ function loadSheet(name, tabId, preserveFilters){
   const detectedRow = detectBestHeaderRow(ws, range);
   const totalDataRows = range.e.r - detectedRow;
 
-  // Si el tab ya tiene una fila de encabezado elegida manualmente, usarla directamente
-  if(tab._manualHdrRow !== undefined && tab._manualHdrRow !== null){
-    _processSheetData(tid, name, ws, range, tab._manualHdrRow, preserveFilters);
+  const savedHdr=_hdrRowForSheet(tab, name);
+  if(savedHdr!=null){
+    _processSheetData(tid, name, ws, range, savedHdr, preserveFilters);
     return;
   }
 
@@ -2543,6 +2583,8 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   // Guardar la elección de fila para esta pestaña (persistida en sesión)
   tab._manualHdrRow = hRow;
   tab._hdrRangeStart = range.s.r; // para mostrar número de fila relativo en sidebar
+  if(!tab._hdrBySheet) tab._hdrBySheet={};
+  tab._hdrBySheet[name]={row:hRow, rangeStart:range.s.r};
 
   const raw = extracted.raw;
   if(!raw.length){toast('La hoja no tiene datos');$('loading').style.display='none';return}

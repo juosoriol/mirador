@@ -175,6 +175,23 @@ import {
   writeTheme,
   buildThemeGridHtml,
 } from '../engine/theme-engine.js';
+import {
+  NOTES_KEY,
+  readNotesFromStorage,
+  writeNotesToStorage,
+  getNoteForKey,
+  saveNoteForKey,
+  buildNoteTabHtml,
+} from '../engine/notes-engine.js';
+import {
+  MOBILE_BREAKPOINT,
+  isMobileUi,
+  blurActiveInput,
+  resetViewportStyles,
+  isKeyboardOpen,
+  isViewportShifted,
+  shouldShowViewportRestoreBtn,
+} from '../engine/mobile-ui-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -2123,12 +2140,13 @@ function copyDetailRow(idx){
   const row=tab.rawData[idx];if(!row)return;
   copyText(tab.columns.map(c=>`${c}: ${row[c]||''}`).join('\n'),'✓ Registro copiado');
 }
-const NOTES_KEY='mirador_notes_v1';
-function getNotes(){try{return JSON.parse(localStorage.getItem(NOTES_KEY)||'{}')}catch{return{}}}
-function saveNote(key,val){const n=getNotes();val?n[key]=val:delete n[key];localStorage.setItem(NOTES_KEY,JSON.stringify(n))}
+const getNotes = () => readNotesFromStorage();
+const saveNote = (key, val) => saveNoteForKey(key, val);
+const _isMobileUi = isMobileUi;
+const _blurActiveInput = blurActiveInput;
 function renderNoteTab(key){
-  const note=getNotes()[key]||'';
-  return`<div style="padding:0 0 8px;font-size:11px;color:var(--muted)">Nota para: <strong style="color:var(--text)">${eh(key)}</strong></div>${note?`<div class="saved-note">${eh(note)}</div>`:''}<textarea class="note-area" id="note-area-input" placeholder="Escribe una nota...">${eh(note)}</textarea><div style="display:flex;justify-content:flex-end;margin-top:7px"><button class="da-btn p" onclick="saveNoteFromPanel('${key.replace(/'/g,"\\'")}')">💾 Guardar nota</button></div>`;
+  const note=getNoteForKey(key)||'';
+  return buildNoteTabHtml(key, note, eh);
 }
 function saveNoteFromPanel(key){
   const el=$('note-area-input');if(!el)return;
@@ -3805,23 +3823,8 @@ function renderChart(){
 
 // ── FILTROS MÓVIL (barra inferior + panel) ────────────────────────────────────
 let _mfChipsMounted = false;
-function _isMobileUi(){ return window.innerWidth <= 500; }
-function _blurActiveInput(){
-  const el=document.activeElement;
-  if(!el) return;
-  const tag=el.tagName;
-  if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') el.blur();
-}
-let _vpRestoreHideTimer=null;
 function restoreMobileViewport(){
-  _blurActiveInput();
-  window.scrollTo({top:0,left:0,behavior:'instant'});
-  document.documentElement.scrollTop=0;
-  document.body.scrollTop=0;
-  ['height','position','top','overflow','width'].forEach(p=>{
-    document.documentElement.style.removeProperty(p);
-    document.body.style.removeProperty(p);
-  });
+  resetViewportStyles();
   $('viewport-restore-btn')?.classList.remove('show');
   _mobileUiRefresh();
 }
@@ -3829,6 +3832,7 @@ function _showViewportRestoreBtn(){
   if(!_isMobileUi()) return;
   $('viewport-restore-btn')?.classList.add('show');
 }
+let _vpRestoreHideTimer=null;
 function _scheduleHideViewportRestoreBtn(){
   clearTimeout(_vpRestoreHideTimer);
   _vpRestoreHideTimer=setTimeout(_checkMobileViewportShift, 450);
@@ -3837,9 +3841,7 @@ function _checkMobileViewportShift(){
   const btn=$('viewport-restore-btn');
   if(!btn||!_isMobileUi()){ btn?.classList.remove('show'); return; }
   const vv=window.visualViewport;
-  const keyboardOpen=!!vv && (window.innerHeight-vv.height)>120;
-  const shifted=window.scrollY>8 || (vv && vv.offsetTop>8);
-  if(keyboardOpen||shifted) btn.classList.add('show');
+  if(shouldShowViewportRestoreBtn(vv)) btn.classList.add('show');
   else btn.classList.remove('show');
 }
 if(window.visualViewport){

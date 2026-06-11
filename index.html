@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260608-mobile-pills-fix', k='mirador_build_v';
+  var BUILD='20260610-sheets-btn-fix', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -6494,6 +6494,7 @@ function _mobileUiRefresh(){
   _updateMobileBnav();
   _updateMobileActiveBar();
   _updateSearchClearBtn();
+  _updateSheetsBtn();
 }
 function _mfSyncOptionsUI(){
   const sc=$('search-col'), mf=$('mf-search-col');
@@ -7046,8 +7047,9 @@ function _updateSheetsBtn(){
   const lbl = $('btn-sheets-label');
   const badge = $('btn-sheets-badge');
   const count = tab?.sheets?.length || 0;
-  const show = _isMobileUi() && !!tab && count > 0 && tabs.size > 0;
-  if(sheetsBtn) sheetsBtn.style.display = show ? 'flex' : 'none';
+  // Visible on all viewports when the active tab has sheet names (incl. multi-tab)
+  const show = !!tab && count > 0;
+  if(sheetsBtn) sheetsBtn.style.display = show ? 'inline-flex' : 'none';
   if(lbl) lbl.textContent = 'Hojas';
   if(badge){
     if(count > 1){

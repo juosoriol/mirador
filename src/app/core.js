@@ -117,6 +117,26 @@ import {
   isContainsChipFilter,
   prepareCdpPanelData,
 } from '../engine/chip-dropdown-engine.js';
+import {
+  createFolderEntry,
+  deleteFolderAt,
+  formatTimeAgo,
+  getFavoriteFiles,
+  getFilesInFolder,
+  getUnassignedFiles,
+  moveFileToFolder,
+  readFileListFromStorage,
+  readFoldersFromStorage,
+  registerRecentFile,
+  removeFileAt,
+  renameFolderEntry,
+  reassignFilesOnFolderRename,
+  toggleFileFavorite,
+  toggleFolderOpen,
+  unassignFilesFromFolder,
+  writeFileListToStorage,
+  writeFoldersToStorage,
+} from '../engine/file-manager-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -3366,18 +3386,14 @@ const FM_KEY='mirador_files_v1';
 const FM_FOLDERS_KEY='mirador_folders_v1';
 let _fmOpen=false;
 
-function _fmLoad(){ try{return JSON.parse(localStorage.getItem(FM_KEY))||[];}catch(e){return[];} }
-function _fmSave(list){ localStorage.setItem(FM_KEY,JSON.stringify(list)); }
-function _fmLoadFolders(){ try{return JSON.parse(localStorage.getItem(FM_FOLDERS_KEY))||[];}catch(e){return[];} }
-function _fmSaveFolders(f){ localStorage.setItem(FM_FOLDERS_KEY,JSON.stringify(f)); }
+function _fmLoad(){ return readFileListFromStorage(FM_KEY); }
+function _fmSave(list){ writeFileListToStorage(FM_KEY, list); }
+function _fmLoadFolders(){ return readFoldersFromStorage(FM_FOLDERS_KEY); }
+function _fmSaveFolders(f){ writeFoldersToStorage(FM_FOLDERS_KEY, f); }
 
 function fmRegisterFile(fileName,sheetCount,rowCount){
   const list=_fmLoad();
-  const existing=list.findIndex(f=>f.name===fileName);
-  const entry={name:fileName,sheets:sheetCount||0,rows:rowCount||0,date:Date.now(),fav:existing>=0?list[existing].fav:false,folder:existing>=0?list[existing].folder:null};
-  if(existing>=0) list.splice(existing,1);
-  list.unshift(entry);
-  if(list.length>50) list.length=50;
+  registerRecentFile(list, fileName, sheetCount, rowCount);
   _fmSave(list);
   fmRender();
 }
@@ -3428,7 +3444,7 @@ function fmRender(){
   // Favoritos
   const fp=$('fm-panel-fav');
   if(fp&&fp.offsetParent!==null){
-    const favs=list.filter(f=>f.fav);
+    const favs=getFavoriteFiles(list);
     fp.innerHTML=favs.length?favs.map(f=>{
       const idx=list.findIndex(x=>x.name===f.name);
       return `<div class="fm-item${f.name===currentFile?' fm-active':''}" onclick="fmOpenFile('${ejs(f.name)}')" oncontextmenu="fmCtx(event,${idx})">
@@ -3443,7 +3459,7 @@ function fmRender(){
   const flp=$('fm-panel-folders');
   if(flp&&flp.offsetParent!==null){
     let html=folders.map((folder,fi)=>{
-      const files=list.filter(f=>f.folder===folder.name);
+      const files=getFilesInFolder(list, folder.name);
       return `<div>
         <div class="fm-folder" onclick="fmToggleFolderOpen(${fi})" oncontextmenu="fmFolderCtx(event,${fi})">
           <span style="font-size:13px;color:${folder.color||'#f59e0b'}">📁</span>
@@ -3463,7 +3479,7 @@ function fmRender(){
       </div>`;
     }).join('');
     // Sin carpeta
-    const unassigned=list.filter(f=>!f.folder);
+    const unassigned=getUnassignedFiles(list);
     if(unassigned.length){
       html+=`<div style="margin-top:4px;padding:4px 0;border-top:1px solid var(--border)">
         <div style="padding:2px 8px;font-size:9px;color:var(--muted)">Sin carpeta (${unassigned.length})</div>
@@ -3481,16 +3497,12 @@ function fmRender(){
 }
 
 function _fmTimeAgo(ts){
-  const d=Date.now()-ts;
-  if(d<3600000) return Math.round(d/60000)+'m';
-  if(d<86400000) return Math.round(d/3600000)+'h';
-  if(d<604800000) return Math.round(d/86400000)+'d';
-  return new Date(ts).toLocaleDateString();
+  return formatTimeAgo(ts);
 }
 
 function fmToggleFav(idx){
   const list=_fmLoad();
-  if(list[idx]) list[idx].fav=!list[idx].fav;
+  toggleFileFavorite(list, idx);
   _fmSave(list);
   fmRender();
 }
@@ -3511,8 +3523,7 @@ function fmNewFolder(){
   const name=prompt('Nombre de la nueva carpeta:');
   if(!name||!name.trim()) return;
   const folders=_fmLoadFolders();
-  const colors=['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444','#06b6d4'];
-  folders.push({name:name.trim(),color:colors[folders.length%colors.length],_open:false});
+  createFolderEntry(folders, name);
   _fmSaveFolders(folders);
   fmShowTab('folders');
   fmRender();
@@ -3520,14 +3531,14 @@ function fmNewFolder(){
 
 function fmToggleFolderOpen(fi){
   const folders=_fmLoadFolders();
-  if(folders[fi]) folders[fi]._open=!folders[fi]._open;
+  toggleFolderOpen(folders, fi);
   _fmSaveFolders(folders);
   fmRender();
 }
 
 function fmMoveToFolder(fileIdx,folderName){
   const list=_fmLoad();
-  if(list[fileIdx]) list[fileIdx].folder=folderName;
+  moveFileToFolder(list, fileIdx, folderName);
   _fmSave(list);
   _fmCloseCtx(); _tabCloseCtx();
   fmRender();
@@ -3535,7 +3546,7 @@ function fmMoveToFolder(fileIdx,folderName){
 
 function fmRemoveFile(idx){
   const list=_fmLoad();
-  list.splice(idx,1);
+  removeFileAt(list, idx);
   _fmSave(list);
   _fmCloseCtx();
   fmRender();
@@ -3598,12 +3609,10 @@ function fmRenameFolder(fi){
   const f=folders[fi]; if(!f) return;
   const name=prompt('Nuevo nombre:',f.name);
   if(!name||!name.trim()) return;
-  const oldName=f.name;
-  f.name=name.trim();
+  const { oldName, newName }=renameFolderEntry(folders, fi, name);
   _fmSaveFolders(folders);
-  // Update files in that folder
   const list=_fmLoad();
-  list.forEach(file=>{ if(file.folder===oldName) file.folder=f.name; });
+  if(oldName && newName) reassignFilesOnFolderRename(list, oldName, newName);
   _fmSave(list);
   fmRender();
 }
@@ -3611,13 +3620,12 @@ function fmRenameFolder(fi){
 function fmDeleteFolder(fi){
   _fmCloseCtx();
   const folders=_fmLoadFolders();
-  const f=folders[fi]; if(!f) return;
-  // Unassign files
+  const { folders: nextFolders, folderName }=deleteFolderAt(folders, fi);
+  if(!folderName) return;
   const list=_fmLoad();
-  list.forEach(file=>{ if(file.folder===f.name) file.folder=null; });
+  unassignFilesFromFolder(list, folderName);
   _fmSave(list);
-  folders.splice(fi,1);
-  _fmSaveFolders(folders);
+  _fmSaveFolders(nextFolders);
   fmRender();
 }
 

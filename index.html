@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-pills-render-fix', k='mirador_build_v';
+  var BUILD='20260610-search-filters-decouple', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -2829,7 +2829,7 @@ function _visibleChipsInOneLine(bar, chips){
 function _clearChipSearch(){
   const si=$('chip-search');
   if(si&&si.value){ si.value=''; onChipSearch(); return; }
-  clearFilters();
+  clearChipFiltersOnly();
 }
 
 function _updateClearChipBtn(){
@@ -3599,24 +3599,17 @@ applyFilters = function(){
 };
 
 function clearFilters(){
+  clearChipFiltersOnly();
   const tab=T(); if(!tab) return;
-  tab.colFilters={};
   tab.searchCol='';
-  tab.searchText='';
-  tab.pillsSearchText='';
   $('search-col').selectedIndex=0;
-  $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
   const cr=$('chk-regex'); if(cr) cr.checked=false;
   const ce=$('chk-excl'); if(ce) ce.checked=false;
   const fb=$('btn-regex-flags'); if(fb) fb.style.display='none';
   const rp=$('regex-flags-panel'); if(rp) rp.style.display='none';
-  _resetLiveSearchState(tab);
-  $('search-input').value='';
-  _syncPillsSearchUI(tab);
   closeDropdown(); closeMobileFilterSheet();
   if(typeof _mfSyncOptionsUI==='function') _mfSyncOptionsUI();
-  updateChipStates(); applyFilters();
-  if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
+  applyFilters();
   _mobileUiRefresh();
   toast('Filtros limpiados');
 }
@@ -6495,17 +6488,11 @@ function _updateMobileActiveBar(){
   if(!_isMobileUi()){ bar.classList.remove('show'); return; }
   const tab=T();
   const parts=[];
-  const q=_pillsOn
-    ? ($('pills-search-input')?.value||tab?.pillsSearchText||'').trim()
-    : ($('search-input')?.value||'').trim();
-  if(q) parts.push({rm:'search', html:'"'+eh(q)+'"'});
   if(tab){
     Object.entries(tab.colFilters||{}).forEach(([col,val])=>{
       parts.push({rm:'col:'+col, html:eh(col)+': '+eh(_colFilterLabel(col,val))});
     });
   }
-  if($('chk-regex')?.checked) parts.push({rm:'regex', html:'Regex'});
-  if($('chk-excl')?.checked) parts.push({rm:'excl', html:'Excluir'});
   if(!parts.length){ bar.classList.remove('show'); return; }
   bar.classList.add('show');
   let h=`<span class="mf-active-count">${parts.length}</span>`;
@@ -6516,10 +6503,7 @@ function _updateMobileActiveBar(){
   host.querySelectorAll('[data-rm]').forEach(btn=>{
     btn.onclick=()=>{
       const k=btn.dataset.rm;
-      if(k==='search') _clearLiveSearch();
-      else if(k==='regex'){ const c=$('chk-regex'); if(c){c.checked=false;onRegexChange();}}
-      else if(k==='excl'){ const c=$('chk-excl'); if(c){c.checked=false;applyFilters();}}
-      else if(k.startsWith('col:')) removeColFilter(k.slice(4));
+      if(k.startsWith('col:')) removeColFilter(k.slice(4));
       _updateMobileActiveBar();
     };
   });
@@ -6891,10 +6875,9 @@ function renderPillsView(){
   _pillsFilteredCache = rows;
 
   const activeFilters = Object.keys(tab.colFilters||{}).length;
-  const searchActive  = !!(tab.pillsSearchText || $('pills-search-input')?.value);
   const total = tab.rawData?.length || 0;
   const countTxt = rows.length.toLocaleString() + ' registros' +
-    (activeFilters||searchActive ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
+    (activeFilters ? ` <span style="color:var(--acc-text);font-size:10px">(filtrado de ${total.toLocaleString()})</span>` : '');
   $('pills-toolbar-count').innerHTML = countTxt;
 
   const palette=['#22c55e','#f59e0b','#f87171','#60a5fa','#c084fc','#34d399','#fb923c','#a78bfa'];

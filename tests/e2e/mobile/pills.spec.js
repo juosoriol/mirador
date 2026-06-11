@@ -20,6 +20,12 @@ test.describe('Móvil — modo Pills', () => {
     await expect(page.locator('#pills-grid [class*="mpill"]').first()).toBeVisible();
   });
 
+  test('búsqueda pills no aparece como filtro de columna', async ({ page }) => {
+    await page.fill('#pills-search-input', 'test');
+    await page.waitForTimeout(400);
+    await expect(page.locator('#mobile-active-bar')).not.toHaveClass(/show/);
+  });
+
   test('búsqueda pills filtra; barra superior no filtra en modo pills', async ({ page }) => {
     const total = await getRowCount(page);
     await expect(page.locator('#searchbar')).toBeHidden();

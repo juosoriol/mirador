@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260610-session-reload-fix', k='mirador_build_v';
+  var BUILD='20260611-session-persist-v2', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -2065,32 +2065,60 @@ function _sessionClearIdb(){
   })).catch(()=>{});
 }
 
+function _sessionReadEmergency(){
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY + '_emergency') || 'null'); } catch(_) { return null; }
+}
+
 async function _sessionReadAll(){
   const local = _sessionReadLocal();
+  if(local && !local._store && local.tabs?.length) return local;
+  const idb = await _sessionReadIdb().catch(() => null);
+  if(idb?.tabs?.some(t => t.rawData?.length)) return idb;
+  const emerg = _sessionReadEmergency();
+  if(emerg?.tabs?.some(t => t.rawData?.length)) return emerg;
   if(local && !local._store) return local;
-  return _sessionReadIdb().catch(() => null);
+  return null;
 }
 
 function clearStoredSession(){
-  try { localStorage.removeItem(SESSION_KEY); } catch(_) {}
+  try {
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_KEY + '_emergency');
+  } catch(_) {}
   _sessionClearIdb();
 }
 
+function _sessionWriteEmergency(data){
+  const lite = {
+    activeTabId: data.activeTabId,
+    activeName: data.activeName,
+    ts: data.ts,
+    tabs: data.tabs.map(t => ({
+      ...t,
+      rawData: (t.rawData || []).slice(0, 1500),
+    })),
+    pillsCfg: data.pillsCfg,
+  };
+  try { localStorage.setItem(SESSION_KEY + '_emergency', JSON.stringify(lite)); } catch(_) {}
+}
+
 function saveSession(){
-  if(!tabs.size) return;
+  if(!tabs.size){ clearStoredSession(); return; }
   const data = _sessionBuildData();
   const json = JSON.stringify(data);
   try {
     localStorage.setItem(SESSION_KEY, json);
+    try { localStorage.removeItem(SESSION_KEY + '_emergency'); } catch(_) {}
     _sessionClearIdb();
-  } catch(_) {
-    try {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({
-        _store: 'idb', ts: data.ts, activeName: data.activeName, tabCount: data.tabs.length,
-      }));
-    } catch(_) {}
-    _sessionWriteIdb(json).catch(()=>{});
-  }
+    return;
+  } catch(_) {}
+  const stub = {
+    _store: 'idb', ts: data.ts, activeTabId: data.activeTabId,
+    activeName: data.activeName, tabCount: data.tabs.length,
+  };
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify(stub)); } catch(_) {}
+  _sessionWriteEmergency(data);
+  _sessionWriteIdb(json).catch(()=>{});
 }
 
 function _flushSessionSave(){
@@ -2099,10 +2127,8 @@ function _flushSessionSave(){
 }
 
 function promptSessionRestore(){
-  const saved = _sessionReadLocal();
-  if(!saved || saved._store === 'idb' || !saved.tabs?.length) return false;
-  if(!saved.tabs.some(t => t.rawData?.length)) return false;
-  return restoreSession();
+  restoreSessionAsync();
+  return true;
 }
 
 async function openSessionPanel(){
@@ -2125,7 +2151,7 @@ async function openSessionPanel(){
         const label=Array.isArray(val)?`${col}:${val.length}vals`:col;
         return `<span style="padding:1px 5px;border-radius:6px;font-size:9px;background:var(--acc-dim);color:var(--acc-text);border:0.5px solid var(--acc)">${eh(label)}</span>`;
       }).join(' ')+(filters.length>3?`<span style="font-size:9px;color:var(--muted)">+${filters.length-3}</span>`:'');
-      return `<div style="padding:8px 14px;border-bottom:0.5px solid var(--border);cursor:pointer${isActive?';background:var(--acc-dim)':''}" onclick="restoreSession();$('session-panel')?.remove()">
+      return `<div style="padding:8px 14px;border-bottom:0.5px solid var(--border);cursor:pointer${isActive?';background:var(--acc-dim)':''}" onclick="restoreSessionAsync().then(()=>$('session-panel')?.remove())">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:${t.sheets?.length||filters.length?'4':'0'}px">
           <span style="font-size:11px;font-weight:500;color:${isActive?'var(--acc-text)':'var(--text)'};flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${isActive?'● ':''} ${eh(t.fileName||'Sin nombre')}</span>
           <span style="font-size:9px;color:var(--muted)">${(t.rawData?.length||0).toLocaleString()} filas</span>
@@ -2199,8 +2225,10 @@ function _applySavedSession(saved, quiet){
 function restoreSession(){
   try {
     const saved = _sessionReadLocal();
-    if(saved?._store === 'idb') return false;
-    return _applySavedSession(saved);
+    if(saved && !saved._store && _applySavedSession(saved)) return true;
+    const emerg = _sessionReadEmergency();
+    if(emerg?.tabs?.length) return _applySavedSession(emerg);
+    return false;
   } catch(_) { return false; }
 }
 
@@ -2213,12 +2241,19 @@ async function restoreSessionAsync(){
 }
 
 async function _bootSessionRestore(){
+  const hasSaved = _sessionReadLocal() || _sessionReadEmergency();
+  if(hasSaved){
+    $('loading').style.display = 'flex';
+    $('dropzone').style.display = 'none';
+    setStatus('Restaurando sesión…');
+  }
   const ok = await restoreSessionAsync();
+  $('loading').style.display = 'none';
   if(!ok && tabs.size === 0) showDropzone(true);
   else if(tabs.size > 0){
     _syncDataAreaView();
     const tab = T();
-    if(tab?.rawData?.length && !tab.filtered?.length) refreshActiveView(activeTabId);
+    if(tab?.rawData?.length) refreshActiveView(activeTabId);
   }
   if(T()) _showFileActions();
 }

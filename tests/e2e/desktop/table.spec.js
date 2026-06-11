@@ -51,6 +51,7 @@ test.describe('Escritorio — modo Tabla', () => {
     const total = await getRowCount(page);
     expect(total).toBeGreaterThan(0);
 
+    await page.evaluate(() => { if (typeof saveSession === 'function') saveSession(); });
     await page.reload();
     try {
       await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });

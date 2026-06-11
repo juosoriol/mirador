@@ -39,6 +39,18 @@ test.describe('Móvil — modo Tabla', () => {
     await expect(page.locator('#btn-my-docs')).toBeHidden();
   });
 
+  test('recarga página y restaura datos en móvil', async ({ page }) => {
+    expect(await getRowCount(page)).toBeGreaterThan(0);
+    await page.evaluate(() => { if (typeof saveSession === 'function') saveSession(); });
+    await page.reload();
+    try {
+      await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });
+    } catch { /* auth ya restaurado */ }
+    await expect(page.locator('#dropzone')).toBeHidden({ timeout: 30_000 });
+    await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 30_000 });
+    expect(await getRowCount(page)).toBeGreaterThan(0);
+  });
+
   test('modal Hojas abre en móvil', async ({ page }) => {
     await page.locator('#btn-mobile-sheets').click();
     await expect(page.locator('#mobile-sheets-overlay')).toHaveClass(/open/);

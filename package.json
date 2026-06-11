@@ -9,6 +9,7 @@
     "test:headed": "playwright test --headed",
     "test:desktop": "playwright test --project=desktop",
     "test:mobile": "playwright test --project=mobile",
+    "test:core": "playwright test tests/e2e/desktop/core.spec.js tests/e2e/mobile/core.spec.js",
     "test:shared": "playwright test --project=shared",
     "setup:e2e": "node scripts/write-e2e.mjs",
     "test:all": "npm run setup:e2e && playwright test",

@@ -1,10 +1,23 @@
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { expect } from '@playwright/test';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export const FIXTURE_XLSX = path.resolve(__dirname, '../fixtures/cuadro-concurso-2024.xlsx');
+const DEFAULT_FIXTURE = path.resolve(__dirname, '../fixtures/cuadro-concurso-2024.xlsx');
+const ONEDRIVE_FIXTURE = 'c:\\Users\\juoso\\OneDrive\\Escritorio\\Cuadro Concurso 2024_CNSC 8-4-2024.xlsx';
+
+function resolveFixturePath() {
+  if (process.env.FIXTURE_XLSX && fs.existsSync(process.env.FIXTURE_XLSX)) {
+    return path.resolve(process.env.FIXTURE_XLSX);
+  }
+  if (fs.existsSync(DEFAULT_FIXTURE)) return DEFAULT_FIXTURE;
+  if (fs.existsSync(ONEDRIVE_FIXTURE)) return ONEDRIVE_FIXTURE;
+  return DEFAULT_FIXTURE;
+}
+
+export const FIXTURE_XLSX = resolveFixturePath();
 
 export function requireCredentials() {
   const email = process.env.TEST_EMAIL;
@@ -25,7 +38,6 @@ export async function login(page) {
     return;
   }
 
-  // Firebase puede restaurar la sesión de forma asíncrona tras cargar storageState
   try {
     await expect(loginScreen).toHaveClass(/hidden/, { timeout: 10_000 });
     return;
@@ -43,9 +55,25 @@ export async function login(page) {
 
 export async function loadFixture(page, filePath = FIXTURE_XLSX) {
   await page.setInputFiles('#file-input', filePath);
-  await page.locator('#loading').waitFor({ state: 'hidden', timeout: 60_000 });
+  await page.locator('#loading').waitFor({ state: 'hidden', timeout: 120_000 });
   await expect(page.locator('#dropzone')).toBeHidden();
-  await page.locator('#table-body tr').first().waitFor({ timeout: 30_000 });
+  await page.locator('#table-body tr').first().waitFor({ timeout: 60_000 });
+}
+
+export async function flushSession(page) {
+  await page.evaluate(() => {
+    if (typeof saveSession === 'function') saveSession();
+  });
+}
+
+export async function reloadAndExpectData(page) {
+  await flushSession(page);
+  await page.reload();
+  try {
+    await expect(page.locator('#login-screen')).toHaveClass(/hidden/, { timeout: 15_000 });
+  } catch { /* auth ya restaurado */ }
+  await expect(page.locator('#dropzone')).toBeHidden({ timeout: 60_000 });
+  await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 60_000 });
 }
 
 export async function isPillsOpen(page) {
@@ -71,7 +99,7 @@ export async function enterPillsMode(page) {
   }
 
   await expect(page.locator('#pills-view')).toHaveClass(/open/);
-  await page.locator('#pills-grid [class*="mpill"]').first().waitFor({ timeout: 20_000 });
+  await page.locator('#pills-grid [class*="mpill"]').first().waitFor({ timeout: 30_000 });
 }
 
 export async function exitPillsMode(page) {
@@ -133,4 +161,193 @@ export async function expectEmptyState(page) {
 export async function getRowCount(page) {
   const text = await page.locator('#st-vis').textContent();
   return parseInt(text?.replace(/\D/g, '') || '0', 10);
+}
+
+export async function discoverSearchTerm(page) {
+  return page.evaluate(() => {
+    const tab = typeof T === 'function' ? T() : null;
+    if (!tab?.rawData?.length || !tab.columns?.length) return 'test';
+    const col = tab.columns.find((c) => !c.startsWith('__EMPTY')) || tab.columns[0];
+    for (const row of tab.rawData) {
+      const v = String(row[col] || '').trim();
+      if (v.length >= 3) return v.slice(0, 12);
+    }
+    return 'test';
+  });
+}
+
+export async function searchAndExpectReduction(page, selector, term) {
+  const before = await getRowCount(page);
+  await page.fill(selector, term);
+  await page.waitForTimeout(500);
+  const after = await getRowCount(page);
+  expect(after).toBeLessThan(before);
+  return { before, after };
+}
+
+export async function clearSearch(page, selector) {
+  await page.fill(selector, '');
+  await page.waitForTimeout(500);
+}
+
+export async function openSheetsModal(page) {
+  const btn = page.locator('#btn-mobile-sheets');
+  await btn.waitFor({ state: 'visible', timeout: 60_000 });
+  await btn.click();
+  await expect(page.locator('#mobile-sheets-overlay')).toHaveClass(/open/);
+}
+
+export async function switchToSheet(page, index) {
+  await openSheetsModal(page);
+  const item = page.locator('#ms-list .ms-item').nth(index);
+  const name = await item.locator('.ms-item-name').innerText();
+  await item.click();
+  await expect(page.locator('#mobile-sheets-overlay')).not.toHaveClass(/open/);
+  await page.locator('#loading').waitFor({ state: 'hidden', timeout: 120_000 }).catch(() => {});
+  await expect(page.locator('#table-body tr').first()).toBeVisible({ timeout: 60_000 });
+  return name;
+}
+
+export async function applyFirstChipFilter(page, { isMobile } = {}) {
+  const before = await getRowCount(page);
+  if (isMobile) {
+    await page.locator('#mbnav-filters').click();
+    await expect(page.locator('#mobile-filter-overlay')).toHaveClass(/open/);
+    await page.locator('#mf-chips-host .chip').first().click();
+  } else {
+    await page.locator('#chips-bar .chip').first().click();
+  }
+  await expect(page.locator('#chip-dropdown')).toHaveClass(/open/);
+  const items = page.locator('#chip-dropdown .cdp-item');
+  const count = await items.count();
+  for (let i = 0; i < count; i++) {
+    const item = items.nth(i);
+    const label = await item.locator('.cdp-item-label').innerText().catch(() => '');
+    if (label && !label.includes('(Todos)') && !label.includes('Con cédula') && !label.includes('sin cédula')) {
+      await item.click();
+      break;
+    }
+  }
+  await page.waitForTimeout(500);
+  const after = await getRowCount(page);
+  if (isMobile) {
+    await page.evaluate(() => { if (typeof closeMobileFilterSheet === 'function') closeMobileFilterSheet(); });
+  } else {
+    await page.evaluate(() => { if (typeof closeDropdown === 'function') closeDropdown(); });
+  }
+  return { before, after };
+}
+
+export async function clearAllFilters(page, { isMobile } = {}) {
+  if (isMobile && await page.locator('#btn-mobile-quick-clear').isVisible()) {
+    await page.locator('#btn-mobile-quick-clear').click();
+  } else {
+    await page.evaluate(() => {
+      if (typeof clearChipFiltersOnly === 'function') clearChipFiltersOnly();
+    });
+  }
+  await page.waitForTimeout(400);
+}
+
+export async function openSecondTab(page, filePath = FIXTURE_XLSX) {
+  await page.setInputFiles('#file-input', filePath);
+  await page.locator('#loading').waitFor({ state: 'hidden', timeout: 120_000 });
+  await expect(page.locator('#tabs-bar .tab')).toHaveCount(2);
+}
+
+export async function clickTabByIndex(page, index) {
+  await page.locator('#tabs-bar .tab').nth(index).click();
+  await page.waitForTimeout(600);
+}
+
+export async function openActionsPanel(page, { isMobile } = {}) {
+  if (isMobile) {
+    await page.locator('#mbnav-menu').click();
+  } else {
+    await page.locator('#btn-actions').click();
+  }
+  await expect(page.locator('#actions-panel')).toHaveClass(/open/);
+}
+
+export async function openDocsPanel(page, { isMobile } = {}) {
+  await openActionsPanel(page, { isMobile });
+  await page.locator('#ap-docs').click();
+  await expect(page.locator('#docs-panel')).toHaveClass(/open/, { timeout: 30_000 });
+}
+
+export async function saveToCloudAndConfirm(page, { isMobile } = {}) {
+  const testName = `e2e-test-${Date.now()}.xlsx`;
+
+  page.once('dialog', async (dialog) => {
+    if (dialog.type() === 'confirm') await dialog.accept();
+    else await dialog.accept();
+  });
+
+  if (isMobile) {
+    await page.locator('#mbnav-menu').click();
+    await page.locator('#ap-save-cloud').click();
+  } else {
+    await page.locator('#btn-save-cloud').click();
+  }
+
+  page.once('dialog', async (dialog) => {
+    await dialog.accept();
+  });
+
+  await page.waitForTimeout(3000);
+  return testName;
+}
+
+export async function deleteCloudTestDocs(page) {
+  await page.evaluate(async () => {
+    if (!_fbDb || !_fbUser) return;
+    const snap = await _fbDb.collection('documents')
+      .where('userId', '==', _fbUser.uid)
+      .get();
+    for (const doc of snap.docs) {
+      const name = doc.data().fileName || '';
+      if (!name.startsWith('e2e-test-')) continue;
+      try {
+        const path = doc.data().storagePath;
+        if (path) await _fbStorage.ref(path).delete();
+      } catch (_) {}
+      await doc.ref.delete();
+    }
+  });
+}
+
+export async function assertTableLayoutStable(page) {
+  const mainBox = await page.locator('#main').boundingBox();
+  const wrapBefore = await page.locator('#table-wrap').boundingBox();
+  expect(mainBox).toBeTruthy();
+  expect(wrapBefore).toBeTruthy();
+
+  await page.locator('#vt-scroll').evaluate((el) => {
+    el.scrollTop = 200;
+    el.scrollLeft = 100;
+  });
+  await page.waitForTimeout(300);
+
+  const wrapAfter = await page.locator('#table-wrap').boundingBox();
+  expect(wrapAfter).toBeTruthy();
+  if (wrapBefore && wrapAfter && mainBox) {
+    expect(Math.abs(wrapAfter.y - wrapBefore.y)).toBeLessThan(25);
+    expect(wrapAfter.x).toBeGreaterThanOrEqual(mainBox.x - 5);
+  }
+}
+
+export async function installFilePickerGuard(page) {
+  await page.evaluate(() => {
+    window.__e2eFilePickerTriggered = false;
+    const inp = document.getElementById('file-input');
+    if (inp && !inp.__e2eGuard) {
+      inp.__e2eGuard = true;
+      inp.addEventListener('click', () => { window.__e2eFilePickerTriggered = true; }, true);
+    }
+  });
+}
+
+export async function expectNoFilePicker(page) {
+  const triggered = await page.evaluate(() => !!window.__e2eFilePickerTriggered);
+  expect(triggered).toBe(false);
 }

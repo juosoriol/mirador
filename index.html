@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <script>
 (function(){
-  var BUILD='20260611-session-persist-v2', k='mirador_build_v';
+  var BUILD='20260611-sheet-cache-v1', k='mirador_build_v';
   var prev=localStorage.getItem(k);
   if(prev&&prev!==BUILD){ localStorage.setItem(k,BUILD); location.reload(); return; }
   localStorage.setItem(k,BUILD);
@@ -1956,6 +1956,128 @@ const debounce = (fn,ms) => {
 // ── SESIÓN ────────────────────────────────────────────────────────────────────
 const SESSION_IDB = 'mirador_session_db';
 const SESSION_IDB_STORE = 'session';
+const WORKBOOK_IDB_PREFIX = 'workbook:';
+
+function _workbookIdbKey(tabId){ return WORKBOOK_IDB_PREFIX + tabId; }
+
+function _sessionWriteWorkbook(tabId, arrayBuffer){
+  if(!arrayBuffer) return Promise.resolve(false);
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
+    tx.objectStore(SESSION_IDB_STORE).put(arrayBuffer, _workbookIdbKey(tabId));
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  })).catch(() => false);
+}
+
+function _sessionReadWorkbook(tabId){
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readonly');
+    const req = tx.objectStore(SESSION_IDB_STORE).get(_workbookIdbKey(tabId));
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  })).catch(() => null);
+}
+
+function _sessionClearWorkbooks(tabIds){
+  const ids = tabIds || [...tabs.keys()];
+  if(!ids.length) return Promise.resolve();
+  return _sessionOpenIdb().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(SESSION_IDB_STORE, 'readwrite');
+    const store = tx.objectStore(SESSION_IDB_STORE);
+    ids.forEach(id => store.delete(_workbookIdbKey(id)));
+    tx.oncomplete = () => resolve(true);
+    tx.onerror = () => reject(tx.error);
+  })).catch(() => {});
+}
+
+function _sessionCompactSheetCache(cache){
+  if(!cache || typeof cache !== 'object') return {};
+  const out = {};
+  for(const [name, entry] of Object.entries(cache)){
+    if(!entry?.rawData?.length) continue;
+    const fakeTab = { rawData: entry.rawData, columns: entry.columns || [] };
+    const compact = _sessionCompactTab(fakeTab);
+    out[name] = {
+      columns: compact.columns,
+      rawData: compact.rawData,
+      _manualHdrRow: entry._manualHdrRow ?? null,
+      _hdrRangeStart: entry._hdrRangeStart ?? null,
+      dateColsDetected: entry.dateColsDetected || [],
+    };
+  }
+  return out;
+}
+
+function _cacheSheetData(tab, sheetName){
+  if(!tab || !sheetName || !tab.rawData?.length) return;
+  if(!tab._sheetCache) tab._sheetCache = {};
+  const compact = _sessionCompactTab(tab);
+  tab._sheetCache[sheetName] = {
+    columns: compact.columns,
+    rawData: compact.rawData,
+    _manualHdrRow: tab._manualHdrRow ?? null,
+    _hdrRangeStart: tab._hdrRangeStart ?? null,
+    dateColsDetected: tab.dateColsDetected || [],
+  };
+}
+
+async function _restoreWorkbooksFromIdb(){
+  if(typeof XLSX === 'undefined') return;
+  for(const [id, tab] of tabs){
+    if(tab.workbook) continue;
+    const buf = await _sessionReadWorkbook(id);
+    if(!buf) continue;
+    try{
+      tab.workbook = XLSX.read(buf, { type: 'array', cellDates: false });
+      const meta = (tab.workbook.Workbook?.Sheets) || [];
+      tab.sheets = tab.workbook.SheetNames.filter((_, i) => {
+        const m = meta[i];
+        return !m || !m.Hidden;
+      });
+      if(!tab.sheets.length) tab.sheets = tab.workbook.SheetNames;
+    }catch(e){
+      console.warn('Workbook restore failed for tab', id, e);
+    }
+  }
+}
+
+function _loadSheetFromCache(tabId, sheetName, preserveFilters){
+  const tab = tabs.get(tabId);
+  const cached = tab?._sheetCache?.[sheetName];
+  if(!tab || !cached?.rawData?.length) return false;
+  tab.activeSheet = sheetName;
+  tab.columns = cached.columns;
+  tab.rawData = cached.rawData;
+  tab.dateColsDetected = cached.dateColsDetected || tab.dateColsDetected || [];
+  tab._manualHdrRow = cached._manualHdrRow ?? tab._manualHdrRow;
+  tab._hdrRangeStart = cached._hdrRangeStart ?? tab._hdrRangeStart;
+  tab.searchIndex = null;
+  tab.colUniques = null;
+  tab.colNulls = null;
+  tab.selected = new Set();
+  if(!preserveFilters){
+    tab.colFilters = {};
+    tab.condRules = [];
+    tab.sortCol = null;
+    tab.searchText = '';
+    tab.searchCol = '';
+    tab.dateFrom = '';
+    tab.dateTo = '';
+    tab.dateCol = '';
+  }
+  buildChips();
+  buildSearchCombo();
+  buildDateColCombo();
+  enableControls(true);
+  _syncDataViewAfterLoad(tabId);
+  renderTabs();
+  renderSheetsSidebar();
+  setStatus(`"${sheetName}" — ${tab.rawData.length.toLocaleString()} filas · ${tab.columns.length} columnas (caché)`);
+  updateBreadcrumb();
+  saveSession();
+  return true;
+}
 
 function _sessionCompactTab(t){
   const raw = t.rawData || [];
@@ -2013,6 +2135,7 @@ function _sessionBuildData(){
         _manualHdrRow: t._manualHdrRow ?? null,
         _hdrRangeStart: t._hdrRangeStart ?? null,
         _hdrBySheet: t._hdrBySheet ?? null,
+        _sheetCache: _sessionCompactSheetCache(t._sheetCache),
         statsPanels: (t.statsPanels || []).filter(c => keepSet.has(c)),
         rawData: compact.rawData,
       };
@@ -2085,6 +2208,7 @@ function clearStoredSession(){
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_KEY + '_emergency');
   } catch(_) {}
+  _sessionClearWorkbooks([...tabs.keys()]);
   _sessionClearIdb();
 }
 
@@ -2208,6 +2332,7 @@ function _applySavedSession(saved, quiet){
       _manualHdrRow: s._manualHdrRow ?? null,
       _hdrRangeStart: s._hdrRangeStart ?? null,
       _hdrBySheet: s._hdrBySheet ?? null,
+      _sheetCache: s._sheetCache || {},
       statsPanels: s.statsPanels || null,
       searchText:s.searchText||'', pillsSearchText:s.pillsSearchText||'', searchCol:s.searchCol||'',
       dateFrom:s.dateFrom||'', dateTo:s.dateTo||'', dateCol:s.dateCol||'',
@@ -2220,6 +2345,12 @@ function _applySavedSession(saved, quiet){
   if(T()?.rawData?.length) refreshActiveView(activeTabId);
   if(!quiet) toast(`Sesión restaurada — ${tabs.size} pestaña(s)`);
   return true;
+}
+
+async function _applySavedSessionAsync(saved, quiet){
+  const ok = _applySavedSession(saved, quiet);
+  if(ok) await _restoreWorkbooksFromIdb();
+  return ok;
 }
 
 function restoreSession(){
@@ -2236,7 +2367,7 @@ async function restoreSessionAsync(){
   try {
     const saved = await _sessionReadAll();
     if(!saved?.tabs?.some(t => t.rawData?.length)) return false;
-    return _applySavedSession(saved, true);
+    return _applySavedSessionAsync(saved, true);
   } catch(_) { return false; }
 }
 
@@ -2248,6 +2379,7 @@ async function _bootSessionRestore(){
     setStatus('Restaurando sesión…');
   }
   const ok = await restoreSessionAsync();
+  if(ok) await _restoreWorkbooksFromIdb();
   $('loading').style.display = 'none';
   if(!ok && tabs.size === 0) showDropzone(true);
   else if(tabs.size > 0){
@@ -2600,7 +2732,9 @@ function processFile(file){
     try{
       const tab=tabs.get(tabId);
       if(!tab) return;
-      tab.workbook=XLSX.read(e.target.result,{type:'array',cellDates:false});
+      const buf=e.target.result;
+      tab.workbook=XLSX.read(buf,{type:'array',cellDates:false});
+      _sessionWriteWorkbook(tabId, buf);
       const meta=(tab.workbook.Workbook?.Sheets)||[];
       tab.sheets=tab.workbook.SheetNames.filter((_,i)=>{ const m=meta[i]; return !m||!m.Hidden; });
       if(!tab.sheets.length) tab.sheets=tab.workbook.SheetNames;
@@ -2666,9 +2800,10 @@ function loadSheet(name, tabId, preserveFilters){
   else if(prevSort){ tab.sortCol=prevSort.col; tab.sortDir=prevSort.dir; }
   closeDropdown(); renderSheetsSidebar();
 
-  // Sin workbook → datos ya en memoria (sesión/favorito); no se puede cambiar de hoja
+  // Sin workbook → usar caché de hojas visitadas o datos en memoria
   if(!tab.workbook){
     if(prevSheet!==name){
+      if(_loadSheetFromCache(tid, name, preserveFilters)) return;
       tab.activeSheet=prevSheet;
       renderSheetsSidebar();
       toast('Abre el archivo de nuevo para cambiar de hoja', true);
@@ -2851,6 +2986,7 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
   updateBreadcrumb();
   renderSheetsSidebar();
   fmRegisterFile(tab.fileName, tab.sheets?.length||0, tab.rawData.length);
+  _cacheSheetData(tab, name);
   saveSession();
   saveSessionDebounced();
 }
@@ -6016,7 +6152,7 @@ function setAutoRefresh(ms){
 // Limpiar timers al cerrar tab
 function closeTab(id){
   if(_refreshTimers[id]){ clearInterval(_refreshTimers[id]); delete _refreshTimers[id]; }
-  // Call original logic directly
+  _sessionClearWorkbooks([id]);
   tabs.delete(id);
   if(activeTabId===id) activeTabId=tabs.size ? [...tabs.keys()].at(-1) : null;
   renderTabs();

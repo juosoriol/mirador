@@ -13,9 +13,16 @@ New-Item -ItemType Directory -Force -Path @(
 $fixture = 'tests\fixtures\cuadro-concurso-2024.xlsx'
 $source  = 'C:\dev\mirador\tests\fixtures\cuadro-concurso-2024.xlsx'
 $sourceAlt = 'c:\Users\juoso\OneDrive\Escritorio\Cuadro Concurso 2024_CNSC 8-4-2024.xlsx'
-if (-not (Test-Path $fixture) -and (Test-Path $source)) {
-  Copy-Item $source $fixture
-  Write-Host "Fixture copiado: $fixture"
+if (-not (Test-Path $fixture)) {
+  if (Test-Path $sourceAlt) {
+    Copy-Item $sourceAlt $fixture
+    Write-Host "Fixture copiado desde OneDrive: $fixture"
+  } elseif (Test-Path $source) {
+    Copy-Item $source $fixture
+    Write-Host "Fixture copiado: $fixture"
+  } else {
+    Write-Warning "Coloca cuadro-concurso-2024.xlsx en tests\fixtures\ o define FIXTURE_XLSX en .env.test"
+  }
 }
 
 if (-not (Test-Path '.env.test')) {

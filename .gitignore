@@ -18,6 +18,7 @@ test-results/
 tests/fixtures/*.xlsx
 tests/fixtures/*.xls
 tests/fixtures/*.csv
+!tests/fixtures/sample.csv
 
 # Copia local anidada (no versionar)
 mirador/

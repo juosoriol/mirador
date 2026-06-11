@@ -1,5 +1,7 @@
 'use strict';
 
+import { filterRows } from '../engine/filter-engine.js';
+
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
 const FAV_KEY      = 'mirador_favorites_v1';
@@ -1927,7 +1929,6 @@ function applyFilters(){
   _syncLiveSearchFields(_rawTxt);
   const useRegex=$('chk-regex')?.checked;
   const useExcl =$('chk-excl')?.checked;
-  const txt     = useRegex?_rawTxt:_rawTxt.toLowerCase();
   const scol    = $('search-col').value;
   const dfrom   = $('date-from').value;
   const dto     = $('date-to').value;
@@ -1935,98 +1936,26 @@ function applyFilters(){
   if(_pillsOn) tab.pillsSearchText=_rawTxt;
   else tab.searchText=_rawTxt;
 
-  const hasColFilters = Object.keys(tab.colFilters).length>0;
-  const effectiveDcol = dcol || (tab.dateColsDetected?.length===1 ? tab.dateColsDetected[0] : '');
-  const hasDates      = effectiveDcol&&(dfrom||dto);
-  const hasText       = txt!=='';
-  const allCols       = !scol||scol==='(Todas las columnas)';
-  const data          = tab.rawData;
-  const len           = data.length;
+  const { filtered, searchIndex, lastUseRegex } = filterRows({
+    data: tab.rawData,
+    columns: tab.columns,
+    colFilters: tab.colFilters,
+    searchText: _rawTxt,
+    useRegex,
+    useExclude: useExcl,
+    regexFlags: getRegexFlags() || 'i',
+    searchCol: scol,
+    dateFrom: dfrom,
+    dateTo: dto,
+    dateCol: dcol,
+    dateColsDetected: tab.dateColsDetected,
+    searchIndex: tab.searchIndex,
+    lastUseRegex: tab._lastUseRegex,
+  });
 
-  // Pre-computar filtros de columna: arrays→Sets, strings pre-procesados
-  let filterOps=null;
-  if(hasColFilters){
-    filterOps=[];
-    for(const[col,val]of Object.entries(tab.colFilters)){
-      if(Array.isArray(val))                       filterOps.push({col,type:1,set:new Set(val)});
-      else if(val==='__NULL__')                    filterOps.push({col,type:2});
-      else if(val==='__WITH__')                    filterOps.push({col,type:3});
-      else if(val?.startsWith('__CONTAINS__:'))    filterOps.push({col,type:4,q:val.slice(13)});
-      else if(val?.startsWith('__DATE_RANGE__:')){
-        const parts=val.slice(14).split('__TO__:');
-        filterOps.push({col,type:5,from:parts[0]||'',to:parts[1]||''});
-      }
-      else                                         filterOps.push({col,type:0,val});
-    }
-  }
-
-  // Índice de búsqueda concatenado: una string por fila, se construye una sola vez
-  // Invalidar índice si se activa regex O si se desactiva (para reconstruir limpio)
-  if(useRegex||(!useRegex&&tab._lastUseRegex)) tab.searchIndex=null;
-  tab._lastUseRegex=useRegex;
-  if(hasText&&allCols&&!useRegex&&!tab.searchIndex){
-    const cols=tab.columns;
-    const idx=new Array(len);
-    for(let i=0;i<len;i++){
-      const r=data[i];
-      if(!r){idx[i]='';continue}
-      let s='';
-      for(let c=0;c<cols.length;c++) s+=(r[cols[c]]||'');
-      idx[i]=s.toLowerCase();
-    }
-    tab.searchIndex=idx;
-  }
-  const sIdx=tab.searchIndex;
-
-  // Pre-compilar regex una sola vez
-  let re=null;
-  if(hasText&&useRegex){ try{ const rTxt=txt.replace(/\*/g,'.*'); re=new RegExp(rTxt,getRegexFlags()||'i'); }catch(e){re=null;} }
-
-  // Loop principal — una sola pasada
-  const result=[];
-  for(let i=0;i<len;i++){
-    const row=data[i]; if(!row) continue;
-
-    // 1. Filtros de columna (más selectivos → primero)
-    if(filterOps){
-      let skip=false;
-      for(let f=0;f<filterOps.length;f++){
-        const op=filterOps[f]; const rv=row[op.col];
-        switch(op.type){
-          case 1: if(!op.set.has(rv)){skip=true;} break;
-          case 0: if(rv!==op.val){skip=true;} break;
-          case 2: if(rv!==''&&rv!=null){skip=true;} break;
-          case 3: if(rv===''||rv==null){skip=true;} break;
-          case 4: if(!(rv||'').toLowerCase().includes(op.q)){skip=true;} break;
-          case 5: { const rv2=rv||''; if(op.from&&rv2<op.from){skip=true;break;} if(op.to&&rv2>op.to){skip=true;} break; }
-        }
-        if(skip) break;
-      }
-      if(skip) continue;
-    }
-
-    // 2. Rango de fechas
-    if(hasDates){ const rv=row[effectiveDcol]||''; if(dfrom&&rv<dfrom) continue; if(dto&&rv>dto) continue; }
-
-    // 3. Búsqueda texto
-    if(hasText){
-      let match;
-      if(re){
-        const hay=allCols?tab.columns.map(c=>row[c]||'').join(''):(row[scol]||'');
-        match=re.test(hay);
-      } else {
-        const hay=allCols?(sIdx?sIdx[i]:tab.columns.map(c=>row[c]||'').join('').toLowerCase()):(row[scol]||'').toLowerCase();
-        match=hay.includes(txt);
-      }
-      // useExcl=true: excluir filas que coinciden (skip if match)
-      // useExcl=false: mostrar solo filas que coinciden (skip if !match)
-      if(useExcl ? match : !match) continue;
-    }
-
-    result.push(i);
-  }
-
-  tab.filtered=result;
+  tab.filtered = filtered;
+  tab.searchIndex = searchIndex;
+  tab._lastUseRegex = lastUseRegex;
   tab.selected.clear();
   if(_pillsOn) updateChipStates();
   else renderTable();

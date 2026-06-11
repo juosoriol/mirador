@@ -68,10 +68,6 @@ import {
   DEFAULT_CHIP_LIMIT,
   findCedulaColumn,
   precalcColStats as enginePrecalcColStats,
-  buildCandidateRowIndices,
-  countColumnValueMap,
-  countNullRows,
-  countNonNullRows,
   sortColumnValues,
   selectionSetFromFilter,
   getChipFilterDisplayLabel,
@@ -97,6 +93,30 @@ import {
   getChartEligibleColumns,
   prepareChartSeries,
 } from '../engine/chart-engine.js';
+import {
+  applyFavoriteFiltersToTab,
+  buildFilterSummary,
+  buildViewState,
+  createFavoriteEntry,
+  createTabFromFavoriteState,
+  defaultFavoriteName,
+  findFavoriteByFileName,
+  findFavoriteByName,
+  isFavoriteFile,
+  readFavoritesFromStorage,
+  upsertFavorite,
+  writeFavoritesToStorage,
+} from '../engine/views-engine.js';
+import {
+  cdpHeaderCountLabel,
+  cdpSpecCounts,
+  computeChipDropdownLayout,
+  computeDateChipPanelLayout,
+  filterCdpOptionValues,
+  getContainsChipQuery,
+  isContainsChipFilter,
+  prepareCdpPanelData,
+} from '../engine/chip-dropdown-engine.js';
 
 // ── CONSTANTES ────────────────────────────────────────────────────────────────
 const SESSION_KEY  = 'mirador_session_v1';
@@ -559,42 +579,28 @@ function _tabFileDot(ext){
 
 // Star → guardar/quitar vista inmediatamente
 function _tabIsFav(fileName){
-  return getFavs().some(f=>f.state?.fileName===fileName);
+  return isFavoriteFile(getFavs(), fileName);
 }
 function _tabBuildViewState(tab, { compact = false } = {}){
-  const state={
-    colFilters:JSON.parse(JSON.stringify(tab.colFilters||{})),
-    searchText:tab.searchText||$('search-input')?.value||'',
-    searchCol:tab.searchCol||$('search-col')?.value||'',
-    dateFrom:tab.dateFrom||$('date-from')?.value||'',
-    dateTo:tab.dateTo||$('date-to')?.value||'',
-    dateCol:tab.dateCol||$('date-col')?.value||'',
-    fileName:tab.fileName, activeSheet:tab.activeSheet, sheets:tab.sheets,
-    dateColsDetected:tab.dateColsDetected, color:tab.color
-  };
-  if(!compact){
-    state.columns=tab.columns;
-    state.rawData=tab.rawData;
-  }
-  return state;
+  return buildViewState(tab, {
+    searchText: $('search-input')?.value || '',
+    searchCol: $('search-col')?.value || '',
+    dateFrom: $('date-from')?.value || '',
+    dateTo: $('date-to')?.value || '',
+    dateCol: $('date-col')?.value || '',
+  }, { compact });
 }
 function _safeSetFavs(favs){
-  try{
-    setFavs(favs);
-    return true;
-  }catch(e){
-    const quota=e?.name==='QuotaExceededError'||/quota/i.test(String(e?.message||''));
-    toast(quota?'Vista demasiado grande para guardar — quita filtros o usa un archivo más pequeño':'No se pudo guardar la vista',true);
-    return false;
-  }
+  const result=writeFavoritesToStorage(FAV_KEY, favs);
+  if(result.ok) return true;
+  toast(result.quota?'Vista demasiado grande para guardar — quita filtros o usa un archivo más pequeño':'No se pudo guardar la vista',true);
+  return false;
 }
 function _tabSaveView(tab){
   const state=_tabBuildViewState(tab,{compact:true});
-  const name=(tab.fileName||'Vista').replace(/\.[^.]+$/,'');
+  const name=defaultFavoriteName(tab.fileName);
   const favs=getFavs();
-  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
-  const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
-  if(idx>=0) favs[idx]=fav; else favs.push(fav);
+  upsertFavorite(favs, createFavoriteEntry({ name, state }), 'fileName');
   if(!_safeSetFavs(favs)) return false;
   const fmList=_fmLoad();
   const fmIdx=fmList.findIndex(x=>x.name===tab.fileName);
@@ -604,7 +610,7 @@ function _tabSaveView(tab){
 }
 function _tabRemoveView(tab){
   const favs=getFavs();
-  const idx=favs.findIndex(f=>f.state?.fileName===tab.fileName);
+  const idx=findFavoriteByFileName(favs, tab.fileName);
   if(idx<0) return false;
   const name=favs[idx].name;
   favs.splice(idx,1);
@@ -1264,15 +1270,12 @@ function openDateChipPanel(col, chipEl){
 
   const ref=chipEl||$('chips-bar');
   const rect=ref.getBoundingClientRect();
-  const panelW=280;
-  let left=rect.left;
-  if(left+panelW>window.innerWidth-10) left=Math.max(6,rect.right-panelW);
-  const vwD = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  const safeLeftD = vwD<=500 ? 8 : Math.max(6, Math.min(left, vwD-panelW-6));
-  dd.style.left = safeLeftD+'px';
-  dd.style.width = vwD<=500 ? (vwD-16)+'px' : '';
-  dd.style.top=(rect.bottom+4)+'px';
-  dd.style.maxHeight='200px';
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const layout=computeDateChipPanelLayout(rect, { width: vw });
+  dd.style.left = layout.left+'px';
+  dd.style.width = layout.width ? layout.width+'px' : '';
+  dd.style.top=layout.top+'px';
+  dd.style.maxHeight=layout.maxHeight+'px';
 
   const cur=tab.colFilters[col];
   const { from: curFrom, to: curTo } = parseDateChipFilter(cur);
@@ -1325,27 +1328,16 @@ function openCdpPanel(col, chipEl){
   const dd=$('chip-dropdown');
   dd.classList.add('open');
 
-  // Posicionar debajo del chip clicado, con clamp al viewport
   const ref = chipEl || $('chips-bar');
   const rect = ref.getBoundingClientRect();
-  const panelW = 320;
-  let left = rect.left;
-  // Si se sale por la derecha, alinear al borde derecho del chip
-  if(left + panelW > window.innerWidth - 10) left = Math.max(6, rect.right - panelW);
-  const top = rect.bottom + 4;
-  const available = window.innerHeight - top - 12;
+  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const layout = computeChipDropdownLayout(rect, { width: vw, height: vh });
 
-  // En móvil usar visualViewport para el alto real visible (iOS Safari)
-  const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight);
-  const vw = (window.visualViewport ? window.visualViewport.width  : window.innerWidth);
-  const safeLeft = Math.max(6, Math.min(left, vw - panelW - 6));
-  const available2 = vh - top - 12;
-
-  dd.style.left = safeLeft + 'px';
-  dd.style.top  = top + 'px';
-  dd.style.maxHeight = Math.min(420, Math.max(180, available2)) + 'px';
-  // En móvil: ancho casi completo, centrado
-  if(vw <= 500){ dd.style.left='8px'; dd.style.width=(vw-16)+'px'; } else { dd.style.width=''; }
+  dd.style.left = layout.left + 'px';
+  dd.style.top  = layout.top + 'px';
+  dd.style.maxHeight = layout.maxHeight + 'px';
+  if(layout.width){ dd.style.left='8px'; dd.style.width=layout.width+'px'; } else { dd.style.width=''; }
 
   renderCdpContent(col);
 }
@@ -1357,28 +1349,31 @@ function renderCdpContent(col){
 
   if(!tab.colUniques) precalcColStats(tab);
 
-  const candidateRows=buildCandidateRowIndices(tab.rawData, tab.colFilters, col);
-  const filtCountsAll=countColumnValueMap(tab.rawData, candidateRows, col);
-  const allVals=tab.colUniques[col] ? sortColumnValues(tab.colUniques[col]) : [];
-  const curFilter = tab.colFilters[col];
-  const selSet = selectionSetFromFilter(curFilter);
+  const { candidateRows, valueCounts: filtCountsAll, allValues: allVals, curFilter, selection: selSet } =
+    prepareCdpPanelData({
+      rawData: tab.rawData,
+      colFilters: tab.colFilters,
+      colUniques: tab.colUniques,
+      col,
+    });
+  const specCounts=cdpSpecCounts(tab.rawData, candidateRows, col);
 
   dd.innerHTML=`
     <div id="cdp-head">
       <span id="chip-dropdown-title">${eh(col)}</span>
-      <span id="cdp-count">${selSet.size>0?`${selSet.size}/${allVals.length}`:`0/${allVals.length}`}</span>
+      <span id="cdp-count">${cdpHeaderCountLabel(selSet.size, allVals.length)}</span>
       <button id="dp-close" onclick="closeDropdown()" title="Cerrar">×</button>
     </div>
     ${isSpec?`
       <div id="cdp-opts-wrap">
         <div class="cdp-item${curFilter===undefined?' cdp-sel':''}" onclick="cdpSetSpec(undefined)">
-          <input type="checkbox" ${curFilter===undefined?'checked':''}/><span class="cdp-item-label">(Todos)</span><span class="cdp-item-cnt">${candidateRows.length}</span>
+          <input type="checkbox" ${curFilter===undefined?'checked':''}/><span class="cdp-item-label">(Todos)</span><span class="cdp-item-cnt">${specCounts.all}</span>
         </div>
         <div class="cdp-item${curFilter==='__WITH__'?' cdp-sel':''}" onclick="cdpSetSpec('__WITH__')">
-          <input type="checkbox" ${curFilter==='__WITH__'?'checked':''}/><span class="cdp-item-label">Con cédula</span><span class="cdp-item-cnt">${countNonNullRows(tab.rawData, candidateRows, col)}</span>
+          <input type="checkbox" ${curFilter==='__WITH__'?'checked':''}/><span class="cdp-item-label">Con cédula</span><span class="cdp-item-cnt">${specCounts.withValue}</span>
         </div>
         <div class="cdp-item${curFilter==='__NULL__'?' cdp-sel':''}" onclick="cdpSetSpec('__NULL__')">
-          <input type="checkbox" ${curFilter==='__NULL__'?'checked':''}/><span class="cdp-item-label">Sin cédula</span><span class="cdp-item-cnt">${countNullRows(tab.rawData, candidateRows, col)}</span>
+          <input type="checkbox" ${curFilter==='__NULL__'?'checked':''}/><span class="cdp-item-label">Sin cédula</span><span class="cdp-item-cnt">${specCounts.null}</span>
         </div>
       </div>
     `:`
@@ -1402,7 +1397,7 @@ function renderCdpContent(col){
     const specialFrag=document.createDocumentFragment();
 
     // Fila: (Nulos)
-    const nullCnt=countNullRows(tab.rawData, candidateRows, col);
+    const nullCnt=specCounts.null;
     const isNullSel=curFilter==='__NULL__';
     const nullRow=document.createElement('div');
     nullRow.className='cdp-item cdp-special'+(isNullSel?' cdp-sel':'');
@@ -1411,8 +1406,8 @@ function renderCdpContent(col){
     specialFrag.appendChild(nullRow);
 
     // Fila: Contiene...
-    const containsActive=typeof curFilter==='string'&&curFilter.startsWith('__CONTAINS__:');
-    const containsVal=containsActive?curFilter.slice(13):'';
+    const containsActive=isContainsChipFilter(curFilter);
+    const containsVal=getContainsChipQuery(curFilter);
     const containsRow=document.createElement('div');
     containsRow.className='cdp-item cdp-special'+(containsActive?' cdp-sel':'');
     containsRow.style.cssText='flex-direction:column;align-items:flex-start;gap:4px;padding:6px 14px';
@@ -1434,7 +1429,7 @@ function renderCdpContent(col){
     optionsWrap.appendChild(checkWrap);
 
     const renderItems=(q='')=>{
-      const filtered=q?allVals.filter(v=>v.toLowerCase().includes(q)):allVals;
+      const filtered=filterCdpOptionValues(allVals, q);
       const frag=document.createDocumentFragment();
       if(!filtered.length){
         const e=document.createElement('div');
@@ -2637,49 +2632,34 @@ function setAllCols(visible){
 }
 
 // ── FAVORITOS ─────────────────────────────────────────────────────────────────
-const getFavs = () => { try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]')}catch{return[]} };
-const setFavs = f => localStorage.setItem(FAV_KEY,JSON.stringify(f));
+const getFavs = () => readFavoritesFromStorage(FAV_KEY);
+const setFavs = f => writeFavoritesToStorage(FAV_KEY, f);
 
 function openFavModal(){ openViewsPanel(); }
 function closeFavModal(e){ if(e&&e.target!==$('fav-overlay'))return; $('fav-overlay').classList.remove('open'); $('fav-name-input').value=''; }
 
-function buildFilterSummary(st){
-  const p=[];
-  Object.entries(st.colFilters||{}).forEach(([col,val])=>{
-    if(Array.isArray(val)) p.push(`${col}:${val.length===1?val[0]:`${val.length} valores`}`);
-    else p.push(`${col}:${val==='__NULL__'?'sin valor':val==='__WITH__'?'con valor':val?.startsWith('__CONTAINS__:')?`~${val.slice(13)}`:val}`);
-  });
-  if(st.searchText) p.push(`"${st.searchText}"`);
-  if(st.dateFrom||st.dateTo) p.push(`${st.dateCol||'fecha'}:${st.dateFrom||'*'}→${st.dateTo||'*'}`);
-  return p.length?p.join(' · '):'(sin filtros)';
-}
-
 function saveFavorite(){
   const tab=T(); if(!tab) return;
   const name=($('fav-name-input').value||'').trim(); if(!name){toast('Escribe un nombre');return}
-  const state={ colFilters:JSON.parse(JSON.stringify(tab.colFilters)),
-    searchText:$('search-input').value||'', searchCol:$('search-col').value||'',
-    dateFrom:$('date-from').value||'', dateTo:$('date-to').value||'', dateCol:$('date-col').value||'',
-    fileName:tab.fileName, activeSheet:tab.activeSheet, sheets:tab.sheets,
-    columns:tab.columns, rawData:tab.rawData, dateColsDetected:tab.dateColsDetected, color:tab.color };
-  const favs=getFavs(), idx=favs.findIndex(f=>f.name===name);
-  const fav={name,summary:buildFilterSummary(state),state,date:new Date().toLocaleDateString('es-CO')};
-  if(idx>=0){favs[idx]=fav;toast(`"${name}" actualizada`)} else{favs.push(fav);toast(`"${name}" guardada`)}
-  if(!_safeSetFavs(favs)) return; $('fav-name-input').value=''; renderFavList();
+  const state=buildViewState(tab, {
+    searchText: $('search-input').value||'',
+    searchCol: $('search-col').value||'',
+    dateFrom: $('date-from').value||'',
+    dateTo: $('date-to').value||'',
+    dateCol: $('date-col').value||'',
+  });
+  const favs=getFavs();
+  const existed=findFavoriteByName(favs, name)>=0;
+  upsertFavorite(favs, createFavoriteEntry({ name, state }), 'name');
+  if(!_safeSetFavs(favs)) return;
+  toast(existed?`"${name}" actualizada`:`"${name}" guardada`);
+  $('fav-name-input').value=''; renderFavList();
 }
 
 function loadFavorite(idx){
   const fav=getFavs()[idx]; if(!fav) return;
-  const st=fav.state, id=++tabCounter;
-  tabs.set(id,{ id, fileName:st.fileName||fav.name, color:st.color||TAB_COLORS[(id-1)%TAB_COLORS.length],
-    workbook:null, sheets:st.sheets||[st.activeSheet||''], activeSheet:st.activeSheet||'',
-    rawData:st.rawData||[], columns:st.columns||[], filtered:[], selected:new Set(),
-    searchIndex:null, colUniques:null, colNulls:null,
-    hiddenCols:new Set(), frozenCols:new Set(),
-    colFilters:JSON.parse(JSON.stringify(st.colFilters||{})), condRules:[], sortCol:null, sortDir:1,
-    activeChipCol:null, dateColsDetected:st.dateColsDetected||[],
-    searchText:st.searchText||'', searchCol:st.searchCol||'',
-    dateFrom:st.dateFrom||'', dateTo:st.dateTo||'', dateCol:st.dateCol||'' });
+  const id=++tabCounter;
+  tabs.set(id, createTabFromFavoriteState(fav, id, TAB_COLORS[(id-1)%TAB_COLORS.length]));
   activeTabId=id; renderTabs(); restoreTabUI(); closeFavModal();
   toast(`📌 Vista "${fav.name}" cargada`); saveSession();
 }
@@ -2690,14 +2670,10 @@ function openFileForFav(idx){
   inp.type='file'; inp.accept='.xlsx,.xls,.xlsb,.xlsm,.csv,.tsv,.ods,.json,.txt';
   inp.onchange=()=>{
     if(!inp.files.length) return;
-    // Process the file, then load the favorite on top
     processFile(inp.files[0]);
-    // After loading, apply the favorite filters
     setTimeout(()=>{
       const tab=T(); if(!tab) return;
-      const st=fav.state;
-      tab.colFilters=JSON.parse(JSON.stringify(st.colFilters||{}));
-      tab.searchText=st.searchText||'';
+      applyFavoriteFiltersToTab(tab, fav.state||{});
       applyFilters(); updateChipStates();
       toast(`📌 Archivo abierto con vista "${fav.name}"`);
     }, 1200);

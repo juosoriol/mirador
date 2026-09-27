@@ -65,6 +65,7 @@ export async function initUserProfile(user) {
       if (tr.claims.role) role = tr.claims.role;
     } catch (_) {}
   }
+
   docRef.update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
 
   return role;

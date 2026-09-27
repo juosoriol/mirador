@@ -9,6 +9,18 @@ function ChipsBarInner() {
   return (
     <div id="chips-bar" style={{ display: 'none' }}>
       <div id="chip-search-wrap" style={{ display: 'none', flexShrink: 0, alignItems: 'center', gap: 5 }}>
+        <button
+          type="button"
+          id="btn-filter-studio"
+          className="fs-launch"
+          onClick={() => callLegacy('openFilterStudio')}
+          title="Abrir filtros (Ctrl+K para la barra rápida)"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 5h18M6 12h12M10 19h4" />
+          </svg>
+          Filtros
+        </button>
         <input type="text" id="chip-search" placeholder="🔍 Filtros..." autoComplete="off" />
         <button
           type="button"

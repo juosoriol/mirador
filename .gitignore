@@ -26,3 +26,5 @@ mirador/
 # Sistema
 .DS_Store
 Thumbs.db
+
+.shots/

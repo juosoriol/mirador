@@ -1826,6 +1826,7 @@ applyFilters = function(){
     _pillsUpdateFilterBtn();
     if(typeof renderTabs === 'function') renderTabs();
   }
+  window.dispatchEvent(new CustomEvent('mirador:filters-changed'));
 };
 
 function refreshActiveView(tabId){

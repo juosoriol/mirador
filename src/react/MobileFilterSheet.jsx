@@ -17,6 +17,9 @@ function MobileFilterSheetInner() {
           </button>
         </div>
         <div className="mf-sheet-body">
+          <button type="button" className="fs-launch fs-launch-block" id="mf-btn-filter-studio" onClick={() => callLegacy('openFilterStudio')}>
+            ✨ Probar los nuevos filtros
+          </button>
           <p
             style={{
               fontSize: 11,

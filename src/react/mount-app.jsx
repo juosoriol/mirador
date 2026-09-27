@@ -17,6 +17,7 @@ import { DocsPanel } from './DocsPanel.jsx';
 import { AppOverlays } from './AppOverlays.jsx';
 import { MobileFilterSheet } from './MobileFilterSheet.jsx';
 import { ChipDropdown } from './ChipDropdown.jsx';
+import { FilterStudio } from './filters/FilterStudio.jsx';
 
 export function mountAppShell() {
   const loginRoot = document.getElementById('login-root');
@@ -105,4 +106,12 @@ export function mountAppShell() {
   if (mobileFilterRoot) {
     createRoot(mobileFilterRoot).render(<MobileFilterSheet />);
   }
+
+  let filterStudioRoot = document.getElementById('filter-studio-root');
+  if (!filterStudioRoot) {
+    filterStudioRoot = document.createElement('div');
+    filterStudioRoot.id = 'filter-studio-root';
+    document.body.appendChild(filterStudioRoot);
+  }
+  createRoot(filterStudioRoot).render(<FilterStudio />);
 }

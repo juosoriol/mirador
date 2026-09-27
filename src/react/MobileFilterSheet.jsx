@@ -17,9 +17,16 @@ function MobileFilterSheetInner() {
           </button>
         </div>
         <div className="mf-sheet-body">
-          <button type="button" className="fs-launch fs-launch-block" id="mf-btn-filter-studio" onClick={() => callLegacy('openFilterStudio')}>
-            ✨ Probar los nuevos filtros
-          </button>
+          <div className="mf-sec">
+            <div className="mf-sec-t">Filtrar por columna</div>
+            <button type="button" className="fs-launch fs-launch-block" id="mf-btn-filter-studio" onClick={() => callLegacy('openFilterStudio')}>
+              Elegir columnas y valores
+            </button>
+            <div className="mf-sec-hint" id="mf-active-hint">
+              Ningún filtro de columna activo
+            </div>
+            <div className="mf-chips-host" id="mf-chips-host" />
+          </div>
           <p
             style={{
               fontSize: 11,
@@ -28,7 +35,7 @@ function MobileFilterSheetInner() {
               lineHeight: 1.4,
             }}
           >
-            La búsqueda de texto queda arriba en tiempo real. Aquí: columnas, chips y opciones.
+            Opciones de la búsqueda de texto:
           </p>
           <div className="mf-sec">
             <div className="mf-sec-t">Buscar en columna</div>
@@ -59,17 +66,10 @@ function MobileFilterSheetInner() {
               </label>
             </div>
           </div>
-          <div className="mf-sec">
-            <div className="mf-sec-t">Filtrar por columna</div>
-            <div className="mf-sec-hint" id="mf-active-hint">
-              Ningún filtro de columna activo
-            </div>
-            <div className="mf-chips-host" id="mf-chips-host" />
-          </div>
         </div>
         <div className="mf-sheet-ftr">
           <button type="button" className="mf-btn" onClick={() => callLegacy('clearChipFiltersOnly')}>
-            Limpiar chips
+            Quitar filtros
           </button>
           <button
             type="button"

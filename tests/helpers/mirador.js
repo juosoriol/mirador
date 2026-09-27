@@ -279,31 +279,24 @@ export async function switchToSheet(page, index) {
 
 export async function applyFirstChipFilter(page, { isMobile } = {}) {
   const before = await getRowCount(page);
+  await page.evaluate(() => localStorage.setItem('mirador_filter_ui', 'window'));
   if (isMobile) {
     await page.locator('#mbnav-filters').click();
     await expect(page.locator('#mobile-filter-overlay')).toHaveClass(/open/);
-    await page.locator('#mf-chips-host .chip').first().click();
+    await page.locator('#mf-btn-filter-studio').click();
   } else {
-    await page.locator('#chips-bar .chip').first().click();
+    await page.locator('#btn-filter-studio').click();
   }
-  await expect(page.locator('#chip-dropdown')).toHaveClass(/open/);
-  const items = page.locator('#chip-dropdown .cdp-item');
-  const count = await items.count();
-  for (let i = 0; i < count; i++) {
-    const item = items.nth(i);
-    const label = await item.locator('.cdp-item-label').innerText().catch(() => '');
-    if (label && !label.includes('(Todos)') && !label.includes('Con cédula') && !label.includes('sin cédula')) {
-      await item.click();
-      break;
-    }
+  const win = page.locator('.fs-window');
+  await expect(win).toBeVisible();
+  if (isMobile && await win.evaluate((el) => el.classList.contains('step-columns'))) {
+    await win.locator('.fs-col', { hasText: 'valores' }).first().click();
   }
-  await page.waitForTimeout(500);
+  await win.locator('.fs-values .fs-check input').first().check();
+  await page.waitForTimeout(300);
   const after = await getRowCount(page);
-  if (isMobile) {
-    await page.evaluate(() => { if (typeof closeMobileFilterSheet === 'function') closeMobileFilterSheet(); });
-  } else {
-    await page.evaluate(() => { if (typeof closeDropdown === 'function') closeDropdown(); });
-  }
+  await win.locator('.fs-btn.primary').click();
+  await expect(win).toBeHidden();
   return { before, after };
 }
 

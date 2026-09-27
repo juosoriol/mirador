@@ -20,6 +20,7 @@ function ChipsBarInner() {
             <path d="M3 5h18M6 12h12M10 19h4" />
           </svg>
           Filtros
+          <span id="fs-launch-count" className="fs-launch-count" />
         </button>
         <input type="text" id="chip-search" placeholder="🔍 Filtros..." autoComplete="off" />
         <button
@@ -44,7 +45,7 @@ function ChipsBarInner() {
         >
           🧹 Limpiar
         </button>
-        <span id="chips-count" style={{ fontSize: 10, color: 'var(--acc-text)', whiteSpace: 'nowrap' }} />
+        <span id="chips-count" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }} />
         <button
           type="button"
           id="chips-toggle"

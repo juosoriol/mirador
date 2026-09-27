@@ -1081,7 +1081,11 @@ function buildChips(){
     chip.dataset.col=col;
     if(special) chip.dataset.special=special;
     chip._origHTML=null; // reset for chip search
-    chip.onclick=e=>{ if(e.target.closest('.chip-x')){removeColFilter(col);return} toggleChipDropdown(col,chip); };
+    chip.onclick=e=>{
+      if(e.target.closest('.chip-x')){removeColFilter(col);return}
+      if(typeof window.openFilterStudio==='function'){ window.openFilterStudio(undefined,col); return; }
+      toggleChipDropdown(col,chip);
+    };
     bar.insertBefore(chip,ref);
     return chip;
   };
@@ -1135,7 +1139,8 @@ function updateChipStates(){
     }
   });
   const n=Object.keys(tab.colFilters).length;
-  $('chips-count').textContent=n>0?`${n} filtro${n>1?'s':''} activo${n>1?'s':''}`:'' ;
+  $('chips-count').textContent=n>0?'':'Sin filtros de columna';
+  const lc=$('fs-launch-count'); if(lc) lc.textContent=n>0?String(n):'';
   // Cache HTML for chip search restore
   chips.forEach(chip=>{ chip._origHTML=chip.innerHTML; });
   // Sync filter indicator to table headers
@@ -1199,8 +1204,8 @@ function _updateClearChipBtn(){
   const tab=T();
   const hasSearch=!!($('chip-search')?.value||'').trim();
   const hasFilters=tab&&Object.keys(tab.colFilters||{}).length>0;
-  btn.style.opacity=(hasSearch||hasFilters)?'1':'0.3';
-  btn.style.cursor=(hasSearch||hasFilters)?'pointer':'default';
+  btn.style.display=(hasSearch||hasFilters)?'':'none';
+  btn.style.opacity='1';
 }
 
 // ── BUSCADOR DE CHIPS ────────────────────────────────────────────────────────

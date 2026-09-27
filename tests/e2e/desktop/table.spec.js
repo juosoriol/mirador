@@ -34,10 +34,21 @@ test.describe('Escritorio — modo Tabla', () => {
     await expect(input).toHaveValue('a b ');
   });
 
-  test('chips muestran conteos reales tras cargar', async ({ page }) => {
-    const counts = await page.locator('#chips-bar .chip[data-col] .chip-count').allInnerTexts();
-    expect(counts.length).toBeGreaterThan(0);
-    expect(counts.some(c => parseInt(c, 10) > 0)).toBe(true);
+  test('barra de filtros muestra solo filtros activos', async ({ page }) => {
+    await page.evaluate(() => localStorage.setItem('mirador_filter_ui', 'window'));
+    await expect(page.locator('#btn-filter-studio')).toBeVisible();
+    await expect(page.locator('#chips-bar .chip:visible')).toHaveCount(0);
+    await expect(page.locator('#chips-count')).toHaveText('Sin filtros de columna');
+    await page.locator('#btn-filter-studio').click();
+    await page.locator('.fs-window .fs-values .fs-check input').first().check();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#chips-bar .chip:visible')).toHaveCount(1);
+    await expect(page.locator('#fs-launch-count')).toHaveText('1');
+    await page.locator('#chips-bar .chip.active').click();
+    await expect(page.locator('.fs-overlay')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.locator('#chips-bar .chip.active .chip-x').click();
+    await expect(page.locator('#chips-bar .chip:visible')).toHaveCount(0);
   });
 
   test('modal Hojas abre y cierra', async ({ page }) => {

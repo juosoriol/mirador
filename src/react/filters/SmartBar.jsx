@@ -8,8 +8,8 @@ function suggestionKey(s) {
 }
 
 /** Method 3 — command palette: type "columna: valor" or any text, pick with keyboard. */
-export function SmartBar({ tab, version, method, onMethod, onClose }) {
-  const [query, setQuery] = useState('');
+export function SmartBar({ tab, version, method, onMethod, onClose, initialCol }) {
+  const [query, setQuery] = useState(initialCol ? `${initialCol}: ` : '');
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
   const listRef = useRef(null);

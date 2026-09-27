@@ -287,6 +287,14 @@ function _bindDocsListActions(body) {
   });
 }
 
+/** Firebase maps any HTTP 402 from Storage (e.g. closed billing account) to storage/quota-exceeded. */
+function _storageErrorMessage(e){
+  if(e?.code === 'storage/quota-exceeded'){
+    return 'La nube no está disponible: la cuenta de facturación del proyecto de Firebase está inactiva. Contacta al administrador.';
+  }
+  return e?.message || String(e);
+}
+
 async function saveToCloud(){
   if(!fbUser){ alert('Debes iniciar sesión primero.'); return; }
   const tab = T();
@@ -365,7 +373,7 @@ async function saveToCloud(){
     console.error('Error guardando documento:', e);
     btn.innerHTML = originalText;
     btn.disabled = false;
-    alert('Error al guardar: ' + e.message);
+    alert('Error al guardar: ' + _storageErrorMessage(e));
   }
 }
 
@@ -471,7 +479,7 @@ async function openCloudDoc(docId){
     input.dispatchEvent(event);
   } catch(e){
     console.error('Error abriendo documento:', e);
-    alert('Error al abrir: ' + e.message);
+    alert('Error al abrir: ' + _storageErrorMessage(e));
     openDocsPanel();
   }
 }
@@ -498,7 +506,7 @@ async function deleteCloudDoc(docId, storagePath){
     openDocsPanel();
   } catch(e){
     console.error('Error eliminando documento:', e);
-    alert('Error al eliminar: ' + e.message);
+    alert('Error al eliminar: ' + _storageErrorMessage(e));
   }
 }
 

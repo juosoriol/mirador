@@ -26,6 +26,20 @@ test.describe('Escritorio — modo Tabla', () => {
     expect(await getRowCount(page)).toBeLessThanOrEqual(total);
   });
 
+  test('búsqueda conserva espacios al escribir', async ({ page }) => {
+    const input = page.locator('#search-input');
+    await input.click();
+    await input.pressSequentially('a b ');
+    await page.waitForTimeout(600);
+    await expect(input).toHaveValue('a b ');
+  });
+
+  test('chips muestran conteos reales tras cargar', async ({ page }) => {
+    const counts = await page.locator('#chips-bar .chip[data-col] .chip-count').allInnerTexts();
+    expect(counts.length).toBeGreaterThan(0);
+    expect(counts.some(c => parseInt(c, 10) > 0)).toBe(true);
+  });
+
   test('modal Hojas abre y cierra', async ({ page }) => {
     await expect(page.locator('#btn-mobile-sheets')).toBeVisible();
     await page.locator('#btn-mobile-sheets').click();

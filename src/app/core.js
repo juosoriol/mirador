@@ -1744,11 +1744,11 @@ function getRegexFlags(){
 }
 function _activeSearchText(tab){
   if(_pillsOn){
-    if(tab.pillsSearchText!=null && tab.pillsSearchText!==undefined) return String(tab.pillsSearchText).trim();
-    return ($('pills-search-input')?.value||'').trim();
+    if(tab.pillsSearchText!=null && tab.pillsSearchText!==undefined) return String(tab.pillsSearchText);
+    return $('pills-search-input')?.value||'';
   }
-  if(tab.searchText!=null && tab.searchText!==undefined) return String(tab.searchText).trim();
-  return ($('search-input')?.value||'').trim();
+  if(tab.searchText!=null && tab.searchText!==undefined) return String(tab.searchText);
+  return $('search-input')?.value||'';
 }
 function _resetLiveSearchState(tab){
   tab=tab||T();
@@ -1793,7 +1793,7 @@ function applyFilters(){
     data: tab.rawData,
     columns: tab.columns,
     colFilters: tab.colFilters,
-    searchText: _rawTxt,
+    searchText: _rawTxt.trim(),
     useRegex,
     useExclude: useExcl,
     regexFlags: getRegexFlags() || 'i',
@@ -1810,8 +1810,8 @@ function applyFilters(){
   tab.searchIndex = searchIndex;
   tab._lastUseRegex = lastUseRegex;
   tab.selected.clear();
-  if(_pillsOn) updateChipStates();
-  else renderTable();
+  updateChipStates();
+  if(!_pillsOn) renderTable();
   updateStats();
   updateStatusBar();
   updateBreadcrumb();

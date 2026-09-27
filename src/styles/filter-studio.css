@@ -17,12 +17,6 @@
   display: inline-grid; place-items: center;
 }
 
-/* The chip row only lists active filters; everything else lives in Filter Studio. */
-#chips-bar .chip:not(.active),
-#mf-chips-host .chip:not(.active),
-#chip-search,
-#chips-toggle,
-#chips-more-badge { display: none !important; }
 #chips-count:empty { display: none; }
 
 .fs-launch-block { width: 100%; justify-content: center; padding: 11px 14px; font-size: 14px; border-radius: 12px; margin: 4px 0 8px; }

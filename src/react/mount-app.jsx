@@ -17,7 +17,6 @@ import { Sidebar } from './Sidebar.jsx';
 import { DocsPanel } from './DocsPanel.jsx';
 import { AppOverlays } from './AppOverlays.jsx';
 import { MobileFilterSheet } from './MobileFilterSheet.jsx';
-import { ChipDropdown } from './ChipDropdown.jsx';
 import { FilterStudio } from './filters/FilterStudio.jsx';
 
 /** Static shell element ids that core.js reads at module evaluation. */
@@ -54,11 +53,6 @@ function renderShells() {
   const chipsRoot = document.getElementById('chips-bar-root');
   if (chipsRoot) {
     createRoot(chipsRoot).render(<ChipsBar />);
-  }
-
-  const chipDropdownRoot = document.getElementById('chip-dropdown-root');
-  if (chipDropdownRoot) {
-    createRoot(chipDropdownRoot).render(<ChipDropdown />);
   }
 
   const searchRoot = document.getElementById('searchbar-root');

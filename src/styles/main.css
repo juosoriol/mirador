@@ -270,57 +270,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13
 .spill:hover{filter:brightness(1.2);transform:scale(1.05)}
 .spill-more:hover{background:var(--s3)!important;color:var(--text)!important}
 #chips-bar{display:flex;align-items:center;gap:6px;padding:5px 14px;background:var(--s1);border-top:none;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;height:38px;transition:height .35s cubic-bezier(.4,0,.2,1)}
-#chips-bar.chips-expanded{height:auto;max-height:120px;flex-wrap:wrap;overflow-y:auto;overflow-x:hidden}
-#chips-toggle{display:none;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;border:0.5px solid var(--border2);color:var(--acc-text);cursor:pointer;background:var(--acc-dim);white-space:nowrap;transition:background .12s;user-select:none;flex-shrink:0;margin-left:auto}
-#chips-toggle:hover{background:var(--s2)}
-#chips-toggle svg{transition:transform .3s}
-#chips-toggle.open svg{transform:rotate(180deg)}
-#chips-more-badge{font-size:8px;color:var(--muted)}
 #chip-search-wrap{display:flex;align-items:center}
-#chip-search{padding:4px 11px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-size:12px;width:250px;outline:none;font-family:var(--font);transition:border-color .15s;flex-shrink:0}
-#chip-search:focus{border-color:var(--acc);color:var(--text)}
-#chip-search::placeholder{color:var(--muted);font-size:12px}
-.chip.chip-dim{opacity:.2;pointer-events:none;transition:opacity .12s}
-.chip.chip-hl{border-color:var(--acc-text);color:var(--text);background:var(--s2);transition:all .12s}
-.chip-hl-text{color:var(--acc-text);font-weight:600}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:var(--bg);color:var(--muted);cursor:pointer;transition:all .12s;white-space:nowrap;user-select:none}
 .chip:hover{border-color:var(--border2);color:var(--text);background:var(--s2)}
 .chip.active{background:var(--chip-active-bg,var(--acc-dim));border-color:var(--chip-active-border,var(--acc-text));color:var(--chip-active-text,var(--acc-text))}
 .chip.active .chip-x{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#3b82f633;font-size:10px}
 .chip-x{display:none}
-.chip-count{background:var(--s2);color:var(--muted);padding:0 5px;border-radius:8px;font-size:10px}
 #chips-right{margin-left:auto;display:flex;align-items:center;gap:7px;flex-shrink:0;position:sticky;right:0;background:var(--s1);padding-left:6px}
 #chips-count{font-size:11px;color:var(--muted);white-space:nowrap}
-/* ── CHIP DROPDOWN — panel flotante multi-checkbox ── */
-#chip-dropdown{display:none;position:fixed;z-index:900;background:var(--s1);border:1px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.35);width:min(320px,92vw);flex-direction:column;overflow:hidden;max-height:min(420px,60dvh)}
-#chip-dropdown.open{display:flex}
-#cdp-head{display:flex;align-items:center;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
-#chip-dropdown-title{font-size:12px;font-weight:600;color:var(--text);text-transform:none;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-#cdp-count{font-size:11px;color:var(--muted);margin-left:8px;flex-shrink:0}
-#dp-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0}
-#dp-close:hover{color:var(--text)}
-#cdp-search-wrap{padding:8px 10px 6px;border-bottom:1px solid var(--border);flex-shrink:0}
-.dp-search{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;font-size:12px;font-family:var(--font);outline:none;box-sizing:border-box}
-.dp-search:focus{border-color:var(--acc)}
-#cdp-opts-wrap{flex:1;overflow-y:auto;padding:4px 0}
-#cdp-opts-wrap::-webkit-scrollbar{width:4px}
-#cdp-opts-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .cdp-item{display:flex;align-items:center;gap:10px;padding:7px 14px;cursor:pointer;transition:background .08s;user-select:none}
 .cdp-item:hover{background:var(--s2)}
 .cdp-item.cdp-sel{background:var(--acc-dim)}
 .cdp-item input[type=checkbox]{accent-color:var(--acc);width:14px;height:14px;flex-shrink:0;cursor:pointer}
 .cdp-item-label{flex:1;font-size:12px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cdp-item-cnt{font-size:11px;color:var(--muted);flex-shrink:0;min-width:20px;text-align:right}
-.cdp-item.cdp-empty{opacity:.35;cursor:not-allowed}
-.cdp-sep{border-top:1px solid var(--border);margin:3px 0}
-.cdp-special{border-left:2px solid var(--acc-dim)}
-.cdp-special.cdp-sel{border-left-color:var(--acc)}
-#cdp-footer{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-top:1px solid var(--border);flex-shrink:0;background:var(--s2)}
-#cdp-sel-label{font-size:11px;color:var(--muted)}
-#cdp-sel-label strong{color:var(--acc-text)}
-.cdp-footer-btn{background:none;border:none;font-size:12px;cursor:pointer;padding:3px 8px;border-radius:4px;font-family:var(--font);transition:background .1s}
-#cdp-btn-clear{color:var(--muted)}.cdp-footer-btn:hover{background:var(--s3);color:var(--text)}
-#cdp-btn-all{color:var(--acc-text);font-weight:500}
 #searchbar{display:flex;align-items:center;gap:8px;padding:6px 14px;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
 input[type=text],input[type=date],select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:5px 10px;font-size:12px;font-family:var(--font);outline:none;transition:border-color .12s}
 input[type=text]:focus,input[type=date]:focus,select:focus{border-color:var(--acc)}
@@ -329,7 +292,7 @@ select{max-width:175px}
 input[type=date]{width:130px}
 #main{display:flex;flex:1;overflow:hidden;position:relative}
 /* React mount roots: passthrough so flex/scroll targets (#data-area, #pills-view) layout unchanged */
-#topbar-root,#tabs-bar-root,#stats-bar-root,#chips-bar-root,#chip-dropdown-root,#searchbar-root,
+#topbar-root,#tabs-bar-root,#stats-bar-root,#chips-bar-root,#searchbar-root,
 #mobile-active-bar-root,#statusbar-root,#sidebar-root,#docs-panel-root,#overlays-root,
 #mobile-filter-root,#data-area-root,#pills-view-root{display:contents}
 #sidebar{display:none!important}
@@ -412,8 +375,6 @@ tbody tr.selected td{color:var(--sel-text,#bfdbfe)!important}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--s3);border-radius:6px;border:2px solid var(--bg)}
 ::-webkit-scrollbar-thumb:hover{background:var(--border2)}
-#cdp-opts-wrap::-webkit-scrollbar{width:5px;height:5px}
-#cdp-opts-wrap::-webkit-scrollbar-thumb{border-width:1px}
 .modal-overlay{display:none;position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal-box{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;max-width:96vw;position:relative}
@@ -965,7 +926,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   .tab{padding:8px 10px;min-height:48px}
   .tab-name{font-size:12px}
   .chip{font-size:12px}
-  .chip-count{font-size:11px}
   /* Stats bar más compacta */
   .scard-val{font-size:16px}
   .scard-label{font-size:10px}
@@ -1108,8 +1068,6 @@ html[data-theme="dashboard-purple"] #statusbar{background:var(--s1)}
   width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.25)!important;
   color:#fff!important;font-size:12px;margin-left:2px
 }
-.mf-chips-host .chip.active .chip-count{background:rgba(255,255,255,.25)!important;color:#fff!important}
-.mf-chips-host .chip-count{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,.2);margin-left:4px}
 .chip-val{color:var(--acc-text);font-weight:600}
 .mf-sec-hint{font-size:10px;color:var(--acc-text);margin:-4px 0 8px;font-weight:500}
 .mf-btn{flex:1;padding:11px;border-radius:var(--r);border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}

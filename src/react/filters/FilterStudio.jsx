@@ -15,7 +15,6 @@ export function FilterStudio() {
   const open = useCallback((method, col = null) => {
     const m = FILTER_UI_METHODS.includes(method) ? method : loadFilterMethod();
     if (!window.T?.()?.rawData?.length) return;
-    window.closeDropdown?.();
     window.closeMobileFilterSheet?.();
     setState({ open: true, method: m, col });
   }, []);

@@ -3,13 +3,8 @@
 ## Setup
 
 1. Copy `.env.test.example` to `.env.test` and set `TEST_EMAIL` / `TEST_PASSWORD`.
-2. Place the large Excel fixture at `tests/fixtures/cuadro-concurso-2024.xlsx`, or run:
-
-   ```powershell
-   .\scripts\setup-e2e.ps1
-   ```
-
-   This copies from OneDrive if available: `Cuadro Concurso 2024_CNSC 8-4-2024.xlsx`.
+2. Place the large Excel fixture at `tests/fixtures/cuadro-concurso-2024.xlsx`
+   (e.g. a copy of `Cuadro Concurso 2024_CNSC 8-4-2024.xlsx`).
 
 3. Optional: set `FIXTURE_XLSX` in `.env.test` to a custom path.
 
@@ -26,7 +21,8 @@
 | `.\deploy.ps1` | Build + deploy to Firebase Hosting |
 | `npm test` | Full suite (setup + shared + desktop + mobile) |
 | `npm run test:core` | Core user flows (desktop + mobile) |
-| `npm run test:unit` | Engine unit tests: filter + sheet loader (Vitest) |
+| `npm run test:unit` | Engine unit tests (Vitest) |
+| `npm run test:all` | Unit tests + full E2E suite |
 | `npm run test:desktop` | Desktop project only |
 | `npm run test:mobile` | Mobile project only |
 

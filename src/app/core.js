@@ -69,17 +69,10 @@ import {
   buildPillsFichaBodyHtml,
 } from '../engine/pills-engine.js';
 import {
-  DEFAULT_CHIP_LIMIT,
   findCedulaColumn,
   precalcColStats as enginePrecalcColStats,
-  sortColumnValues,
   selectionSetFromFilter,
   getChipFilterDisplayLabel,
-  parseDateChipFilter,
-  buildDateRangeFilter,
-  computeFilteredNonEmptyCounts,
-  toggleChipSelection,
-  invertChipSelection,
 } from '../engine/chip-filter-engine.js';
 import {
   STATS_PILL_COLORS,
@@ -111,16 +104,6 @@ import {
   upsertFavorite,
   writeFavoritesToStorage,
 } from '../engine/views-engine.js';
-import {
-  cdpHeaderCountLabel,
-  cdpSpecCounts,
-  computeChipDropdownLayout,
-  computeDateChipPanelLayout,
-  filterCdpOptionValues,
-  getContainsChipQuery,
-  isContainsChipFilter,
-  prepareCdpPanelData,
-} from '../engine/chip-dropdown-engine.js';
 import {
   createFolderEntry,
   deleteFolderAt,
@@ -198,7 +181,6 @@ const SESSION_KEY  = 'mirador_session_v1';
 const FAV_KEY      = 'mirador_favorites_v1';
 const TAB_COLORS   = ['#16a34a','#2563eb','#d97706','#9333ea','#dc2626','#0891b2','#65a30d','#c026d3'];
 const MAX_SESSION  = DEFAULT_MAX_SESSION_ROWS;
-const CHIP_LIMIT   = DEFAULT_CHIP_LIMIT;    // máximo únicos para mostrar como chip
 const SEARCH_DELAY = 80;     // debounce en ms — rápido para feedback en tiempo real
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────────────────────
@@ -482,7 +464,7 @@ function _applySavedSession(saved, quiet){
       searchIndex:null, colUniques:null, colNulls:null,
       hiddenCols:new Set(s.hiddenCols||[]), frozenCols:new Set(s.frozenCols||[]), frozenOrder:s.frozenOrder||[],
       colFilters:s.colFilters||{}, condRules:s.condRules||[],
-      sortCol:s.sortCol||null, sortDir:s.sortDir||1, activeChipCol:null,
+      sortCol:s.sortCol||null, sortDir:s.sortDir||1,
       dateColsDetected:s.dateColsDetected||[],
       _manualHdrRow: s._manualHdrRow ?? null,
       _hdrRangeStart: s._hdrRangeStart ?? null,
@@ -577,7 +559,6 @@ window.addEventListener('DOMContentLoaded', function(){
   ['fb-admin-overlay', 'fb-user-menu', 'tab-ctx-menu', 'fm-ctx-menu'].forEach(id => {
     document.getElementById(id)?.remove();
   });
-  if(typeof _mfUnmountChips==='function') _mfUnmountChips();
   if(typeof _mobileUiRefresh==='function') _mobileUiRefresh();
 });
 
@@ -790,7 +771,6 @@ function _syncPillsSearchUI(tab){
 function restoreTabUI(){
   const tab=T();
   if(!tab){showDropzone(true);return}
-  closeDropdown();
   renderSheetsSidebar();
   if(!tab.rawData.length){
     if(tab.workbook){
@@ -965,10 +945,10 @@ function loadSheet(name, tabId, preserveFilters){
   if(tid!==activeTabId){activeTabId=tid;renderTabs()}
   const prevSheet=tab.activeSheet;
   const prevSort=preserveFilters?{col:tab.sortCol,dir:tab.sortDir}:null;
-  tab.activeSheet=name; tab.selected=new Set(); tab.activeChipCol=null;
+  tab.activeSheet=name; tab.selected=new Set();
   if(!preserveFilters){ resetTabFiltersForNewSheet(tab); }
   else if(prevSort){ tab.sortCol=prevSort.col; tab.sortDir=prevSort.dir; }
-  closeDropdown(); renderSheetsSidebar();
+  renderSheetsSidebar();
 
   // Sin workbook → usar caché de hojas visitadas o datos en memoria
   if(!tab.workbook){
@@ -1050,9 +1030,9 @@ function _processSheetData(tabId, name, ws, range, hRow, preserveFilters){
 const fmtDate = formatIsoDate;
 const fmtCell = formatCellValue;
 
-// ── CHIPS ─────────────────────────────────────────────────────────────────────
-// Precalcula colUniques y colNulls en UNA pasada sobre rawData (O(N))
-// y los guarda en el tab para no recalcular en cada updateChipStates
+// ── CHIPS DE FILTROS ACTIVOS ──────────────────────────────────────────────────
+// La barra solo muestra filtros de columna activos; elegir columnas y valores
+// se hace en Filter Studio (src/react/filters).
 function precalcColStats(tab){
   enginePrecalcColStats(tab);
 }
@@ -1060,611 +1040,50 @@ function precalcColStats(tab){
 function buildChips(){
   const tab=T(); if(!tab) return;
   if(!tab.colUniques) precalcColStats(tab);
-  if(_mfChipsMounted) _mfUnmountChips();
-  $('mf-chips-host')?.querySelectorAll('.chip').forEach(c=>c.remove());
-  _mfChipsMounted=false;
-
-  const bar=$('chips-bar');
   $('chips-placeholder').style.display='none';
   $('chips-right').style.display='flex';
-  bar.querySelectorAll('.chip').forEach(c=>c.remove());
-  const ref=$('chips-right');
-
-  // Show search input
   const sw=$('chip-search-wrap');
   if(sw) sw.style.display='flex';
-  const si=$('chip-search');
-  if(si){ si.value=''; si.disabled=false; }
-
-  const makeChip=(col,special)=>{
-    const chip=el('div',{cls:'chip'});
-    chip.dataset.col=col;
-    if(special) chip.dataset.special=special;
-    chip._origHTML=null; // reset for chip search
-    chip.onclick=e=>{
-      if(e.target.closest('.chip-x')){removeColFilter(col);return}
-      if(typeof window.openFilterStudio==='function'){ window.openFilterStudio(undefined,col); return; }
-      toggleChipDropdown(col,chip);
-    };
-    bar.insertBefore(chip,ref);
-    return chip;
-  };
-
-  const cedCol=findCedulaColumn(tab.columns);
-  const hid=tab.hiddenCols||new Set();
-  if(cedCol) makeChip(cedCol,'null-filter'); // siempre visible, aunque la columna esté oculta
-
-  tab.columns.forEach(col=>{
-    if(hid.has(col)) return;
-    if(cedCol&&col===cedCol) return;
-    if(tab.dateColsDetected.includes(col)){
-      makeChip(col,'date-filter'); // date columns get their own chip type
-      return;
-    }
-    const u=(tab.colUniques[col]?.size)||0;
-    if(u>=1&&u<=CHIP_LIMIT) makeChip(col,null);
-  });
   updateChipStates();
+}
+
+function _renderActiveChips(host, ref, tab){
+  host.querySelectorAll('.chip').forEach(c=>c.remove());
+  const cedCol=findCedulaColumn(tab.columns);
+  Object.entries(tab.colFilters).forEach(([col,val])=>{
+    const icon=col===cedCol?'🪪 ':tab.dateColsDetected?.includes(col)?'📅 ':'';
+    const chip=el('div',{cls:'chip active'});
+    chip.dataset.col=col;
+    chip.innerHTML=`${icon}${eh(col)}: <strong class="chip-val">${eh(getChipFilterDisplayLabel(val))}</strong> <span class="chip-x">×</span>`;
+    chip.onclick=e=>{
+      if(e.target.closest('.chip-x')){ removeColFilter(col); return; }
+      window.openFilterStudio?.(undefined,col);
+    };
+    host.insertBefore(chip, ref);
+  });
 }
 
 function updateChipStates(){
   const tab=T(); if(!tab) return;
-  if(!tab.colUniques) precalcColStats(tab); // guardia: nunca acceder null
-  const chips=[...$('chips-bar').querySelectorAll('.chip[data-col]'),
-    ...($('mf-chips-host')?.querySelectorAll('.chip[data-col]')||[])];
-  if(!chips.length) return;
-
-  // Obtener solo las columnas que tienen chip para limitar la pasada
-  const chipCols=new Set([...chips].map(c=>c.dataset.col));
-  const filtCnt=computeFilteredNonEmptyCounts(tab.rawData, tab.filtered, chipCols);
-
-  chips.forEach(chip=>{
-    const col=chip.dataset.col;
-    const isSpec=chip.dataset.special==='null-filter';
-    const isDate=chip.dataset.special==='date-filter';
-    const active=tab.colFilters[col]!==undefined;
-    chip.classList.toggle('active',active);
-    const val=tab.colFilters[col];
-    if(active){
-      const label=getChipFilterDisplayLabel(val);
-      chip.innerHTML=`${isSpec?'🪪 ':isDate?'📅 ':''}${eh(col)}: <strong class="chip-val">${eh(label)}</strong> <span class="chip-x">×</span>`;
-    } else if(isSpec){
-      const nulls=tab.colNulls[col]||0;
-      chip.innerHTML=`🪪 ${eh(col)} ${nulls>0?'⚠️':''}<span class="chip-count">${nulls} nulos</span>`;
-    } else if(isDate){
-      const cnt=filtCnt[col]||0;
-      chip.innerHTML=`📅 ${eh(col)} <span class="chip-count">${cnt}</span>`;
-    } else {
-      chip.innerHTML=`${eh(col)} <span class="chip-count">${filtCnt[col]||0}</span>`;
-    }
-  });
+  const bar=$('chips-bar');
+  if(bar) _renderActiveChips(bar, $('chips-right'), tab);
+  const mfHost=$('mf-chips-host');
+  if(mfHost) _renderActiveChips(mfHost, null, tab);
   const n=Object.keys(tab.colFilters).length;
   $('chips-count').textContent=n>0?'':'Sin filtros de columna';
   const lc=$('fs-launch-count'); if(lc) lc.textContent=n>0?String(n):'';
-  // Cache HTML for chip search restore
-  chips.forEach(chip=>{ chip._origHTML=chip.innerHTML; });
-  // Sync filter indicator to table headers
   document.querySelectorAll('thead th[data-col]').forEach(th=>{
     const col=th.dataset.col;
     th.classList.toggle('col-filtered', col && tab.colFilters[col]!==undefined);
   });
-  // Update toggle badge and clear button
-  setTimeout(_updateChipsBadge, 50);
-  _updateClearChipBtn();
+  const btn=$('btn-clear-chips'); if(btn) btn.style.display=n>0?'':'none';
   _mobileUiRefresh();
   if($('mobile-filter-overlay')?.classList.contains('open')) _mfSyncOptionsUI();
-}
-
-function toggleChipsBar(){
-  const bar=$('chips-bar');
-  const tog=$('chips-toggle');
-  const lbl=$('chips-toggle-label');
-  const isOpen=bar.classList.contains('chips-expanded');
-  bar.classList.toggle('chips-expanded',!isOpen);
-  tog.classList.toggle('open',!isOpen);
-  lbl.textContent=isOpen?'Ver todos':'Colapsar';
-  _updateChipsBadge();
-}
-
-function _updateChipsBadge(){
-  const bar=$('chips-bar');
-  const tog=$('chips-toggle');
-  const badge=$('chips-more-badge');
-  const chips=[...(bar?.querySelectorAll('.chip')||[])];
-  if(!chips.length){ if(tog) tog.style.display='none'; return; }
-  if(tog) tog.style.display='flex';
-  const isOpen=bar.classList.contains('chips-expanded');
-  if(badge) badge.textContent='';
-  const lbl=$('chips-toggle-label');
-  if(lbl) lbl.textContent=isOpen?'Colapsar':'Ver todos';
-  const chevron=tog?.querySelector('svg');
-  if(chevron) chevron.style.transform=isOpen?'rotate(180deg)':'';
-}
-
-function _visibleChipsInOneLine(bar, chips){
-  // Rough estimate: total chip widths that fit in bar width
-  const barW=bar.clientWidth - 280; // subtract search + toggle
-  let usedW=0, count=0;
-  for(const chip of chips){
-    const w=(chip.offsetWidth||100)+6;
-    if(usedW+w>barW) break;
-    usedW+=w; count++;
-  }
-  return Math.max(3, count);
-}
-
-function _clearChipSearch(){
-  const si=$('chip-search');
-  if(si&&si.value){ si.value=''; onChipSearch(); return; }
-  clearChipFiltersOnly();
-}
-
-function _updateClearChipBtn(){
-  const btn=$('btn-clear-chips'); if(!btn) return;
-  const tab=T();
-  const hasSearch=!!($('chip-search')?.value||'').trim();
-  const hasFilters=tab&&Object.keys(tab.colFilters||{}).length>0;
-  btn.style.display=(hasSearch||hasFilters)?'':'none';
-  btn.style.opacity='1';
-}
-
-// ── BUSCADOR DE CHIPS ────────────────────────────────────────────────────────
-function initChipSearch(){
-  const si=$('chip-search');
-  if(!si) return;
-  si.addEventListener('input',onChipSearch);
-  si.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){
-      si.value=''; onChipSearch(); si.blur();
-    }
-    if(e.key==='Enter'){
-      e.preventDefault();
-      // Abrir el primer chip resaltado
-      const first=document.querySelector('.chip.chip-hl');
-      if(first) first.click();
-      si.value=''; onChipSearch();
-    }
-  });
-}
-
-function onChipSearch(){
-  const q=($('chip-search')?.value||'').toLowerCase().trim();
-  const bar=$('chips-bar');
-  const chips=[...bar.querySelectorAll('.chip')];
-  const ref=$('chips-right');
-
-  if(!q){
-    // Restore: cédula siempre de primera, resto en orden original
-    const cedChip=chips.find(c=>c.dataset.special==='null-filter');
-    chips.forEach(chip=>{
-      chip.classList.remove('chip-dim','chip-hl');
-      if(chip._origHTML) chip.innerHTML=chip._origHTML;
-      bar.insertBefore(chip, ref);
-    });
-    // Re-anclar cédula al inicio (justo después de chip-search-wrap)
-    if(cedChip){
-      const sw=$('chip-search-wrap');
-      const swNext=sw?sw.nextSibling:null;
-      // Si nextSibling es el mismo cedChip, ya está en su lugar
-      if(swNext!==cedChip) bar.insertBefore(cedChip, swNext);
-    }
-    return;
-  }
-
-  bar.classList.add('chips-expanded');
-  const cedChip=chips.find(c=>c.dataset.special==='null-filter');
-  const matching=[], nonMatching=[];
-
-  chips.forEach(chip=>{
-    const isCed=chip.dataset.special==='null-filter';
-    if(isCed) return; // cédula se maneja aparte
-    const col=(chip.dataset.col||'').toLowerCase();
-    const match=col.includes(q);
-    chip.classList.toggle('chip-dim',!match);
-    chip.classList.toggle('chip-hl',match);
-    if(match){
-      if(!chip._origHTML) chip._origHTML=chip.innerHTML;
-      chip.innerHTML=chip._origHTML;
-      _highlightChipText(chip, q);
-      matching.push(chip);
-    } else {
-      if(chip._origHTML) chip.innerHTML=chip._origHTML;
-      nonMatching.push(chip);
-    }
-  });
-
-  // Cédula: siempre primera, nunca dim, sin highlight aunque coincida
-  const sw=$('chip-search-wrap');
-  if(cedChip){
-    cedChip.classList.remove('chip-dim','chip-hl');
-    if(cedChip._origHTML) cedChip.innerHTML=cedChip._origHTML;
-    bar.insertBefore(cedChip, sw.nextSibling);
-  }
-  // El resto: matching después de cédula, nonMatching al final
-  const anchor=cedChip?cedChip.nextSibling:sw.nextSibling;
-  matching.forEach(chip=>bar.insertBefore(chip, anchor));
-  nonMatching.forEach(chip=>bar.insertBefore(chip, ref));
-  _updateClearChipBtn();
-}
-
-function _highlightChipText(chip, q){
-  // Walk text nodes and wrap the match — avoids breaking HTML structure
-  const walker=document.createTreeWalker(chip, NodeFilter.SHOW_TEXT, null);
-  const matches=[];
-  let node;
-  while((node=walker.nextNode())){
-    const text=node.textContent;
-    const lower=text.toLowerCase();
-    const idx=lower.indexOf(q);
-    if(idx>=0) matches.push({node,idx,q});
-  }
-  // Process in reverse to preserve offsets
-  for(let i=matches.length-1;i>=0;i--){
-    const {node,idx,q}=matches[i];
-    const text=node.textContent;
-    const span=document.createElement('span');
-    span.className='chip-hl-text';
-    span.textContent=text.slice(idx,idx+q.length);
-    const after=document.createTextNode(text.slice(idx+q.length));
-    node.textContent=text.slice(0,idx);
-    node.parentNode.insertBefore(span,node.nextSibling);
-    node.parentNode.insertBefore(after,span.nextSibling);
-    break; // highlight only first match per chip
-  }
-}
-
-// ── PANEL DE FILTRO MULTI-CHECKBOX ────────────────────────────────────────────
-let _cdpCol = null;        // columna activa en el panel
-let _cdpChipEl = null;     // chip que lo abrió (para posicionamiento)
-
-function toggleChipDropdown(col, chipEl){
-  const tab=T(); if(!tab) return;
-  const dd=$('chip-dropdown');
-  if(_cdpCol===col && dd.classList.contains('open')){ closeDropdown(); return; }
-  _cdpCol = col;
-  _cdpChipEl = chipEl;
-  tab.activeChipCol = col;
-  // Date chips open a date range mini-panel
-  if(chipEl?.dataset.special==='date-filter'){
-    openDateChipPanel(col, chipEl); return;
-  }
-  openCdpPanel(col, chipEl);
-}
-
-function openDateChipPanel(col, chipEl){
-  const tab=T(); if(!tab) return;
-  const dd=$('chip-dropdown');
-  dd.classList.add('open');
-
-  const ref=chipEl||$('chips-bar');
-  const rect=ref.getBoundingClientRect();
-  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  const layout=computeDateChipPanelLayout(rect, { width: vw });
-  dd.style.left = layout.left+'px';
-  dd.style.width = layout.width ? layout.width+'px' : '';
-  dd.style.top=layout.top+'px';
-  dd.style.maxHeight=layout.maxHeight+'px';
-
-  const cur=tab.colFilters[col];
-  const { from: curFrom, to: curTo } = parseDateChipFilter(cur);
-
-  dd.innerHTML=`
-    <div id="cdp-head">
-      <span id="chip-dropdown-title">📅 ${eh(col)}</span>
-      <button id="dp-close" onclick="closeDropdown()" title="Cerrar">×</button>
-    </div>
-    <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px">
-      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)">
-        <span style="min-width:40px">Desde</span>
-        <input type="date" id="dcp-from" value="${curFrom}" style="flex:1;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:11px;outline:none" onchange="applyDateChipFilter('${ejs(col)}')"/>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)">
-        <span style="min-width:40px">Hasta</span>
-        <input type="date" id="dcp-to" value="${curTo}" style="flex:1;padding:4px 8px;border:0.5px solid var(--border);border-radius:var(--r);background:var(--bg);color:var(--text);font-size:11px;outline:none" onchange="applyDateChipFilter('${ejs(col)}')"/>
-      </div>
-    </div>
-    <div id="cdp-footer">
-      <span id="cdp-sel-label" style="font-size:11px;color:var(--muted)">${col}</span>
-      <div style="display:flex;gap:4px">
-        <button class="cdp-footer-btn" onclick="clearDateChipFilter('${ejs(col)}')">Limpiar</button>
-        <button class="cdp-footer-btn" id="cdp-btn-all" onclick="closeDropdown()">Cerrar</button>
-      </div>
-    </div>`;
-
-  setTimeout(()=>document.addEventListener('mousedown',_cdpOutsideHandler,{once:true}),10);
-}
-
-function applyDateChipFilter(col){
-  const tab=T(); if(!tab) return;
-  const from=($('dcp-from')?.value||'').trim();
-  const to=($('dcp-to')?.value||'').trim();
-  const next=buildDateRangeFilter(from, to);
-  if(next===undefined) delete tab.colFilters[col];
-  else tab.colFilters[col]=next;
-  applyFilters(); updateChipStates();
-}
-
-function clearDateChipFilter(col){
-  const tab=T(); if(!tab) return;
-  delete tab.colFilters[col];
-  applyFilters(); updateChipStates();
-  closeDropdown();
-}
-
-function openCdpPanel(col, chipEl){
-  const tab=T(); if(!tab) return;
-  const dd=$('chip-dropdown');
-  dd.classList.add('open');
-
-  const ref = chipEl || $('chips-bar');
-  const rect = ref.getBoundingClientRect();
-  const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-  const layout = computeChipDropdownLayout(rect, { width: vw, height: vh });
-
-  dd.style.left = layout.left + 'px';
-  dd.style.top  = layout.top + 'px';
-  dd.style.maxHeight = layout.maxHeight + 'px';
-  if(layout.width){ dd.style.left='8px'; dd.style.width=layout.width+'px'; } else { dd.style.width=''; }
-
-  renderCdpContent(col);
-}
-
-function renderCdpContent(col){
-  const tab=T(); if(!tab) return;
-  const dd=$('chip-dropdown');
-  const isSpec = _cdpChipEl?.dataset.special==='null-filter';
-
-  if(!tab.colUniques) precalcColStats(tab);
-
-  const { candidateRows, valueCounts: filtCountsAll, allValues: allVals, curFilter, selection: selSet } =
-    prepareCdpPanelData({
-      rawData: tab.rawData,
-      colFilters: tab.colFilters,
-      colUniques: tab.colUniques,
-      col,
-    });
-  const specCounts=cdpSpecCounts(tab.rawData, candidateRows, col);
-
-  dd.innerHTML=`
-    <div id="cdp-head">
-      <span id="chip-dropdown-title">${eh(col)}</span>
-      <span id="cdp-count">${cdpHeaderCountLabel(selSet.size, allVals.length)}</span>
-      <button id="dp-close" onclick="closeDropdown()" title="Cerrar">×</button>
-    </div>
-    ${isSpec?`
-      <div id="cdp-opts-wrap">
-        <div class="cdp-item${curFilter===undefined?' cdp-sel':''}" onclick="cdpSetSpec(undefined)">
-          <input type="checkbox" ${curFilter===undefined?'checked':''}/><span class="cdp-item-label">(Todos)</span><span class="cdp-item-cnt">${specCounts.all}</span>
-        </div>
-        <div class="cdp-item${curFilter==='__WITH__'?' cdp-sel':''}" onclick="cdpSetSpec('__WITH__')">
-          <input type="checkbox" ${curFilter==='__WITH__'?'checked':''}/><span class="cdp-item-label">Con cédula</span><span class="cdp-item-cnt">${specCounts.withValue}</span>
-        </div>
-        <div class="cdp-item${curFilter==='__NULL__'?' cdp-sel':''}" onclick="cdpSetSpec('__NULL__')">
-          <input type="checkbox" ${curFilter==='__NULL__'?'checked':''}/><span class="cdp-item-label">Sin cédula</span><span class="cdp-item-cnt">${specCounts.null}</span>
-        </div>
-      </div>
-    `:`
-      <div id="cdp-search-wrap">
-        <input class="dp-search" type="text" id="cdp-search-input" placeholder="🔍 Filtrar ${eh(col)}…" autocomplete="off"/>
-      </div>
-      <div id="cdp-opts-wrap"></div>
-    `}
-    <div id="cdp-footer">
-      <span id="cdp-sel-label"><strong id="cdp-sel-num">${selSet.size}</strong> seleccionados</span>
-      <div style="display:flex;gap:4px">
-        <button class="cdp-footer-btn" id="cdp-btn-clear" onclick="cdpClearAll()">Limpiar</button>
-        <button class="cdp-footer-btn" id="cdp-btn-invert" onclick="cdpInvert()" title="Seleccionar lo opuesto">Invertir</button>
-        <button class="cdp-footer-btn" id="cdp-btn-all" onclick="cdpSelectAll()">Todos</button>
-      </div>
-    </div>`;
-
-  if(!isSpec){
-    // Opción especial "Contiene..." y "Nulos"
-    const optionsWrap=$('cdp-opts-wrap');
-    const specialFrag=document.createDocumentFragment();
-
-    // Fila: (Nulos)
-    const nullCnt=specCounts.null;
-    const isNullSel=curFilter==='__NULL__';
-    const nullRow=document.createElement('div');
-    nullRow.className='cdp-item cdp-special'+(isNullSel?' cdp-sel':'');
-    nullRow.innerHTML=`<input type="checkbox" ${isNullSel?'checked':''}/><span class="cdp-item-label" style="font-style:italic;opacity:.75">(Nulos / vacíos)</span><span class="cdp-item-cnt">${nullCnt}</span>`;
-    nullRow.onclick=e=>{e.stopPropagation(); if(isNullSel){delete tab.colFilters[_cdpCol];}else{tab.colFilters[_cdpCol]='__NULL__';} applyFilters();updateChipStates();renderCdpContent(_cdpCol);};
-    specialFrag.appendChild(nullRow);
-
-    // Fila: Contiene...
-    const containsActive=isContainsChipFilter(curFilter);
-    const containsVal=getContainsChipQuery(curFilter);
-    const containsRow=document.createElement('div');
-    containsRow.className='cdp-item cdp-special'+(containsActive?' cdp-sel':'');
-    containsRow.style.cssText='flex-direction:column;align-items:flex-start;gap:4px;padding:6px 14px';
-    containsRow.innerHTML=`<div style="display:flex;align-items:center;gap:10px;width:100%"><input type="checkbox" ${containsActive?'checked':''}/><span class="cdp-item-label" style="font-style:italic;opacity:.75">Contiene texto…</span></div>
-      <input id="cdp-contains-input" type="text" placeholder="Escribe para filtrar…" value="${eh(containsVal)}" style="width:100%;padding:4px 8px;font-size:11px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);outline:none;font-family:var(--font)" autocomplete="off"/>`;
-    containsRow.onclick=e=>e.stopPropagation();
-    specialFrag.appendChild(containsRow);
-
-    const sep=document.createElement('div');
-    sep.className='cdp-sep';
-    specialFrag.appendChild(sep);
-
-    optionsWrap.innerHTML='';
-    optionsWrap.appendChild(specialFrag);
-
-    // Append checkboxes after special rows — must be before renderItems & "Contiene" wiring
-    const checkWrap=document.createElement('div');
-    checkWrap.style.cssText='display:contents';
-    optionsWrap.appendChild(checkWrap);
-
-    const renderItems=(q='')=>{
-      const filtered=filterCdpOptionValues(allVals, q);
-      const frag=document.createDocumentFragment();
-      if(!filtered.length){
-        const e=document.createElement('div');
-        e.style.cssText='padding:10px 14px;font-size:12px;color:var(--muted)';
-        e.textContent='Sin resultados';
-        frag.appendChild(e);
-      } else {
-        filtered.forEach(v=>{
-          const cnt=filtCountsAll[v]||0;
-          const checked=selSet.has(v);
-          const row=document.createElement('div');
-          row.className='cdp-item'+(checked?' cdp-sel':'')+(cnt===0&&!checked?' cdp-empty':'');
-          row.dataset.val=v;
-          row.innerHTML=`<input type="checkbox" ${checked?'checked':''}/><span class="cdp-item-label" title="${eh(v)}">${eh(v)}</span><span class="cdp-item-cnt">${cnt}</span>`;
-          row.onclick=e=>{e.stopPropagation();cdpToggleVal(v);};
-          row.querySelector('input').onclick=e=>{e.stopPropagation();cdpToggleVal(v);};
-          frag.appendChild(row);
-        });
-      }
-      checkWrap.innerHTML=''; checkWrap.appendChild(frag);
-    };
-
-    // Wire "Contiene" input
-    const ci=$('cdp-contains-input');
-    if(ci){
-      ci.addEventListener('input',()=>{
-        const q=(ci.value||'').trim();
-        if(!q){delete tab.colFilters[_cdpCol];}
-        else{tab.colFilters[_cdpCol]='__CONTAINS__:'+q.toLowerCase();}
-        applyFilters();updateChipStates();
-        containsRow.classList.toggle('cdp-sel',!!q);
-        containsRow.querySelector('input[type=checkbox]').checked=!!q;
-        renderItems(q.toLowerCase());
-      });
-      ci.addEventListener('click',e=>e.stopPropagation());
-      ci.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); closeDropdown(); } });
-      if(containsActive){
-        renderItems(containsVal.toLowerCase());
-      }
-    }
-
-    renderItems();
-
-    // Buscador
-    const si=$('cdp-search-input');
-    if(si){
-      si.addEventListener('input',()=>renderItems(si.value.toLowerCase().trim()));
-      si.addEventListener('click',e=>e.stopPropagation());
-      si.addEventListener('keydown',e=>{
-        if(e.key==='Enter'){ e.preventDefault(); closeDropdown(); }
-      });
-    }
-  }
-
-  // Cerrar al hacer clic fuera
-  setTimeout(()=>{
-    document.addEventListener('mousedown', _cdpOutsideHandler, {once:true});
-  }, 10);
-}
-
-function _cdpOutsideHandler(e){
-  const dd=$('chip-dropdown');
-  if(dd && !dd.contains(e.target) && _cdpChipEl && !_cdpChipEl.contains(e.target)){
-    closeDropdown();
-  } else if(dd && !dd.contains(e.target)){
-    closeDropdown();
-  } else {
-    // Clic dentro: re-registrar listener
-    document.addEventListener('mousedown', _cdpOutsideHandler, {once:true});
-  }
-}
-
-function cdpToggleVal(v){
-  const tab=T(); if(!tab||!_cdpCol) return;
-
-  // Save cursor position before any DOM changes
-  const si=$('cdp-search-input');
-  const prevQ=si?.value||'';
-  const prevSelStart=si?.selectionStart;
-  const prevSelEnd=si?.selectionEnd;
-
-  const cur=tab.colFilters[_cdpCol];
-  const next=toggleChipSelection(cur, v);
-  if(next===undefined) delete tab.colFilters[_cdpCol];
-  else tab.colFilters[_cdpCol]=next;
-
-  applyFilters(); updateChipStates();
-
-  // Update checkboxes and row states in-place — no full re-render
-  const newSel=selectionSetFromFilter(tab.colFilters[_cdpCol]);
-  const dd=$('chip-dropdown');
-  if(dd){
-    dd.querySelectorAll('.cdp-item[data-val]').forEach(row=>{
-      const rv=row.dataset.val;
-      const checked=newSel.has(rv);
-      row.classList.toggle('cdp-sel',checked);
-      const chk=row.querySelector('input[type=checkbox]');
-      if(chk) chk.checked=checked;
-    });
-    // Update counter in header
-    const cnt=$('cdp-count');
-    if(cnt) cnt.textContent=`${newSel.size>0?newSel.size+'/':'0/'}${dd.querySelectorAll('.cdp-item[data-val]').length}`;
-    // Update footer label
-    const lbl=$('cdp-sel-num');
-    if(lbl) lbl.textContent=newSel.size;
-  }
-
-  // Restore search text without stealing focus (evita saltos de viewport en móvil)
-  if(si&&prevQ){
-    si.value=prevQ;
-    if(document.activeElement===si && prevSelStart!=null){
-      si.setSelectionRange(prevSelStart,prevSelEnd??prevSelStart);
-    }
-  }
-}
-
-function cdpSetSpec(val){
-  const tab=T(); if(!tab||!_cdpCol) return;
-  if(val===undefined){ delete tab.colFilters[_cdpCol]; }
-  else { tab.colFilters[_cdpCol]=val; }
-  applyFilters(); updateChipStates();
-  closeDropdown();
-}
-
-function cdpClearAll(){
-  const tab=T(); if(!tab||!_cdpCol) return;
-  delete tab.colFilters[_cdpCol];
-  applyFilters(); updateChipStates();
-  renderCdpContent(_cdpCol);
-}
-
-function cdpSelectAll(){
-  const tab=T(); if(!tab||!_cdpCol) return;
-  if(!tab.colUniques) precalcColStats(tab);
-  const allVals=tab.colUniques[_cdpCol]?sortColumnValues(tab.colUniques[_cdpCol]):[];
-  if(!allVals.length) return;
-  tab.colFilters[_cdpCol]=[...allVals];
-  applyFilters(); updateChipStates();
-  renderCdpContent(_cdpCol);
-}
-
-function cdpInvert(){
-  const tab=T(); if(!tab||!_cdpCol) return;
-  if(!tab.colUniques) precalcColStats(tab);
-  const allVals=tab.colUniques[_cdpCol]?sortColumnValues(tab.colUniques[_cdpCol]):[];
-  const result=invertChipSelection(allVals, tab.colFilters[_cdpCol]);
-  if(!result.ok){
-    toast(result.message||'No se pudo invertir la selección');
-    return;
-  }
-  if(result.action==='clear') delete tab.colFilters[_cdpCol];
-  else tab.colFilters[_cdpCol]=result.values;
-  if(result.message) toast(result.message);
-  applyFilters(); updateChipStates();
-  renderCdpContent(_cdpCol);
 }
 
 function removeColFilter(col){
   const tab=T(); if(!tab) return;
   delete tab.colFilters[col]; applyFilters(); updateChipStates();
-  if(_cdpCol===col) closeDropdown();
-}
-function closeDropdown(){
-  $('chip-dropdown').classList.remove('open');
-  const tab=T(); if(tab) tab.activeChipCol=null;
-  _cdpCol=null; _cdpChipEl=null;
-  document.removeEventListener('mousedown', _cdpOutsideHandler);
 }
 
 // ── BÚSQUEDA ──────────────────────────────────────────────────────────────────
@@ -1874,7 +1293,7 @@ function clearFilters(){
   const ce=$('chk-excl'); if(ce) ce.checked=false;
   const fb=$('btn-regex-flags'); if(fb) fb.style.display='none';
   const rp=$('regex-flags-panel'); if(rp) rp.style.display='none';
-  closeDropdown(); closeMobileFilterSheet();
+  closeMobileFilterSheet();
   if(typeof _mfSyncOptionsUI==='function') _mfSyncOptionsUI();
   applyFilters();
   _mobileUiRefresh();
@@ -2638,8 +2057,7 @@ function ctxCopyCol(){
 function ctxFilter(){
   $('col-menu').classList.remove('open');
   const tab=T(); if(!tab||!_ctxCol) return;
-  const chip=[...$('chips-bar').querySelectorAll('.chip[data-col]')].find(c=>c.dataset.col===_ctxCol);
-  if(chip) chip.click();
+  if(typeof window.openFilterStudio==='function') window.openFilterStudio(undefined,_ctxCol);
   else toast(`Usa la barra de búsqueda para filtrar "${_ctxCol}"`);
 }
 
@@ -2849,7 +2267,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     ['detail-overlay','cond-overlay','fav-overlay','theme-overlay','datecol-overlay','hdr-overlay','col-panel-overlay'].forEach(id=>$(id)?.classList.remove('open'));
     $('chart-overlay').style.display='none'; $('regex-flags-panel').style.display='none'; const _sp=$('stats-picker-overlay'); if(_sp)_sp.remove(); const _pv=$('panel-values-overlay'); if(_pv)_pv.remove(); const _rf=$('refresh-overlay'); if(_rf)_rf.remove();
-    closeDropdown();
   }
 
   // Teclas direccionales — navegar filas (virtual scroll aware)
@@ -3857,7 +3274,6 @@ function renderChart(){
 }
 
 // ── FILTROS MÓVIL (barra inferior + panel) ────────────────────────────────────
-let _mfChipsMounted = false;
 function restoreMobileViewport(){
   resetViewportStyles();
   $('viewport-restore-btn')?.classList.remove('show');
@@ -3901,8 +3317,6 @@ function clearChipFiltersOnly(){
   const tab=T(); if(!tab) return;
   tab.colFilters={};
   $('date-from').value=''; $('date-to').value=''; $('date-col').selectedIndex=0;
-  closeDropdown();
-  if($('chip-search')){ $('chip-search').value=''; onChipSearch(); }
   updateChipStates(); applyFilters();
   _mobileUiRefresh();
 }
@@ -4004,29 +3418,11 @@ function mobileFilterExclToggle(on){
   $('mf-l-excl')?.classList.toggle('on',on);
   _updateMobileActiveBar();
 }
-function _mfMountChips(){
-  if(_mfChipsMounted) return;
-  const host=$('mf-chips-host'), bar=$('chips-bar'), ref=$('chips-right');
-  if(!host||!bar) return;
-  [...bar.querySelectorAll('.chip[data-col]')].forEach(ch=>host.appendChild(ch));
-  _mfChipsMounted=true;
-}
-function _mfUnmountChips(){
-  if(!_mfChipsMounted) return;
-  const host=$('mf-chips-host'), bar=$('chips-bar'), ref=$('chips-right');
-  if(!host||!bar) return;
-  [...host.querySelectorAll('.chip')].forEach(ch=>bar.insertBefore(ch, ref));
-  _mfChipsMounted=false;
-}
 function openMobileFilterSheet(){
   if(!_isMobileUi()) return;
   _blurActiveInput();
   const tab=T(); if(!tab?.rawData?.length){ toast('Carga datos primero'); return; }
   tab.searchText=$('search-input')?.value??tab.searchText??'';
-  const bar=$('chips-bar'), host=$('mf-chips-host');
-  const chipCount=bar.querySelectorAll('.chip[data-col]').length+(host?.querySelectorAll('.chip[data-col]').length||0);
-  if(chipCount===0) buildChips();
-  if(!_mfChipsMounted) _mfMountChips();
   updateChipStates();
   _mfSyncOptionsUI();
   $('mobile-filter-overlay')?.classList.add('open');
@@ -4035,7 +3431,6 @@ function openMobileFilterSheet(){
   _updateMobileBnav();
 }
 function closeMobileFilterSheet(){
-  _mfUnmountChips();
   _blurActiveInput();
   $('mobile-filter-overlay')?.classList.remove('open');
   scheduleOverlayCheck?.();
@@ -4046,7 +3441,6 @@ window.addEventListener('resize', ()=>{ _mobileUiRefresh(); if(!_isMobileUi()) c
 // ── INICIO ────────────────────────────────────────────────────────────────────
 window.__miradorBootDone = false;
 applyTheme(currentTheme);
-initChipSearch();
 document.body.classList.remove('focus-a','focus-b','focus-c','focus-d','focus-c-revealed');
 try{ localStorage.removeItem('mirador_focus_v1'); }catch(_){}
 _sidebarInit();
@@ -4580,12 +3974,11 @@ function toggleColExpand(btn) {
 
 // Mostrar botones de archivo si hay sesión restaurada (también tras _bootSessionRestore)
 
-// ── Inline handler globals (auto-generated by scripts/split-phase0.mjs) ──
+// ── Inline handler globals ──
 const __miradorGlobals = {
   $,
   $$,
   CHART_COLORS,
-  CHIP_LIMIT,
   DETAIL_STYLE_KEY,
   FAV_KEY,
   FM_FOLDERS_KEY,
@@ -4622,11 +4015,7 @@ const __miradorGlobals = {
   _blurActiveInput,
   _bootSessionRestore,
   _cacheSheetData,
-  _cdpChipEl,
-  _cdpCol,
-  _cdpOutsideHandler,
   _checkMobileViewportShift,
-  _clearChipSearch,
   _clearLiveSearch,
   _closeActionsPanelOutside,
   _closeMobileMenuOutside,
@@ -4653,17 +4042,13 @@ const __miradorGlobals = {
   _hdrPicker,
   _hdrRowForSheet,
   _hideFileActions,
-  _highlightChipText,
   _isLoggedIn,
   _isMobileUi,
   _isRecentEnabled,
   _lastComboCols,
   _lastComboTab,
   _loadSheetFromCache,
-  _mfChipsMounted,
-  _mfMountChips,
   _mfSyncOptionsUI,
-  _mfUnmountChips,
   _mobileUiRefresh,
   _onSearchKey,
   _openHdrPickerForTab,
@@ -4741,13 +4126,10 @@ const __miradorGlobals = {
   _tabToggleFav,
   _toastTimer,
   _toggleRecentSave,
-  _updateChipsBadge,
-  _updateClearChipBtn,
   _updateMobileActiveBar,
   _updateMobileBnav,
   _updateSearchClearBtn,
   _updateSheetsBtn,
-  _visibleChipsInOneLine,
   _vpRestoreHideTimer,
   _vtOnScroll,
   _vtRenderVisible,
@@ -4755,7 +4137,6 @@ const __miradorGlobals = {
   activeTabId,
   addCondRule,
   applyCondRules,
-  applyDateChipFilter,
   applyDateColSelection,
   applyFilters,
   applyTheme,
@@ -4765,13 +4146,7 @@ const __miradorGlobals = {
   buildFilterSummary,
   buildSearchCombo,
   cancelHdrPicker,
-  cdpClearAll,
-  cdpInvert,
-  cdpSelectAll,
-  cdpSetSpec,
-  cdpToggleVal,
   clearChipFiltersOnly,
-  clearDateChipFilter,
   clearFilters,
   clearPanelFilter,
   clearRecentSearches,
@@ -4781,7 +4156,6 @@ const __miradorGlobals = {
   closeCondModal,
   closeDateColPanel,
   closeDetail,
-  closeDropdown,
   closeFavModal,
   closeGraphPanel,
   closeMobileFilterSheet,
@@ -4832,7 +4206,6 @@ const __miradorGlobals = {
   getFavs,
   getNotes,
   getRegexFlags,
-  initChipSearch,
   jumpToHdrRow,
   lastClick,
   loadFavorite,
@@ -4841,18 +4214,15 @@ const __miradorGlobals = {
   mobileFilterExclToggle,
   mobileFilterRegexToggle,
   navigateDetail,
-  onChipSearch,
   onDragOver,
   onDrop,
   onPillClick,
   onRegexChange,
   onSearch,
   onSearchColChange,
-  openCdpPanel,
   openColMenu,
   openColPanel,
   openCondModal,
-  openDateChipPanel,
   openDateColPanel,
   openDetail,
   openFavModal,
@@ -4885,7 +4255,6 @@ const __miradorGlobals = {
   reloadTab,
   removeColFilter,
   removeStatsPanel,
-  renderCdpContent,
   renderChart,
   renderCondRules,
   renderDetailBody,
@@ -4928,8 +4297,6 @@ const __miradorGlobals = {
   toast,
   toastCloudSaved,
   toggleActionsPanel,
-  toggleChipDropdown,
-  toggleChipsBar,
   toggleColExpand,
   toggleColVisibility,
   toggleFilesSidebar,

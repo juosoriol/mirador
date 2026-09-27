@@ -2,17 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCandidateRowIndices,
   buildDateRangeFilter,
-  computeFilteredNonEmptyCounts,
   countColumnValueMap,
   countNullRows,
-  countNonNullRows,
   findCedulaColumn,
   getChipFilterDisplayLabel,
-  invertChipSelection,
   precalcColStats,
   selectionSetFromFilter,
-  sortColumnValues,
-  toggleChipSelection,
 } from '../../src/engine/chip-filter-engine.js';
 import { COL_FILTER } from '../../src/engine/filter-types.js';
 
@@ -66,9 +61,8 @@ describe('count helpers', () => {
     });
   });
 
-  it('counts null and non-null cédula rows', () => {
+  it('counts null cédula rows', () => {
     expect(countNullRows(data, rows, 'Cedula')).toBe(2);
-    expect(countNonNullRows(data, rows, 'Cedula')).toBe(2);
   });
 });
 
@@ -84,51 +78,10 @@ describe('getChipFilterDisplayLabel', () => {
   });
 });
 
-describe('toggleChipSelection', () => {
-  it('adds and removes values from multi-select', () => {
-    expect(toggleChipSelection(undefined, 'A')).toEqual(['A']);
-    expect(toggleChipSelection(['A'], 'B')).toEqual(['A', 'B']);
-    expect(toggleChipSelection(['A', 'B'], 'A')).toEqual(['B']);
-    expect(toggleChipSelection(['A'], 'A')).toBeUndefined();
-  });
-});
-
-describe('invertChipSelection', () => {
-  const all = ['A', 'B', 'C'];
-
-  it('rejects invert without prior selection', () => {
-    expect(invertChipSelection(all, undefined).ok).toBe(false);
-  });
-
-  it('clears when all values selected', () => {
-    const r = invertChipSelection(all, ['A', 'B', 'C']);
-    expect(r).toMatchObject({ ok: true, action: 'clear' });
-  });
-
-  it('inverts partial selection', () => {
-    const r = invertChipSelection(all, ['A']);
-    expect(r).toMatchObject({ ok: true, action: 'invert', values: ['B', 'C'] });
-  });
-});
-
-describe('sortColumnValues', () => {
-  it('sorts numerically when possible', () => {
-    expect(sortColumnValues(['10', '2', '1'])).toEqual(['1', '2', '10']);
-  });
-});
-
 describe('buildDateRangeFilter', () => {
   it('builds and clears date range tokens', () => {
     expect(buildDateRangeFilter('2024-01-01', '2024-12-31')).toContain('__DATE_RANGE__');
     expect(buildDateRangeFilter('', '')).toBeUndefined();
-  });
-});
-
-describe('computeFilteredNonEmptyCounts', () => {
-  it('counts non-empty values for chip columns in filtered set', () => {
-    const counts = computeFilteredNonEmptyCounts(data, [0, 2, 3], new Set(['Estado', 'Depto']));
-    expect(counts.Estado).toBe(3);
-    expect(counts.Depto).toBe(3);
   });
 });
 

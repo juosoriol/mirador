@@ -22,13 +22,13 @@ function ChipsBarInner() {
           Filtros
           <span id="fs-launch-count" className="fs-launch-count" />
         </button>
-        <input type="text" id="chip-search" placeholder="🔍 Filtros..." autoComplete="off" />
         <button
           type="button"
           id="btn-clear-chips"
-          onClick={() => callLegacy('_clearChipSearch')}
-          title="Limpiar búsqueda y filtros"
+          onClick={() => callLegacy('clearChipFiltersOnly')}
+          title="Quitar todos los filtros de columna"
           style={{
+            display: 'none',
             padding: '4px 11px',
             borderRadius: 20,
             fontSize: 12,
@@ -38,50 +38,21 @@ function ChipsBarInner() {
             cursor: 'pointer',
             fontFamily: 'var(--font)',
             whiteSpace: 'nowrap',
-            opacity: 0.3,
-            transition: 'opacity .15s,transform .1s',
+            transition: 'transform .1s',
             flexShrink: 0,
           }}
         >
           🧹 Limpiar
         </button>
         <span id="chips-count" style={{ fontSize: 12, color: 'var(--muted)', whiteSpace: 'nowrap' }} />
-        <button
-          type="button"
-          id="chips-toggle"
-          onClick={() => callLegacy('toggleChipsBar')}
-          style={{
-            display: 'none',
-            padding: '4px 11px',
-            borderRadius: 20,
-            fontSize: 12,
-            border: '1px solid var(--acc)',
-            background: 'var(--acc-dim)',
-            cursor: 'pointer',
-            fontFamily: 'var(--font)',
-            whiteSpace: 'nowrap',
-            transition: 'all .15s',
-            flexShrink: 0,
-            alignItems: 'center',
-            gap: 4,
-            color: 'var(--acc-text)',
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <polyline points="6,9 12,15 18,9" />
-          </svg>
-          <span id="chips-toggle-label">Ver todos</span>
-        </button>
       </div>
       <span id="chips-placeholder" style={{ color: 'var(--muted)', fontSize: 12 }}>
         Abre un archivo para ver los filtros
       </span>
-      <div id="chips-right" style={{ display: 'none', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 'auto' }}>
-        <span id="chips-more-badge" />
-      </div>
+      <div id="chips-right" style={{ display: 'none', alignItems: 'center', gap: 6, flexShrink: 0, marginLeft: 'auto' }} />
     </div>
   );
 }
 
-/** Static shell — core.js injects .chip nodes and toggles visibility. */
+/** Static shell — core.js injects active-filter .chip nodes before #chips-right. */
 export const ChipsBar = memo(ChipsBarInner);

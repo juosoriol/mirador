@@ -8,9 +8,9 @@ Servidor local:
   o: npm run dev
   → http://localhost:8000
 
-Pruebas E2E:
+Pruebas:
   Doble clic en INSTALAR-Y-PROBAR.bat
-  o: node scripts\write-e2e.mjs && npm test
+  o: npm run test:all   (unitarias + E2E)
 
 Producción:
   https://miradorapp-b9faf.web.app

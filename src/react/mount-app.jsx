@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { flushSync } from 'react-dom';
 import { AuthProvider } from '../auth/AuthContext.jsx';
 import { LoginApp } from './LoginApp.jsx';
 import { TabBar } from './TabBar.jsx';
@@ -19,7 +20,15 @@ import { MobileFilterSheet } from './MobileFilterSheet.jsx';
 import { ChipDropdown } from './ChipDropdown.jsx';
 import { FilterStudio } from './filters/FilterStudio.jsx';
 
+/** Static shell element ids that core.js reads at module evaluation. */
+export const SHELL_IDS = ['topbar', 'tabs-bar', 'chips-bar', 'searchbar', 'stats-bar', 'statusbar', 'st-total', 'pills-view', 'mobile-bnav', 'dropzone', 'loading'];
+
+/** Render every shell synchronously so the DOM exists before core.js is imported. */
 export function mountAppShell() {
+  flushSync(renderShells);
+}
+
+function renderShells() {
   const loginRoot = document.getElementById('login-root');
   if (loginRoot) {
     createRoot(loginRoot).render(

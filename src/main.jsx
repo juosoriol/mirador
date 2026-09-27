@@ -1,12 +1,24 @@
 import './styles/main.css';
-import { mountAppShell } from './react/mount-app.jsx';
+import { mountAppShell, SHELL_IDS } from './react/mount-app.jsx';
 
 mountAppShell();
 
+async function waitForShells(timeoutMs = 10_000) {
+  const start = performance.now();
+  for (;;) {
+    const missing = SHELL_IDS.filter((id) => !document.getElementById(id));
+    if (!missing.length) return;
+    if (performance.now() - start > timeoutMs) {
+      console.warn('[Mirador] shells still missing, booting anyway:', missing);
+      return;
+    }
+    await new Promise((r) => requestAnimationFrame(r));
+  }
+}
+
 async function boot() {
   try {
-    // Let React commit all shell roots before legacy core touches the DOM.
-    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    await waitForShells();
     await import('./app/core.js');
     await import('./services/firebase-app.js');
     if (typeof window._mobileUiRefresh === 'function') {

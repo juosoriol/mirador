@@ -30,14 +30,9 @@ export function initFirebaseClient() {
   _storage = firebase.storage();
   _fns = firebase.app().functions('us-central1');
 
-  _db.settings({
-    cacheSizeBytes: firebase.firestore.CACHE_SIZE_UNLIMITED,
-    ignoreUndefinedProperties: true,
-  });
-
-  _db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
-    console.warn('[Firestore] Persistencia no habilitada:', err.code);
-  });
+  // Memory cache only: multi-tab IndexedDB persistence made the first query wait
+  // ~5s for the previous page's primary-tab lease on every reload.
+  _db.settings({ ignoreUndefinedProperties: true });
 
   _initialized = true;
   return { auth: _auth, db: _db, storage: _storage, fns: _fns, config: FB_CONFIG };

@@ -26,5 +26,6 @@ setup('guardar sesión Firebase', async ({ page }) => {
 
   await waitForAppReady(page);
   await resetToIdleState(page);
-  await page.context().storageState({ path: authFile });
+  // Firebase compat keeps the auth session in IndexedDB.
+  await page.context().storageState({ path: authFile, indexedDB: true });
 });

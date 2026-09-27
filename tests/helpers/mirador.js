@@ -75,18 +75,23 @@ export async function login(page) {
   for (let attempt = 0; attempt < 2; attempt++) {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     const loginScreen = page.locator('#login-screen');
-    await loginScreen.waitFor({ state: 'visible', timeout: 20_000 });
+    await loginScreen.waitFor({ state: 'attached', timeout: 20_000 });
+
+    // Either the stored session logs in (screen hides) or the form appears.
+    await page.waitForFunction(
+      () =>
+        document.getElementById('login-screen')?.classList.contains('hidden') ||
+        !!document.getElementById('login-email')?.offsetParent,
+      null,
+      { timeout: 30_000 },
+    );
 
     if (!(await loginScreen.evaluate((el) => el.classList.contains('hidden')))) {
-      try {
-        await expect(loginScreen).toHaveClass(/hidden/, { timeout: 5_000 });
-      } catch {
-        await page.fill('#login-email', email);
-        await page.fill('#login-pass', password);
-        await page.getByRole('button', { name: 'Ingresar' }).click();
-        await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
-        await expect(page.locator('#login-error')).not.toHaveClass(/show/);
-      }
+      await page.fill('#login-email', email);
+      await page.fill('#login-pass', password);
+      await page.getByRole('button', { name: 'Ingresar' }).click();
+      await expect(loginScreen).toHaveClass(/hidden/, { timeout: 30_000 });
+      await expect(page.locator('#login-error')).not.toHaveClass(/show/);
     }
 
     try {

@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { activeFilterTokens, columnFacet, containsFilter, selectValues, setValueSelected } from '../../engine/filter-studio-engine.js';
 import { COL_FILTER } from '../../engine/filter-types.js';
 import { buildDateRangeFilter, parseDateChipFilter } from '../../engine/chip-filter-engine.js';
-import { clearAllColFilters, setColFilter } from './filter-bridge.js';
+import { clearAllColFilters, facetRowsExcept, getGlobalSearch, setColFilter, setGlobalSearch } from './filter-bridge.js';
 
 const METHOD_LABELS = { window: 'Ventana', drawer: 'Panel', smart: 'Barra' };
 const RENDER_CAP = 300;
@@ -38,9 +38,21 @@ export function ResultCount({ tab }) {
 
 export function ActiveTokens({ tab, onPick, empty = 'Sin filtros activos' }) {
   const tokens = activeFilterTokens(tab.colFilters);
-  if (!tokens.length) return <div className="fs-tokens fs-tokens-empty">{empty}</div>;
+  const search = getGlobalSearch(tab);
+  if (!tokens.length && !search) return <div className="fs-tokens fs-tokens-empty">{empty}</div>;
   return (
     <div className="fs-tokens">
+      {search && (
+        <span className="fs-token fs-token-search">
+          <span className="fs-token-body" title="Texto de la barra de búsqueda">
+            <span className="fs-token-col">Búsqueda</span>
+            <span className="fs-token-val">“{search}”</span>
+          </span>
+          <button type="button" className="fs-token-x" onClick={() => setGlobalSearch('')} aria-label="Quitar búsqueda">
+            ×
+          </button>
+        </span>
+      )}
       {tokens.map((t) => (
         <span key={t.col} className="fs-token">
           <button type="button" className="fs-token-body" onClick={() => onPick?.(t.col)} title={`Editar ${t.col}`}>
@@ -52,7 +64,14 @@ export function ActiveTokens({ tab, onPick, empty = 'Sin filtros activos' }) {
           </button>
         </span>
       ))}
-      <button type="button" className="fs-link" onClick={clearAllColFilters}>
+      <button
+        type="button"
+        className="fs-link"
+        onClick={() => {
+          if (search) setGlobalSearch('');
+          clearAllColFilters();
+        }}
+      >
         Limpiar todo
       </button>
     </div>
@@ -72,10 +91,17 @@ export function CountBar({ count, max }) {
 export function ValuesEditor({ tab, col, version, autoFocus }) {
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
-  const facet = useMemo(() => columnFacet(tab, col, { query }), [tab, col, query, version]);
-  const cur = facet.filter;
+  const cur = tab.colFilters[col];
   const isNull = cur === COL_FILTER.NULL;
   const containsText = typeof cur === 'string' && cur.startsWith(COL_FILTER.CONTAINS_PREFIX) ? cur.slice(COL_FILTER.CONTAINS_PREFIX.length) : '';
+  const [containsInput, setContainsInput] = useState(containsText);
+  useEffect(() => {
+    setContainsInput((prev) => (prev.trim().toLowerCase() === containsText ? prev : containsText));
+  }, [containsText]);
+  const facet = useMemo(
+    () => columnFacet(tab, col, { query, contains: containsText, candidates: facetRowsExcept(col) }),
+    [tab, col, query, containsText, version],
+  );
   const shown = showAll ? facet.values : facet.values.slice(0, RENDER_CAP);
 
   return (
@@ -110,12 +136,19 @@ export function ValuesEditor({ tab, col, version, autoFocus }) {
             className="fs-input sm"
             type="text"
             placeholder="texto…"
-            defaultValue={containsText}
-            key={`${col}-contains`}
-            onChange={(e) => setColFilter(col, containsFilter(e.target.value))}
+            value={containsInput}
+            onChange={(e) => {
+              setContainsInput(e.target.value);
+              setColFilter(col, containsFilter(e.target.value));
+            }}
           />
         </div>
       </div>
+      {containsText && (
+        <div className="fs-contains-hint">
+          {facet.values.length.toLocaleString()} valor{facet.values.length === 1 ? '' : 'es'} contiene{facet.values.length === 1 ? '' : 'n'} “{containsText}”
+        </div>
+      )}
       <div className="fs-values">
         {shown.length === 0 && <div className="fs-empty">Sin resultados</div>}
         {shown.map((v) => (

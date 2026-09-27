@@ -1,5 +1,5 @@
 import { ALL_COLUMNS_LABEL } from './filter-types.js';
-import { filterActiveCondRules, getCondColorForCell } from './cond-engine.js';
+import { condTextColor, filterActiveCondRules, getCondColorForCell } from './cond-engine.js';
 
 export const VT_ROW_H = 30;
 export const VT_BUFFER = 12;
@@ -153,7 +153,12 @@ export function createVirtualTableController(deps) {
       const v = fmtCell(col, raw_v, tab);
       td.title = v;
 
-      let bg = getCondColorForCell(v, col, rules);
+      const bg = getCondColorForCell(v, col, rules);
+      if (bg) {
+        td.classList.add('cond-cell');
+        td.style.setProperty('--cond-bg', bg);
+        td.style.setProperty('--cond-fg', condTextColor(bg));
+      }
 
       if (txt && v && (!scol || allCols || scol === col)) {
         const idx = v.toLowerCase().indexOf(txt);
@@ -161,24 +166,12 @@ export function createVirtualTableController(deps) {
           const pre = document.createTextNode(v.slice(0, idx));
           const mark = el('span', { cls: 'hl' }, [v.slice(idx, idx + txt.length)]);
           const post = document.createTextNode(v.slice(idx + txt.length));
-          if (bg) {
-            const wrap = el('span', {
-              style: `background:${bg};color:#000;border-radius:3px;padding:0 4px`,
-            });
-            wrap.append(pre, mark, post);
-            td.appendChild(wrap);
-          } else {
-            td.append(pre, mark, post);
-          }
+          td.append(pre, mark, post);
           tr.appendChild(td);
           return;
         }
       }
-      if (bg) {
-        td.innerHTML = `<span style="background:${bg};color:#000;border-radius:3px;padding:0 4px">${eh(v)}</span>`;
-      } else {
-        td.textContent = v;
-      }
+      td.textContent = v;
       tr.appendChild(td);
     });
     return tr;

@@ -28,6 +28,21 @@ export function matchCondRule(cellValue, rule) {
   }
 }
 
+/** Black or white text, whichever reads better on the given #rrggbb background. */
+export function condTextColor(hex) {
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(hex || ''));
+  if (!m) return '#000';
+  const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
+  return (r * 299 + g * 587 + b * 114) / 1000 >= 140 ? '#000' : '#fff';
+}
+
+/** How many of the given cell values match a rule. */
+export function countCondMatches(values, rule) {
+  let n = 0;
+  for (const v of values) if (matchCondRule(v, rule)) n++;
+  return n;
+}
+
 /**
  * First matching rule color for a cell, or empty string.
  * @param {unknown} cellValue

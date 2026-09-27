@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from 'react';
-import { FILTER_UI_KEY, FILTER_UI_METHODS } from '../../engine/filter-studio-engine.js';
 
 const EVENT = 'mirador:filters-changed';
 let version = 0;
@@ -54,19 +53,14 @@ export function setGlobalSearch(text) {
   window.applyFilters?.();
 }
 
-export function loadFilterMethod() {
-  try {
-    const m = localStorage.getItem(FILTER_UI_KEY);
-    return FILTER_UI_METHODS.includes(m) ? m : 'window';
-  } catch {
-    return 'window';
-  }
+/** Text currently typed in the live search box of the active view. */
+export function getGlobalSearch(tab) {
+  if (!tab) return '';
+  const text = typeof window._activeSearchText === 'function' ? window._activeSearchText(tab) : tab.searchText;
+  return String(text ?? '').trim();
 }
 
-export function saveFilterMethod(m) {
-  try {
-    localStorage.setItem(FILTER_UI_KEY, m);
-  } catch {
-    /* ignore */
-  }
+/** Row indices matching every filter (including the text search) except the one on `col`. */
+export function facetRowsExcept(col) {
+  return typeof window._facetRowsExcept === 'function' ? window._facetRowsExcept(col) : undefined;
 }

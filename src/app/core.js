@@ -104,6 +104,7 @@ import {
   upsertFavorite,
   writeFavoritesToStorage,
 } from '../engine/views-engine.js';
+import { COND_OPS, countCondMatches, filterActiveCondRules } from '../engine/cond-engine.js';
 import {
   createFolderEntry,
   deleteFolderAt,
@@ -1077,6 +1078,7 @@ function updateChipStates(){
     th.classList.toggle('col-filtered', col && tab.colFilters[col]!==undefined);
   });
   const btn=$('btn-clear-chips'); if(btn) btn.style.display=n>0?'':'none';
+  _updateCondBadge();
   _mobileUiRefresh();
   if($('mobile-filter-overlay')?.classList.contains('open')) _mfSyncOptionsUI();
 }
@@ -1132,6 +1134,7 @@ function onSearch(){
   const tab=T();
   const val=$('search-input')?.value??'';
   if(tab) tab.searchText=val;
+  _scheduleRecentSave(val);
   clearTimeout(searchTimer);
   clearTimeout(_pillsSearchTimer);
   searchTimer=setTimeout(()=>{
@@ -1200,35 +1203,38 @@ function _syncLiveSearchFields(_rawTxt){
   }
   const si=$('search-input'); if(si && si.value!==_rawTxt) si.value=_rawTxt;
 }
+function _filterParams(tab, rawTxt){
+  return {
+    data: tab.rawData,
+    columns: tab.columns,
+    colFilters: tab.colFilters,
+    searchText: rawTxt.trim(),
+    useRegex: $('chk-regex')?.checked,
+    useExclude: $('chk-excl')?.checked,
+    regexFlags: getRegexFlags() || 'i',
+    searchCol: $('search-col').value,
+    dateFrom: $('date-from').value,
+    dateTo: $('date-to').value,
+    dateCol: $('date-col').value,
+    dateColsDetected: tab.dateColsDetected,
+    searchIndex: tab.searchIndex,
+    lastUseRegex: tab._lastUseRegex,
+  };
+}
+/** Rows matching every active filter (text search included) except the one on `col`. */
+function _facetRowsExcept(col){
+  const tab=T(); if(!tab||!tab.rawData.length) return [];
+  const colFilters={...tab.colFilters}; delete colFilters[col];
+  return filterRows({ ..._filterParams(tab, _activeSearchText(tab)), colFilters }).filtered;
+}
 function applyFilters(){
   const tab=T(); if(!tab||!tab.rawData.length) return;
   const _rawTxt=_activeSearchText(tab);
   _syncLiveSearchFields(_rawTxt);
-  const useRegex=$('chk-regex')?.checked;
-  const useExcl =$('chk-excl')?.checked;
-  const scol    = $('search-col').value;
-  const dfrom   = $('date-from').value;
-  const dto     = $('date-to').value;
-  const dcol    = $('date-col').value;
   if(_pillsOn) tab.pillsSearchText=_rawTxt;
   else tab.searchText=_rawTxt;
 
-  const { filtered, searchIndex, lastUseRegex } = filterRows({
-    data: tab.rawData,
-    columns: tab.columns,
-    colFilters: tab.colFilters,
-    searchText: _rawTxt.trim(),
-    useRegex,
-    useExclude: useExcl,
-    regexFlags: getRegexFlags() || 'i',
-    searchCol: scol,
-    dateFrom: dfrom,
-    dateTo: dto,
-    dateCol: dcol,
-    dateColsDetected: tab.dateColsDetected,
-    searchIndex: tab.searchIndex,
-    lastUseRegex: tab._lastUseRegex,
-  });
+  const { filtered, searchIndex, lastUseRegex } = filterRows(_filterParams(tab, _rawTxt));
 
   tab.filtered = filtered;
   tab.searchIndex = searchIndex;
@@ -1841,22 +1847,48 @@ function removeStatsPanel(col){
 function openCondModal(){ const tab=T(); if(!tab)return; renderCondRules(); $('cond-overlay').classList.add('open'); }
 function closeCondModal(e){ if(e&&e.target!==$('cond-overlay'))return; $('cond-overlay').classList.remove('open'); }
 function addCondRule(){ const tab=T(); if(!tab)return; tab.condRules.push({col:'',op:'=',val:'',color:'#3fb950'}); renderCondRules(); }
-function applyCondRules(){ closeCondModal(); renderTable(); toast('Colores aplicados'); }
+function applyCondRules(){ closeCondModal(); _condRulesChanged(); toast('Colores aplicados'); }
+function _condRuleMatchLabel(tab, r){
+  if(!filterActiveCondRules([r]).length) return 'Completa la regla';
+  const vals=tab.filtered.map(i=>tab.rawData[i]).filter(Boolean).map(row=>fmtCell(r.col, row[r.col]??'', tab));
+  const n=countCondMatches(vals, r);
+  return `${n.toLocaleString()} celda${n===1?'':'s'}`;
+}
+let _condLiveTimer=null;
+function _condRulesChanged(){
+  clearTimeout(_condLiveTimer);
+  _condLiveTimer=setTimeout(()=>{ renderTable(); _updateCondBadge(); saveSessionDebounced(); }, 150);
+}
+function _updateCondBadge(){
+  const tab=T();
+  const n=tab?filterActiveCondRules(tab.condRules).length:0;
+  const b=$('cond-rules-count'); if(b) b.textContent=n>0?String(n):'';
+  $('btn-cond-rules')?.classList.toggle('on', n>0);
+}
 function renderCondRules(){
   const tab=T(); if(!tab) return;
   const list=$('cond-rules-list');
-  if(!tab.condRules.length){list.innerHTML='<p style="font-size:12px;color:var(--muted);margin-bottom:10px">Sin reglas. Agrega una abajo.</p>';return}
+  if(!tab.condRules.length){list.innerHTML='<p class="cm-empty">Sin reglas todavía. Ejemplo: <strong>ESTADO = Activo</strong> en verde. Agrega una abajo.</p>';_updateCondBadge();return}
   const colOpts=['<option value="">Columna</option>',...tab.columns.map(c=>`<option value="${eh(c)}">${eh(c)}</option>`)].join('');
   list.innerHTML=tab.condRules.map((r,i)=>`
     <div class="cm-row" data-idx="${i}">
       <select data-f="col">${colOpts.replace(`value="${eh(r.col)}"`,`value="${eh(r.col)}" selected`)}</select>
-      <select data-f="op">${['=','!=','>','<','contiene'].map(op=>`<option value="${op}"${r.op===op?' selected':''}>${op}</option>`).join('')}</select>
+      <select data-f="op">${COND_OPS.map(op=>`<option value="${op}"${r.op===op?' selected':''}>${op}</option>`).join('')}</select>
       <input type="text" data-f="val" value="${eh(r.val)}" placeholder="valor"/>
       <input type="color" data-f="color" value="${r.color||'#3fb950'}"/>
-      <button class="cm-del" data-del="${i}">×</button>
+      <button class="cm-del" data-del="${i}" title="Quitar regla">×</button>
+      <span class="cm-match" data-match="${i}">${_condRuleMatchLabel(tab, r)}</span>
     </div>`).join('');
-  list.oninput=list.onchange=e=>{ const row=e.target.closest('[data-idx]'); if(!row)return; const f=e.target.dataset.f; if(f)tab.condRules[+row.dataset.idx][f]=e.target.value; };
-  list.onclick=e=>{ const d=e.target.dataset.del; if(d!==undefined){tab.condRules.splice(+d,1);renderCondRules();} };
+  list.oninput=list.onchange=e=>{
+    const row=e.target.closest('[data-idx]'); if(!row)return;
+    const f=e.target.dataset.f; if(!f) return;
+    const r=tab.condRules[+row.dataset.idx];
+    r[f]=e.target.value;
+    const m=row.querySelector('[data-match]'); if(m) m.textContent=_condRuleMatchLabel(tab, r);
+    _condRulesChanged();
+  };
+  list.onclick=e=>{ const d=e.target.dataset.del; if(d!==undefined){tab.condRules.splice(+d,1);renderCondRules();_condRulesChanged();} };
+  _updateCondBadge();
 }
 
 // ── EXPORTAR / COPIAR ─────────────────────────────────────────────────────────
@@ -3078,19 +3110,35 @@ function _saveRecentSearches(arr){
   writeRecentSearchesToStorage(RECENT_SEARCH_STORAGE_KEY, arr);
 }
 
+const RECENT_IDLE_SAVE_MS = 2000;
+let _recentIdleTimer = null;
+
 function _addRecentSearch(q){
+  q=String(q||'').trim();
   if(!q||q.length<2) return;
   if(!_isRecentEnabled()) return;
   const arr=addRecentSearchEntry(_getRecentSearches(), q);
   _saveRecentSearches(arr);
   _renderRecentSearches();
-  setTimeout(()=>{ const chk=$('chk-recent'); if(chk) chk.checked=_isRecentEnabled(); },50);
+}
+
+/** Save the live search once the user stops typing, leaves the box, or presses Enter. */
+function _scheduleRecentSave(q){
+  clearTimeout(_recentIdleTimer);
+  _recentIdleTimer=setTimeout(()=>_addRecentSearch(q), RECENT_IDLE_SAVE_MS);
+}
+function _flushRecentSave(q){
+  clearTimeout(_recentIdleTimer);
+  _addRecentSearch(q);
 }
 
 function _toggleRecentSave(){
   const chk=$('chk-recent');
   if(!chk) return;
   setRecentSearchEnabled(chk.checked);
+  if(!chk.checked) clearTimeout(_recentIdleTimer);
+  _renderRecentSearches();
+  toast(chk.checked?'Historial de búsquedas activado':'Historial de búsquedas desactivado');
 }
 
 function _isRecentEnabled(){
@@ -3098,8 +3146,10 @@ function _isRecentEnabled(){
 }
 
 function _renderRecentSearches(){
+  const enabled=_isRecentEnabled();
+  const chk=$('chk-recent'); if(chk) chk.checked=enabled;
   const wrap=$('search-recents'); if(!wrap) return;
-  const arr=_getRecentSearches();
+  const arr=enabled?_getRecentSearches():[];
   if(!arr.length){ wrap.classList.remove('has-items'); wrap.innerHTML=''; return; }
   wrap.classList.add('has-items');
   const now=Date.now();
@@ -3109,8 +3159,8 @@ function _renderRecentSearches(){
     return `<span class="search-recent" data-idx="${i}" 
       style="background:${col.bg};border-color:${col.border};color:${col.text};opacity:${opacity.toFixed(2)}"
       onclick="_applyRecentSearch(${i})"
-      title="Buscar: ${r.q}"
-      >${r.q} <span style="opacity:.5;font-size:10px" onclick="event.stopPropagation();_deleteRecentSearch(${i})">×</span></span>`;
+      title="Buscar: ${eh(r.q)}"
+      >${eh(r.q)} <span style="opacity:.5;font-size:10px" onclick="event.stopPropagation();_deleteRecentSearch(${i})">×</span></span>`;
   }).join('');
 }
 
@@ -3119,8 +3169,14 @@ function _applyRecentSearch(idx){
   const r=arr[idx]; if(!r) return;
   const si=$('search-input'); if(!si) return;
   si.value=r.q;
-  si.dispatchEvent(new Event('input'));
-  _addRecentSearch(r.q);
+  _runLiveSearch();
+  _flushRecentSave(r.q);
+}
+
+function _runLiveSearch(){
+  onSearch();
+  _updateMobileActiveBar();
+  _updateSearchClearBtn();
 }
 
 function _deleteRecentSearch(idx){
@@ -3131,13 +3187,11 @@ function _deleteRecentSearch(idx){
 }
 
 function _onSearchKey(e){
-  if(e.key==='Enter'){
-    const val=($('search-input').value||'').trim();
-    if(val.length>=2) _addRecentSearch(val);
-  }
+  if(e.key==='Enter') _flushRecentSave($('search-input').value);
   if(e.key==='Escape'){
+    clearTimeout(_recentIdleTimer);
     $('search-input').value='';
-    $('search-input').dispatchEvent(new Event('input'));
+    _runLiveSearch();
   }
 }
 
@@ -3321,6 +3375,7 @@ function clearChipFiltersOnly(){
   _mobileUiRefresh();
 }
 function _clearLiveSearch(){
+  clearTimeout(_recentIdleTimer);
   _resetLiveSearchState(T());
   applyFilters();
   _updateSearchClearBtn();
@@ -4053,6 +4108,12 @@ const __miradorGlobals = {
   _onSearchKey,
   _openHdrPickerForTab,
   _origApplyFilters,
+  _facetRowsExcept,
+  _updateCondBadge,
+  _condRulesChanged,
+  _flushRecentSave,
+  _scheduleRecentSave,
+  _runLiveSearch,
   _origTogglePillsMode,
   _pillsAvatarColor,
   _pillsCbNext,

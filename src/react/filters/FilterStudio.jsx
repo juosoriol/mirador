@@ -1,28 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FILTER_UI_METHODS } from '../../engine/filter-studio-engine.js';
-import { loadFilterMethod, saveFilterMethod, useActiveTab } from './filter-bridge.js';
+import { useActiveTab } from './filter-bridge.js';
 import { FilterWindow } from './FilterWindow.jsx';
 import { FacetDrawer } from './FacetDrawer.jsx';
 import { SmartBar } from './SmartBar.jsx';
 import '../../styles/filter-studio.css';
 
 const VIEWS = { window: FilterWindow, drawer: FacetDrawer, smart: SmartBar };
+const DEFAULT_METHOD = 'window';
 
 export function FilterStudio() {
   const { tab, version } = useActiveTab();
-  const [state, setState] = useState({ open: false, method: loadFilterMethod(), col: null });
+  const [state, setState] = useState({ open: false, method: DEFAULT_METHOD, col: null });
 
   const open = useCallback((method, col = null) => {
-    const m = FILTER_UI_METHODS.includes(method) ? method : loadFilterMethod();
+    const m = FILTER_UI_METHODS.includes(method) ? method : DEFAULT_METHOD;
     if (!window.T?.()?.rawData?.length) return;
     window.closeMobileFilterSheet?.();
     setState({ open: true, method: m, col });
   }, []);
   const close = useCallback(() => setState((s) => ({ ...s, open: false })), []);
-  const setMethod = useCallback((m) => {
-    saveFilterMethod(m);
-    setState((s) => ({ ...s, method: m }));
-  }, []);
+  const setMethod = useCallback((m) => setState((s) => ({ ...s, method: m })), []);
 
   useEffect(() => {
     window.openFilterStudio = open;

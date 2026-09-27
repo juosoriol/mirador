@@ -74,12 +74,67 @@ test.describe('Escritorio — nuevos filtros', () => {
     await expect(palette).toBeHidden();
   });
 
-  test('el estilo elegido se recuerda', async ({ page }) => {
+  test('siempre abre en Ventana', async ({ page }) => {
     await page.locator('#btn-filter-studio').click();
     await page.locator('.fs-switch button', { hasText: 'Panel' }).click();
     await expect(page.locator('.fs-drawer')).toBeVisible();
     await page.keyboard.press('Escape');
     await page.locator('#btn-filter-studio').click();
-    await expect(page.locator('.fs-drawer')).toBeVisible();
+    await expect(page.locator('.fs-window')).toBeVisible();
+  });
+
+  test('Contiene reduce la lista de valores', async ({ page }) => {
+    await page.locator('#btn-filter-studio').click();
+    const win = page.locator('.fs-window');
+    const values = win.locator('.fs-values .fs-check .fs-check-label');
+    const before = await values.count();
+    const q = (await values.first().innerText()).trim().slice(0, 6).toLowerCase();
+    await win.locator('.fs-contains input').fill(q);
+    await expect(win.locator('.fs-contains-hint')).toBeVisible();
+    await expect.poll(() => values.count()).toBeLessThan(before);
+    const labels = await values.allInnerTexts();
+    expect(labels.length).toBeGreaterThan(0);
+    for (const l of labels) expect(l.toLowerCase()).toContain(q);
+  });
+
+  test('historial de búsqueda se activa y guarda', async ({ page }) => {
+    const chk = page.locator('#chk-recent');
+    await page.evaluate(() => localStorage.removeItem('mirador_recent_searches_v1'));
+    if (!(await chk.isChecked())) await chk.click();
+    await expect(chk).toBeChecked();
+    await page.locator('#search-input').fill('zzhist');
+    await page.locator('#search-input').press('Enter');
+    await expect(page.locator('#search-recents .search-recent', { hasText: 'zzhist' })).toBeVisible();
+    await chk.click();
+    await expect(chk).not.toBeChecked();
+    await expect(page.locator('#search-recents .search-recent')).toHaveCount(0);
+    await chk.click();
+    await expect(chk).toBeChecked();
+    await page.evaluate(() => window._clearLiveSearch?.());
+  });
+
+  test('botón Colores pinta celdas por regla', async ({ page }) => {
+    const btn = page.locator('#btn-cond-rules');
+    await expect(btn).toBeVisible();
+    await btn.click();
+    await expect(page.locator('#cond-overlay')).toHaveClass(/open/);
+    await page.locator('#cond-overlay button', { hasText: 'Agregar regla' }).click();
+    const row = page.locator('#cond-rules-list .cm-row').first();
+    const rule = await page.evaluate(() => {
+      const tab = window.T();
+      const first = tab.rawData[tab.filtered[0]];
+      const col = tab.columns.find((c) => String(first[c] ?? '').trim().length >= 2);
+      return { col, val: String(first[col]).trim().slice(0, 2) };
+    });
+    await row.locator('select[data-f="col"]').selectOption(rule.col);
+    await row.locator('select[data-f="op"]').selectOption('contiene');
+    await row.locator('input[data-f="val"]').fill(rule.val);
+    await expect(row.locator('.cm-match')).toContainText(/\d+ celda/);
+    await page.locator('#cond-done').click();
+    await expect(page.locator('#cond-overlay')).not.toHaveClass(/open/);
+    await expect(btn).toHaveClass(/on/);
+    await expect(page.locator('td.cond-cell').first()).toBeVisible();
+    await page.screenshot({ path: `${SHOTS}/desktop-4-colores.png` });
+    await page.evaluate(() => { window.T().condRules = []; window._condRulesChanged?.(); });
   });
 });

@@ -57,6 +57,9 @@ export function setRecentSearchEnabled(enabled, storage = globalThis.localStorag
   storage.setItem(RECENT_SEARCH_ENABLED_KEY, enabled ? '1' : '0');
 }
 
+/** Entries this recent whose text is a prefix of a new search are treated as the same search being typed. */
+export const RECENT_SEARCH_REFINE_MS = 60000;
+
 /**
  * @param {Array<{ q: string, ts?: number, color?: number }>} arr
  * @param {string} q
@@ -64,7 +67,12 @@ export function setRecentSearchEnabled(enabled, storage = globalThis.localStorag
  */
 export function addRecentSearchEntry(arr, q, now = Date.now()) {
   if (!q || q.length < 2) return arr;
-  const next = arr.filter((r) => r.q !== q);
+  const lower = q.toLowerCase();
+  const next = arr.filter((r) => {
+    const rq = String(r.q || '').toLowerCase();
+    if (rq === lower) return false;
+    return !(now - (r.ts || 0) < RECENT_SEARCH_REFINE_MS && lower.startsWith(rq));
+  });
   next.unshift({ q, ts: now, color: next.length % RECENT_SEARCH_COLORS.length });
   if (next.length > RECENT_SEARCH_MAX) next.length = RECENT_SEARCH_MAX;
   return next;

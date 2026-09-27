@@ -72,6 +72,18 @@ describe('columnFacet', () => {
     expect(facet.totalValues).toBe(3);
   });
 
+  it('narrows values by the contains text, like the filter does', () => {
+    const facet = columnFacet(makeTab(), 'Ciudad', { contains: 'LL' });
+    expect(facet.values.map((v) => v.value)).toEqual(['Medellín']);
+  });
+
+  it('counts over precomputed candidate rows (e.g. with the text search)', () => {
+    const facet = columnFacet(makeTab(), 'Ciudad', { candidates: [0] });
+    expect(facet.candidateCount).toBe(1);
+    expect(facet.values.find((v) => v.value === 'Bogotá').count).toBe(1);
+    expect(facet.values.find((v) => v.value === 'Cali').count).toBe(0);
+  });
+
   it('marks selected values and filters by query', () => {
     const facet = columnFacet(makeTab({ Ciudad: ['Cali'] }), 'Ciudad', { query: 'cal' });
     expect(facet.values).toEqual([{ value: 'Cali', count: 1, selected: true }]);

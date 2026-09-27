@@ -10,7 +10,6 @@ import {
 } from './chip-filter-engine.js';
 
 export const FILTER_UI_METHODS = ['window', 'drawer', 'smart'];
-export const FILTER_UI_KEY = 'mirador_filter_ui';
 
 /** Lowercase + strip accents for tolerant matching. */
 export function normalizeText(s) {
@@ -66,19 +65,23 @@ export function filterColumnList(cols, query) {
  * Sorted by count desc, then alphabetically.
  * @param {object} tab
  * @param {string} col
- * @param {{ query?: string, sort?: 'count'|'alpha' }} [opts]
+ * @param {{ query?: string, contains?: string, candidates?: number[], sort?: 'count'|'alpha' }} [opts]
+ *   contains: narrows values like the column's "contiene" filter (case-insensitive substring).
+ *   candidates: precomputed row indices (e.g. including the global text search).
  */
 export function columnFacet(tab, col, opts = {}) {
-  const { query = '', sort = 'count' } = opts;
+  const { query = '', contains = '', sort = 'count' } = opts;
   const rawData = tab.rawData || [];
   const colFilters = tab.colFilters || {};
-  const candidates = buildCandidateRowIndices(rawData, colFilters, col);
+  const candidates = opts.candidates || buildCandidateRowIndices(rawData, colFilters, col);
   const counts = countColumnValueMap(rawData, candidates, col);
   const selection = selectionSetFromFilter(colFilters[col]);
   const all = tab.colUniques?.[col] ? [...tab.colUniques[col]] : Object.keys(counts);
   const q = normalizeText(query);
+  const c = String(contains).trim().toLowerCase();
   const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
   let values = all
+    .filter((v) => !c || String(v).toLowerCase().includes(c))
     .filter((v) => !q || normalizeText(v).includes(q))
     .map((v) => ({ value: String(v), count: counts[v] || 0, selected: selection.has(v) }));
   values.sort((a, b) =>

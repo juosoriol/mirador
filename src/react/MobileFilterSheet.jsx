@@ -26,6 +26,18 @@ function MobileFilterSheetInner() {
               Ningún filtro de columna activo
             </div>
             <div className="mf-chips-host" id="mf-chips-host" />
+            <button
+              type="button"
+              className="cond-launch fs-launch-block"
+              id="mf-btn-cond-rules"
+              onClick={() => {
+                callLegacy('closeMobileFilterSheet');
+                callLegacy('openCondModal');
+              }}
+            >
+              <span className="cond-launch-swatch" aria-hidden="true" />
+              Colores por regla
+            </button>
           </div>
           <p
             style={{

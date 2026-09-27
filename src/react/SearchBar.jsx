@@ -18,6 +18,7 @@ function SearchBarInner() {
           callLegacy('_updateSearchClearBtn');
         }}
         onKeyDown={(e) => callLegacy('_onSearchKey', e.nativeEvent)}
+        onBlur={(e) => callLegacy('_flushRecentSave', e.target.value)}
         inputMode="search"
         enterKeyHint="search"
       />
@@ -33,7 +34,7 @@ function SearchBarInner() {
       <div id="search-recents" />
       <label
         id="recent-toggle"
-        title="Guardar búsquedas recientes"
+        title="Guardar el historial de búsquedas (se guarda al dejar de escribir, al pulsar Enter o al salir del buscador)"
         style={{
           display: 'none',
           alignItems: 'center',

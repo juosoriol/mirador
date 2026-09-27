@@ -36,6 +36,14 @@ describe('addRecentSearchEntry', () => {
     expect(arr).toHaveLength(RECENT_SEARCH_MAX);
   });
 
+  it('replaces a just-typed prefix instead of keeping both', () => {
+    const typed = addRecentSearchEntry([{ q: 'car', ts: 1000, color: 0 }], 'cargo', 5000);
+    expect(typed.map((r) => r.q)).toEqual(['cargo']);
+
+    const later = addRecentSearchEntry([{ q: 'car', ts: 1000, color: 0 }], 'cargo', 1000 + 120000);
+    expect(later.map((r) => r.q)).toEqual(['cargo', 'car']);
+  });
+
   it('ignores short queries', () => {
     expect(addRecentSearchEntry([], 'a')).toEqual([]);
   });

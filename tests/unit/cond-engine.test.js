@@ -1,9 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import {
+  condTextColor,
+  countCondMatches,
   filterActiveCondRules,
   getCondColorForCell,
   matchCondRule,
 } from '../../src/engine/cond-engine.js';
+
+describe('condTextColor', () => {
+  it('picks readable text for light and dark backgrounds', () => {
+    expect(condTextColor('#fde047')).toBe('#000');
+    expect(condTextColor('#1e3a8a')).toBe('#fff');
+    expect(condTextColor('nope')).toBe('#000');
+  });
+});
+
+describe('countCondMatches', () => {
+  it('counts matching values', () => {
+    expect(countCondMatches(['Activo', 'Inactivo', 'activo'], { op: '=', val: 'Activo' })).toBe(2);
+  });
+});
 
 describe('filterActiveCondRules', () => {
   it('keeps only complete rules', () => {

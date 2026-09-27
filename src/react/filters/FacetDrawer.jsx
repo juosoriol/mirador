@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { columnFacet, filterColumnList, listFilterColumns, setValueSelected } from '../../engine/filter-studio-engine.js';
-import { clearAllColFilters, setColFilter } from './filter-bridge.js';
+import { COL_FILTER } from '../../engine/filter-types.js';
+import { clearAllColFilters, facetRowsExcept, setColFilter } from './filter-bridge.js';
 import { ActiveTokens, CedulaEditor, DateEditor, MethodSwitch, ResultCount, kindIcon } from './shared.jsx';
 
 const PILL_PREVIEW = 10;
@@ -9,8 +10,12 @@ const PILL_CAP = 200;
 function ValuePills({ tab, col, version }) {
   const [expanded, setExpanded] = useState(false);
   const [query, setQuery] = useState('');
-  const facet = useMemo(() => columnFacet(tab, col, { query }), [tab, col, query, version]);
-  const cur = facet.filter;
+  const cur = tab.colFilters[col];
+  const contains = typeof cur === 'string' && cur.startsWith(COL_FILTER.CONTAINS_PREFIX) ? cur.slice(COL_FILTER.CONTAINS_PREFIX.length) : '';
+  const facet = useMemo(
+    () => columnFacet(tab, col, { query, contains, candidates: facetRowsExcept(col) }),
+    [tab, col, query, contains, version],
+  );
   const limit = expanded ? PILL_CAP : PILL_PREVIEW;
   const shown = facet.values.slice(0, limit);
   const rest = facet.values.length - shown.length;

@@ -24,6 +24,17 @@ function ChipsBarInner() {
         </button>
         <button
           type="button"
+          id="btn-cond-rules"
+          className="cond-launch"
+          onClick={() => callLegacy('openCondModal')}
+          title="Pintar celdas según reglas (colores condicionales)"
+        >
+          <span className="cond-launch-swatch" aria-hidden="true" />
+          Colores
+          <span id="cond-rules-count" className="fs-launch-count" />
+        </button>
+        <button
+          type="button"
           id="btn-clear-chips"
           onClick={() => callLegacy('clearChipFiltersOnly')}
           title="Quitar todos los filtros de columna"

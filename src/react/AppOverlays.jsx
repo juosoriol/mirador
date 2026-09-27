@@ -53,7 +53,8 @@ function AppOverlaysInner() {
           <button type="button" className="modal-close" onClick={() => callLegacy('closeCondModal')}>
             ×
           </button>
-          <h3>⬛ Coloreado condicional</h3>
+          <h3>🎨 Colores por regla</h3>
+          <p className="cm-sub">Pinta las celdas que cumplan una condición. Los cambios se ven al instante en la tabla.</p>
           <div id="cond-rules-list" />
           <button
             type="button"
@@ -64,8 +65,8 @@ function AppOverlaysInner() {
             + Agregar regla
           </button>
           <div className="cm-actions">
-            <button type="button" className="btn primary" onClick={() => callLegacy('applyCondRules')}>
-              Aplicar
+            <button type="button" className="btn primary" id="cond-done" onClick={() => callLegacy('applyCondRules')}>
+              Listo
             </button>
           </div>
         </div>
@@ -566,7 +567,7 @@ function AppOverlaysInner() {
           onClick={closeAnd('openCondModal')}
           style={{ color: '#fcd34d' }}
         >
-          ⬛ Colores condicionales
+          🎨 Colores por regla
         </button>
         <button type="button" className="ap-item" id="ap-cols" onClick={closeAnd('openColPanel')}>
           ▦ Columnas
@@ -598,7 +599,7 @@ function AppOverlaysInner() {
           📊 Gráfico
         </button>
         <button type="button" className="mm-item" id="mm-cond" onClick={closeMobileAnd('openCondModal')}>
-          ⬛ Colores
+          🎨 Colores
         </button>
         <button type="button" className="mm-item" id="mm-cols" onClick={closeMobileAnd('openColPanel')}>
           ▦ Columnas

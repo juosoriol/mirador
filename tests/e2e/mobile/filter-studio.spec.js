@@ -7,12 +7,16 @@ async function visibleCount(page) {
   return page.evaluate(() => window.T().filtered.length);
 }
 
+const METHOD_LABELS = { window: 'Ventana', drawer: 'Panel', smart: 'Barra' };
+
 async function openFromSheet(page, method) {
-  await page.evaluate((m) => localStorage.setItem('mirador_filter_ui', m), method);
   await page.locator('#mbnav-filters').tap();
   await expect(page.locator('#mobile-filter-overlay')).toHaveClass(/open/);
   await page.locator('#mf-btn-filter-studio').tap();
   await expect(page.locator('#mobile-filter-overlay')).not.toHaveClass(/open/);
+  if (method !== 'window') {
+    await page.locator('.fs-window .fs-switch button', { hasText: METHOD_LABELS[method] }).tap();
+  }
 }
 
 test.describe('Móvil — nuevos filtros', () => {
